@@ -1,6 +1,7 @@
 /**
  * Session store using Zustand
  * Manages meditation session state, messages, and streaming
+ * Persists active session ID to localStorage for restoration after page refresh.
  */
 
 import { create } from 'zustand';
@@ -20,6 +21,9 @@ export type SessionStatus =
   | 'ending'
   | 'summary'
   | 'error';
+
+/** localStorage key for persisting the active session ID */
+const ACTIVE_SESSION_STORAGE_KEY = 'openmarcus-active-session-id';
 
 interface SessionState {
   // Session data
@@ -45,11 +49,48 @@ interface SessionState {
   resetSession: () => void;
   loadSession: (sessionId: string) => Promise<void>;
 
+  // Session persistence and restoration
+  restoreSession: () => Promise<void>;
+
   // Helper to update profileId when starting from profile store
   setProfileId: (profileId: string) => void;
 }
 
 let pendingProfileId: string | undefined;
+
+/**
+ * Save the active session ID to localStorage for restoration after page refresh
+ */
+function persistActiveSessionId(sessionId: string): void {
+  try {
+    localStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, sessionId);
+  } catch {
+    // localStorage might be unavailable (e.g., disabled, private mode)
+    // Silently ignore — session just won't persist across refresh
+  }
+}
+
+/**
+ * Remove the persisted session ID from localStorage
+ */
+function clearPersistedSessionId(): void {
+  try {
+    localStorage.removeItem(ACTIVE_SESSION_STORAGE_KEY);
+  } catch {
+    // Silently ignore
+  }
+}
+
+/**
+ * Read the persisted session ID from localStorage
+ */
+function getPersistedSessionId(): string | null {
+  try {
+    return localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
 
 export const useSessionStore = create<SessionState>((set, get) => ({
   currentSession: null,
@@ -83,6 +124,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     try {
       const sid = profileId || pendingProfileId;
       const session = await sessionAPI.createSession(sid);
+
+      // Persist session ID for restoration after page refresh
+      persistActiveSessionId(session.id);
 
       set({
         currentSession: session,
@@ -212,6 +256,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         // If reload fails, keep current messages
       }
 
+      // Clear persisted session ID — session is complete, no need to restore
+      clearPersistedSessionId();
+
       set({
         status: 'summary',
         summary: result.summary,
@@ -235,6 +282,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
    * Reset session state to idle
    */
   resetSession: () => {
+    // Clear persisted session ID when user manually resets
+    clearPersistedSessionId();
+    
     set({
       currentSession: null,
       messages: [],
@@ -255,6 +305,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
     try {
       const detail = await sessionAPI.getSession(sessionId);
+      
+      // Persist the session ID so it survives page refresh
+      if (detail.session.status !== 'summary') {
+        persistActiveSessionId(sessionId);
+      }
+      
       set({
         currentSession: detail.session,
         messages: detail.messages,
@@ -270,6 +326,47 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         title: 'Load Error',
         message,
       });
+    }
+  },
+
+  /**
+   * Restore active session from localStorage on page mount.
+   * Checks for a persisted session ID, loads the session from API if found.
+   * Called once on app/component mount to recover from page refresh.
+   */
+  restoreSession: async () => {
+    const sessionId = getPersistedSessionId();
+    
+    if (!sessionId) {
+      // No persisted session, stay in idle state
+      return;
+    }
+    
+    set({ status: 'starting', error: null });
+    
+    try {
+      const detail = await sessionAPI.getSession(sessionId);
+      
+      // If the session was already completed (summary), clear the persisted ID
+      // and reset to idle. Otherwise, restore the session.
+      if (detail.session.status === 'summary') {
+        clearPersistedSessionId();
+        set({ status: 'idle' });
+        return;
+      }
+      
+      set({
+        currentSession: detail.session,
+        messages: detail.messages,
+        status: 'active',
+        summary: null,
+        actionItems: [],
+      });
+    } catch {
+      // If restoration fails (e.g., session deleted, API unreachable),
+      // clear the persisted ID and reset to idle.
+      clearPersistedSessionId();
+      set({ status: 'idle', error: null });
     }
   },
 }));

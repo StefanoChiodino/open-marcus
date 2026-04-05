@@ -36,6 +36,8 @@ function setupSessionStore(overrides: Record<string, unknown> = {}) {
     sendMessage: vi.fn(),
     endSession: vi.fn(),
     resetSession: vi.fn(),
+    loadSession: vi.fn(),
+    restoreSession: vi.fn(),
     setProfileId: vi.fn(),
     ...overrides,
   };

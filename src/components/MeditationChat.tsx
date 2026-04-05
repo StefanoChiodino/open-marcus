@@ -25,7 +25,13 @@ function MeditationChat() {
     sendMessage,
     endSession,
     resetSession,
+    restoreSession,
   } = useSessionStore();
+
+  // Restore active session from localStorage on mount (handles page refresh)
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
 
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);

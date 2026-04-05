@@ -494,6 +494,166 @@ export class DatabaseService {
     };
   }
 
+  // ==================== Import/Export Operations ====================
+
+  /**
+   * Clear all user data (profiles, sessions, messages, action items)
+   * Does NOT clear stoic content library
+   */
+  clearAllUserData(): { profiles: number; sessions: number; messages: number; actionItems: number } {
+    const clearTransaction = this.db.transaction(() => {
+      // Delete in order respecting foreign keys
+      const actionItemResult = this.db.prepare('DELETE FROM action_items').run();
+      const messageResult = this.db.prepare('DELETE FROM messages').run();
+      const sessionResult = this.db.prepare('DELETE FROM sessions').run();
+      const profileResult = this.db.prepare('DELETE FROM profiles').run();
+      
+      return {
+        profiles: profileResult.changes,
+        sessions: sessionResult.changes,
+        messages: messageResult.changes,
+        actionItems: actionItemResult.changes,
+      };
+    });
+    
+    return clearTransaction();
+  }
+
+  /**
+   * Import all user data from exported JSON
+   */
+  importData(data: {
+    version: string;
+    profiles: Profile[];
+    sessions: Session[];
+    messages: Message[];
+    actionItems: ActionItem[];
+    content?: ContentItem[];
+  }): { profiles: number; sessions: number; messages: number; actionItems: number; content?: number } {
+    const importTransaction = this.db.transaction(() => {
+      const insertProfile = this.db.prepare(`
+        INSERT OR REPLACE INTO profiles (id, name, bio, encrypted_data, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      
+      const insertSession = this.db.prepare(`
+        INSERT OR REPLACE INTO sessions (id, profile_id, status, summary, action_items, started_at, ended_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      const insertMessage = this.db.prepare(`
+        INSERT OR REPLACE INTO messages (id, session_id, role, content, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      
+      const insertActionItem = this.db.prepare(`
+        INSERT OR REPLACE INTO action_items (id, session_id, content, completed, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      
+      const insertContent = this.db.prepare(`
+        INSERT OR REPLACE INTO stoic_content (id, author, source, book, section, letter, type, content, tags)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      let profileCount = 0;
+      let sessionCount = 0;
+      let messageCount = 0;
+      let actionItemCount = 0;
+      let contentCount = 0;
+
+      // Import profiles
+      if (data.profiles && Array.isArray(data.profiles)) {
+        for (const profile of data.profiles) {
+          insertProfile.run(
+            profile.id,
+            profile.name,
+            profile.bio || null,
+            profile.encrypted_data || null,
+            profile.created_at,
+            profile.updated_at,
+          );
+          profileCount++;
+        }
+      }
+
+      // Import sessions
+      if (data.sessions && Array.isArray(data.sessions)) {
+        for (const session of data.sessions) {
+          insertSession.run(
+            session.id,
+            session.profile_id,
+            session.status,
+            session.summary || null,
+            session.action_items || null,
+            session.started_at,
+            session.ended_at || null,
+            session.created_at,
+            session.updated_at,
+          );
+          sessionCount++;
+        }
+      }
+
+      // Import messages
+      if (data.messages && Array.isArray(data.messages)) {
+        for (const message of data.messages) {
+          insertMessage.run(
+            message.id,
+            message.session_id,
+            message.role,
+            message.content,
+            message.created_at,
+          );
+          messageCount++;
+        }
+      }
+
+      // Import action items
+      if (data.actionItems && Array.isArray(data.actionItems)) {
+        for (const actionItem of data.actionItems) {
+          insertActionItem.run(
+            actionItem.id,
+            actionItem.session_id,
+            actionItem.content,
+            actionItem.completed ? 1 : 0,
+            actionItem.created_at,
+            actionItem.updated_at,
+          );
+          actionItemCount++;
+        }
+      }
+
+      // Optionally import stoic content
+      if (data.content && Array.isArray(data.content)) {
+        for (const item of data.content) {
+          insertContent.run(
+            item.id,
+            item.author,
+            item.source,
+            item.book || null,
+            item.section || null,
+            item.letter || null,
+            item.type,
+            item.content,
+            JSON.stringify(item.tags),
+          );
+          contentCount++;
+        }
+      }
+
+      return {
+        profiles: profileCount,
+        sessions: sessionCount,
+        messages: messageCount,
+        actionItems: actionItemCount,
+        content: contentCount,
+      };
+    });
+
+    return importTransaction();
+  }
+
   // ==================== Database Info ====================
 
   /**

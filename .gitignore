@@ -3,5 +3,6 @@ dist/
 .env
 *.db
 data/
+test-data/
 .DS_Store
 *.log

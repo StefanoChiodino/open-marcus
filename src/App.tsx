@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomePage from './pages/HomePage';
+import Settings from './pages/Settings';
 import OnboardingScreen from './components/OnboardingScreen';
 import AppLayout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -133,6 +134,7 @@ function App() {
               <Route path="/session" element={<SessionPage />} />
               <Route path="/history" element={<HistoryPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
           </Routes>
         </ErrorBoundary>

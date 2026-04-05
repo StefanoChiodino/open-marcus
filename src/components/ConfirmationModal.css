@@ -1,0 +1,42 @@
+.confirmation-modal {
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.confirmation-modal::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.confirmation-modal__content {
+  background: var(--color-card-bg, #f5f0e8);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.confirmation-modal__content--danger {
+  border-top: 4px solid var(--color-danger, #c44a2f);
+}
+
+.confirmation-modal__title {
+  margin: 0 0 12px;
+  font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
+  color: var(--color-text, #3a3530);
+  font-size: 1.25rem;
+}
+
+.confirmation-modal__message {
+  margin: 0 0 24px;
+  color: var(--color-text-secondary, #6b6560);
+  line-height: 1.6;
+}
+
+.confirmation-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}

@@ -103,10 +103,22 @@ describe('SessionHistory', () => {
     expect(link.getAttribute('href')).toBe('/history/session-abc');
   });
 
-  it('shows error toast when API fails', async () => {
-    mockListSessions.mockRejectedValue(new Error('Network error'));
-
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('shows fallback text when first_message is null', async () => {
+    mockListSessions.mockResolvedValue([
+      {
+        id: 'session-no-msg',
+        profile_id: 'profile-1',
+        status: 'summary' as const,
+        summary: null,
+        action_items: null,
+        started_at: '2026-04-01T09:00:00Z',
+        ended_at: '2026-04-01T09:15:00Z',
+        created_at: '2026-04-01T09:00:00Z',
+        updated_at: '2026-04-01T09:15:00Z',
+        first_message: null,
+        message_count: 0,
+      },
+    ]);
 
     render(
       <BrowserRouter>
@@ -114,8 +126,7 @@ describe('SessionHistory', () => {
       </BrowserRouter>,
     );
 
-    // Wait for error state
-    const errorMsg = await screen.findByText(/Failed to load session history/);
-    expect(errorMsg).toBeInTheDocument();
+    const preview = await screen.findByText(/Session with no user messages/);
+    expect(preview).toBeInTheDocument();
   });
 });

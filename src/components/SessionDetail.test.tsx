@@ -157,4 +157,92 @@ describe('SessionDetail', () => {
     // Wait for the header to render
     await screen.findByRole('heading', { name: /Session Review/ });
   });
+
+  it('renders summary section when available', async () => {
+    mockGetSession.mockResolvedValue({
+      session: {
+        id: 'session-1',
+        profile_id: 'profile-1',
+        status: 'summary' as const,
+        summary: 'A reflection on discipline and virtue.',
+        action_items: null,
+        started_at: '2026-04-04T10:00:00Z',
+        ended_at: '2026-04-04T10:30:00Z',
+        created_at: '2026-04-04T10:00:00Z',
+        updated_at: '2026-04-04T10:30:00Z',
+        first_message: null,
+        message_count: 0,
+      },
+      messages: [],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/history/session-1']}>
+        <Routes>
+          <Route path="/history/:sessionId" element={<SessionDetail />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/A reflection on discipline and virtue/)).toBeInTheDocument();
+  });
+
+  it('renders action items when available', async () => {
+    mockGetSession.mockResolvedValue({
+      session: {
+        id: 'session-1',
+        profile_id: 'profile-1',
+        status: 'summary' as const,
+        summary: null,
+        action_items: ['Morning reflection', 'Evening journaling'],
+        started_at: '2026-04-04T10:00:00Z',
+        ended_at: '2026-04-04T10:30:00Z',
+        created_at: '2026-04-04T10:00:00Z',
+        updated_at: '2026-04-04T10:30:00Z',
+        first_message: null,
+        message_count: 0,
+      },
+      messages: [],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/history/session-1']}>
+        <Routes>
+          <Route path="/history/:sessionId" element={<SessionDetail />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Morning reflection')).toBeInTheDocument();
+    expect(screen.getByText('Evening journaling')).toBeInTheDocument();
+  });
+
+  it('shows empty message text when session has no messages', async () => {
+    mockGetSession.mockResolvedValue({
+      session: {
+        id: 'session-empty',
+        profile_id: 'profile-1',
+        status: 'active' as const,
+        summary: null,
+        action_items: null,
+        started_at: '2026-04-04T10:00:00Z',
+        ended_at: null,
+        created_at: '2026-04-04T10:00:00Z',
+        updated_at: '2026-04-04T10:00:00Z',
+        first_message: null,
+        message_count: 0,
+      },
+      messages: [],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/history/session-empty']}>
+        <Routes>
+          <Route path="/history/:sessionId" element={<SessionDetail />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/No messages in this session/)).toBeInTheDocument();
+  });
 });

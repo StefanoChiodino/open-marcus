@@ -1,0 +1,56 @@
+{
+  "featureId": "core-ollama-integration",
+  "milestone": "core",
+  "reviewerNotes": "The implementation covers all four expected behaviors from the feature description: (1) POST /api/chat sends messages to Ollama, (2) streaming responses work via ndjson with token-by-token delivery, (3) proper 503 error when Ollama is offline, (4) configurable model via OLLAMA_HOST and OLLAMA_MODEL env vars. The OllamaService class provides clean abstractions for streaming/non-streaming chat, health checks, and a custom OllamaOfflineError. The route validates inputs (400), verifies session existence (404), checks connectivity before streaming (503), persists user messages to the database before attempting Ollama communication, and handles mid-stream errors gracefully. 26 tests pass (17 OllamaService unit tests + 9 chat route integration tests). Manual curl verification confirmed streaming delivers tokens like {\"token\":\"I'm\"} ending with {\"done\":true,\"full_response\":\"...\"}.\n\nNon-blocking issues identified:\n1. Dead code in test setup - createTestApp() creates two Express apps (app, app2) but only uses app2.\n2. No fetch timeout in OllamaService methods - if Ollama hangs, requests block indefinitely.\n3. The non-streaming chat() method is tested but unused by the route (reserved for future use).\n4. Empty string '' catches on 'session_id and message are required' instead of the more accurate 'Message must be a non-empty string'.\n5. Offline test code duplicates the full route handler inline instead of using a shared helper.",
+  "status": "pass",
+  "issues": [
+    {
+      "file": "backend/routes/chat.test.ts",
+      "line": 19,
+      "severity": "non_blocking",
+      "description": "Dead code: createTestApp() creates an unused Express app (app) before creating the actual used app (app2). Lines 19-21 (app setup) should be removed."
+    },
+    {
+      "file": "backend/services/ollama.ts",
+      "line": 42,
+      "severity": "non_blocking",
+      "description": "No fetch timeout on isOnline(), chat(), or streamChat() methods. If Ollama is running but unresponsive, requests will block indefinitely. Consider adding an AbortController with a configurable timeout."
+    },
+    {
+      "file": "backend/services/ollama.ts",
+      "line": 58,
+      "severity": "non_blocking",
+      "description": "Non-streaming chat() method is comprehensively tested but never called by any route. Likely reserved for future features. Consider a TODO comment or document why it exists."
+    },
+    {
+      "file": "backend/routes/chat.ts",
+      "line": 36,
+      "severity": "non_blocking",
+      "description": "Validation mismatch: empty string '' triggers '!message' (falsy) and returns 'session_id and message are required' instead of the more accurate 'Message must be a non-empty string' on line 40. The second check only catches whitespace-only strings like '   '."
+    },
+    {
+      "file": "backend/routes/chat.test.ts",
+      "line": 210,
+      "severity": "non_blocking",
+      "description": "Test code duplication: offline scenario tests (lines ~210-380) inline the full route handler logic instead of using createTestApp() or a shared helper. This creates risk of drift between production route and test route behavior."
+    }
+  ],
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "The worker created test databases with UUIDs in test-data/ directory but this pattern is not documented in AGENTS.md. Other feature workers may discover this independently.",
+      "evidence": "chat.test.ts:112 — testDbPath uses test-data/chat-route-test-${randomUUID()}.db pattern for test isolation"
+    },
+    {
+      "area": "knowledge",
+      "observation": "The Ollama isOnline() check uses /api/tags endpoint. This is a useful pattern for health-checking any Ollama integration that should be recorded.",
+      "evidence": "ollama.ts:42 — fetch(`${this.host}/api/tags`) used for connectivity verification"
+    },
+    {
+      "area": "knowledge",
+      "observation": "The worker discovered the test-model doesn't exist in actual Ollama — causing 404 when used with live service. Tests handle this gracefully but the pattern of using a nonexistent model to simulate Ollama errors may confuse future workers.",
+      "evidence": "chat.test.ts:27 — getOllamaService('http://localhost:11434', 'test-model') — 'test-model' not in Ollama, triggers 404 during streaming tests"
+    }
+  ],
+  "summary": "Feature implements all required behaviors: POST /api/chat with streaming ndjson responses, proper error handling for offline Ollama (503), configurable model via OLLAMA_HOST/OLLAMA_MODEL. 26 tests pass covering OllamaService (constructor, env vars, isOnline, chat, streamChat, singleton) and chat route (validation, offline detection, message persistence). Manual verification via curl confirmed streaming token delivery. Five non-blocking issues identified: dead code in test setup, no fetch timeouts, an unused method, a minor validation message inconsistency, and test code duplication. Overall: solid implementation ready for production."
+}

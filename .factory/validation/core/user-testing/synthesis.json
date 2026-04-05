@@ -1,0 +1,29 @@
+{
+  "milestone": "core",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 8,
+    "passed": 7,
+    "failed": 1,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-MEDIT-001",
+    "VAL-MEDIT-002",
+    "VAL-MEDIT-004",
+    "VAL-MEDIT-005",
+    "VAL-MEDIT-008",
+    "VAL-MEDIT-009",
+    "VAL-MEDIT-010"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-MEDIT-003",
+      "reason": "Page refresh resets Zustand session store to initial state (status='idle', messages=[]). No session restoration logic exists on component mount. Backend data is persisted correctly — this is a frontend-only bug. The Zustand store needs zustand/persist middleware or manual session restoration from API on page load."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null
+}

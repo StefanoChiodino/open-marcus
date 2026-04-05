@@ -1,0 +1,150 @@
+{
+  "groupId": "meditation-core",
+  "testedAt": "2026-04-05T22:30:00.000Z",
+  "isolation": {
+    "frontendUrl": "http://localhost:3101",
+    "backendUrl": "http://localhost:3100",
+    "ollamaUrl": "http://localhost:11434",
+    "model": "llama3.2:latest"
+  },
+  "toolsUsed": ["agent-browser", "curl"],
+  "assertions": [
+    {
+      "id": "VAL-MEDIT-001",
+      "title": "Start new meditation - Marcus greets user by name",
+      "status": "pass",
+      "steps": [
+        { "action": "Clear all data via API and navigate to app", "expected": "Onboarding form displayed", "observed": "Onboarding form displayed with Name and About You fields" },
+        { "action": "Create profile named 'Validation User'", "expected": "Profile created, home page shown", "observed": "Home page shown with profile display showing 'Validation User'" },
+        { "action": "Navigate to /session and click 'Begin Meditation'", "expected": "Session starts, Marcus greets user by name", "observed": "Greeting displayed: 'I am Marcus. Greetings, Validation User. Speak your mind, and let us explore the terrain of your thoughts together.'" }
+      ],
+      "evidence": {
+        "screenshots": ["core/meditation-flow/VAL-MEDIT-001-greeting-by-name.png"],
+        "consoleErrors": "none",
+        "network": "POST /api/sessions -> 201"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MEDIT-002",
+      "title": "Send and receive messages - AI responds with streaming text",
+      "status": "pass",
+      "steps": [
+        { "action": "Type message about work stress in chat input", "expected": "Message text appears in textarea", "observed": "Message typed: 'I've been feeling really stressed about work lately...'" },
+        { "action": "Press Enter to send", "expected": "Message appears in chat, AI starts streaming", "observed": "User message displayed, AI responded with streaming stoic text that completed" },
+        { "action": "Verify AI response", "expected": "Complete AI response with stoic wisdom", "observed": "AI response included Epictetus quote, Meditations 4.22 quote, follow-up question, and reflection exercise. Response completed fully." }
+      ],
+      "evidence": {
+        "screenshots": ["core/meditation-flow/VAL-MEDIT-002-message-typed.png", "core/meditation-flow/VAL-MEDIT-002-ai-response.png"],
+        "consoleErrors": "none",
+        "network": "POST /api/sessions/{id}/chat (SSE streaming) -> 200"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MEDIT-003",
+      "title": "Message persistence - refresh page preserves messages",
+      "status": "fail",
+      "steps": [
+        { "action": "Send message in active session", "expected": "Message sent and displayed", "observed": "User message sent, AI responded fully. Both messages visible." },
+        { "action": "Refresh the page", "expected": "All messages preserved, still in active session", "observed": "Page reset to welcome screen ('Meditation with Marcus Aurelius' / 'Begin Meditation' button). All messages lost from UI." },
+        { "action": "Verify backend data", "expected": "Messages stored on backend", "observed": "Backend API returned 2 messages for the session - data IS persisted server-side. Issue is frontend store not restoring session." }
+      ],
+      "evidence": {
+        "screenshots": ["core/meditation-flow/VAL-MEDIT-003-after-refresh-empty.png"],
+        "consoleErrors": "none",
+        "network": "Session data exists on backend - verified via GET /api/sessions. Issue: Zustand store resets to initial state (status='idle', messages=[]) on page reload with no restoration logic." }
+      },
+      "issues": "BUG: Zustand session store has no persistence mechanism. On page refresh, store resets to empty state and no code attempts to restore the current session from localStorage or API. Backend data is intact - this is purely a frontend bug."
+    },
+    {
+      "id": "VAL-MEDIT-004",
+      "title": "End session gracefully - summary generated",
+      "status": "pass",
+      "steps": [
+        { "action": "Send 3 messages in session to build conversation", "expected": "Messages displayed with AI responses", "observed": "3 messages sent and received with rich stoic responses" },
+        { "action": "Click 'End Session' button", "expected": "Session ends, summary screen displayed", "observed": "'Session Complete' heading displayed with 'Marcus's Reflection' containing key points from conversation" },
+        { "action": "Verify summary content", "expected": "Summary contains key points discussed", "observed": "Comprehensive summary covering: control vs acceptance, emotions as growth opportunities, inner strength, character over external events. Matched conversation themes accurately." }
+      ],
+      "evidence": {
+        "screenshots": ["core/meditation-flow/VAL-MEDIT-004-session-summary.png"],
+        "consoleErrors": "none",
+        "network": "POST /api/sessions/{id}/end-and-summarize -> 200 with summary and actionItems"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MEDIT-005",
+      "title": "Action items - 1-3 concrete action items after session end",
+      "status": "pass",
+      "steps": [
+        { "action": "End session with active conversation", "expected": "Action items displayed", "observed": "Under 'Your Commitments' section, 3 action items displayed:" },
+        { "action": "Verify action item count and quality", "expected": "1-3 concrete, relevant action items", "observed": "3 items: (1) 'Schedule a daily meditation practice to cultivate inner strength and resilience' (2) 'Reframe your relationship with emotions, viewing them as opportunities for growth rather than weaknesses' (3) 'Identify one external factor that is beyond your control and focus on what you can influence instead'" }
+      ],
+      "evidence": {
+        "screenshots": ["core/meditation-flow/VAL-MEDIT-005-action-items.png"],
+        "consoleErrors": "none",
+        "network": "Action items returned in POST /api/sessions/{id}/end-and-summarize response"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MEDIT-008",
+      "title": "Empty state - no past sessions shows appropriate message",
+      "status": "pass",
+      "steps": [
+        { "action": "Clear all data via API (POST /api/export/clear)", "expected": "All profiles and sessions deleted", "observed": "API confirmed: 1 profile, 1 session, 2 messages cleared" },
+        { "action": "Create profile to access app (required to reach history page)", "expected": "Profile created, home page shown", "observed": "Profile 'Validation User' created successfully" },
+        { "action": "Navigate to /history page", "expected": "Empty state message displayed", "observed": "Empty state shows: 'No Meditations Yet' heading, 'No meditations yet. Begin your first meditation.' text, and 'Begin Meditation' button" }
+      ],
+      "evidence": {
+        "screenshots": ["core/meditation-flow/VAL-MEDIT-008-empty-state.png"],
+        "consoleErrors": "none",
+        "network": "GET /api/sessions -> [] (empty array)" },
+      "issues": null
+    },
+    {
+      "id": "VAL-MEDIT-009",
+      "title": "Error handling - Ollama offline shows appropriate error message",
+      "status": "pass",
+      "steps": [
+        { "action": "Start new meditation session", "expected": "Session starts with greeting", "observed": "Session started, greeting displayed" },
+        { "action": "Kill Ollama process (pkill -f 'ollama serve')", "expected": "Ollama stopped, port 11434 unreachable", "observed": "Ollama confirmed stopped (curl to localhost:11434/api/tags failed)" },
+        { "action": "Type and send message in chat", "expected": "Error message about Ollama offline", "observed": "Error message displayed: 'Unable to connect to AI. Please ensure Ollama is running.' User message remained visible in chat." },
+        { "action": "Restart Ollama", "expected": "Ollama serving again", "observed": "Ollama restarted from /Applications/Ollama.app, model llama3.2:latest confirmed available" }
+      ],
+      "evidence": {
+        "screenshots": ["core/meditation-flow/VAL-MEDIT-009-message-ready.png", "core/meditation-flow/VAL-MEDIT-009-ollama-offline-error.png"],
+        "consoleErrors": "none",
+        "network": "POST /api/sessions/{id}/chat -> error response when Ollama down" }
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MEDIT-010",
+      "title": "Conversation flow guidance - Marcus guides naturally with follow-ups and stoic perspectives",
+      "status": "pass",
+      "steps": [
+        { "action": "Send message 1: stressed about work", "expected": "Stoic response with guidance", "observed": "Response included Epictetus quote (Discourses 1.26), Meditations 4.22, focus-on-control advice, and follow-up: 'What is one thing you can control today?'" },
+        { "action": "Send message 2: nothing is in my control", "expected": "Follow-up with personal stoic reference", "observed": "Marcus used user's name, referenced Meditations Book 4 Section 3, cited Epictetus, reframed the problem as perception vs reality, and asked: 'What small step can you take today?'" },
+        { "action": "Send message 3: emotions feel like weakness", "expected": "Deep philosophical response with empathy", "observed": "Excellent response referencing personal experience (Antonine Plague), Meditations Book 4 Section 28 and Book 5 Section 6, nature metaphors (river, bending trees), Temperance concept. Reframed emotions as natural responses, not weaknesses." }
+      ],
+      "evidence": {
+        "screenshots": ["core/meditation-flow/VAL-MEDIT-010-message-2-typed.png", "core/meditation-flow/VAL-MEDIT-010-response-2.png", "core/meditation-flow/VAL-MEDIT-010-message-3-typed.png", "core/meditation-flow/VAL-MEDIT-010-response-3.png"],
+        "consoleErrors": "none",
+        "network": "Multiple streaming SSE responses - all completed successfully" }
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "User greeting with name is inconsistent on subsequent sessions. First session showed 'Greetings, Validation User' but after page refresh and restart, greeting showed without the name. Appears to be a race condition where the profile hasn't loaded from API when the greeting renders.",
+      "resolved": true,
+      "resolution": "Waited for profile to load, but the initial render showed the anonymous version. Component should wait for profile before displaying the greeting.",
+      "affectedAssertions": ["VAL-MEDIT-001"]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 8 assertions: 7 passed, 1 failed (VAL-MEDIT-003: message persistence on page refresh fails due to frontend store reset. Backend data is intact - this is a Zustand store persistence bug that needs zustand/persist middleware or manual session restoration on mount)."
+}

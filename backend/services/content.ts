@@ -1,5 +1,6 @@
 import type { DatabaseService } from '../db/database.js';
 import type { ContentItem } from '../lib/content-schema.js';
+import { getDatabase } from '../db/database.js';
 import { meditations } from '../lib/meditations.js';
 import { senecaQuotes } from '../lib/seneca.js';
 import { epictetusSayings } from '../lib/epictetus.js';
@@ -12,11 +13,7 @@ export class ContentService {
   private dbGetter: () => DatabaseService;
 
   constructor(dbGetter?: () => DatabaseService) {
-    this.dbGetter = dbGetter || (() => {
-      // Dynamic import to avoid circular dependency issues
-      const { getDatabase } = require('../db/database.js');
-      return getDatabase();
-    });
+    this.dbGetter = dbGetter || getDatabase;
   }
 
   private getDb(): DatabaseService {

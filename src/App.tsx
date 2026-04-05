@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomePage from './pages/HomePage';
 import OnboardingScreen from './components/OnboardingScreen';
+import AppLayout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 import { useProfileStore } from './stores/profileStore';
 import type { ProfileFormData } from './shared/types';
 import './styles/App.css';
@@ -65,15 +67,75 @@ function ProfileGateway() {
   return null;
 }
 
+/**
+ * Placeholder session page - to be implemented by meditation-chat-ui feature
+ */
+function SessionPage() {
+  return (
+    <div className="page-container">
+      <h2>Meditation Session</h2>
+      <p className="text-muted">Your meditation session will appear here.</p>
+    </div>
+  );
+}
+
+/**
+ * Placeholder history page - to be implemented by session-history-ui feature
+ */
+function HistoryPage() {
+  return (
+    <div className="page-container">
+      <h2>Session History</h2>
+      <p className="text-muted">No meditations yet. Begin your first meditation.</p>
+    </div>
+  );
+}
+
+/**
+ * Placeholder profile settings page
+ */
+function ProfilePage() {
+  const { profile, startEditing, clearProfile } = useProfileStore();
+
+  return (
+    <div className="page-container">
+      <h2>Profile Settings</h2>
+      {profile && (
+        <div className="profile-settings">
+          <p><strong>Name:</strong> {profile.name}</p>
+          {profile.bio && <p><strong>Bio:</strong> {profile.bio}</p>}
+          <div className="profile-settings__actions">
+            <button onClick={startEditing} className="button button--primary">
+              Edit Profile
+            </button>
+            <button onClick={clearProfile} className="button button--secondary">
+              Reset Profile
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div className="app">
+        <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<ProfileGateway />} />
+            {/* Route without layout for onboarding */}
+            <Route path="/onboarding" element={<ProfileGateway />} />
+
+            {/* Routes with app layout (sidebar navigation, toasts) */}
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<ProfileGateway />} />
+              <Route path="/session" element={<SessionPage />} />
+              <Route path="/history" element={<HistoryPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+            </Route>
           </Routes>
-        </div>
+        </ErrorBoundary>
       </BrowserRouter>
     </QueryClientProvider>
   );

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getSessionService, resetSessionService, ValidationError } from '../services/session.js';
 import { getProfileService } from '../services/profile.js';
+import { getSessionSummaryService } from '../services/sessionSummary.js';
 
 // Type-safe params interface
 interface SessionParams {
@@ -142,6 +143,47 @@ router.put('/:id/end', (req: Request<SessionParams>, res: Response) => {
     }
     
     console.error('Error ending session:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/sessions/:id/end-and-summarize - End session with AI-generated summary
+router.post('/:id/end-and-summarize', async (req: Request<SessionParams>, res: Response) => {
+  try {
+    const id = req.params.id;
+    const sessionService = getSessionService();
+
+    // Verify session exists
+    const session = sessionService.getSessionWithoutMessages(id);
+    if (!session) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+
+    // Generate summary and action items using AI
+    const summaryService = getSessionSummaryService();
+    const result = await summaryService.generateSummary(id);
+
+    // End the session with the generated summary
+    const endedSession = sessionService.endSession(id, result.summary, result.actionItems);
+
+    if (!endedSession) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+
+    res.json({
+      session: endedSession,
+      summary: result.summary,
+      actionItems: result.actionItems,
+    });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+
+    console.error('Error ending and summarizing session:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

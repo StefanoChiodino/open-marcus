@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { getOllamaService, OllamaOfflineError } from '../services/ollama.js';
 import { getSessionService } from '../services/session.js';
+import { getProfileService } from '../services/profile.js';
+import { buildSystemPrompt, generateGreeting } from '../services/persona.js';
 
 const router = Router();
 
@@ -8,6 +10,7 @@ const router = Router();
  * POST /api/chat
  *
  * Sends a message to the AI (Ollama) and streams the response.
+ * The Marcus Aurelius persona is injected as a system message.
  *
  * Request body:
  *   - session_id: string (required) - The session UUID
@@ -40,12 +43,18 @@ router.post('/', async (req: Request, res: Response) => {
 
     const ollamaService = getOllamaService();
     const sessionService = getSessionService();
+    const profileService = getProfileService();
 
     // Verify session exists
     const session = sessionService.getSessionWithoutMessages(session_id);
     if (!session) {
       res.status(404).json({ error: 'Session not found' });
       return;
+    }
+
+    // Auto-transition from intro to active on first message
+    if (session.status === 'intro') {
+      sessionService.updateSessionStatus(session_id, 'active');
     }
 
     // Save user message to database
@@ -60,13 +69,13 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    // Build conversation history for Ollama
+    // Get user name from profile for persona context
+    const profile = profileService.getProfile(session.profile_id);
+    const userName = profile?.name || '';
+
+    // Build conversation history for Ollama with persona system prompt
     const history = sessionService.listMessages(session_id);
-    const messages = history.map(msg => ({
-      role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
-      content: msg.content,
-    }));
-    // The user message was already added to DB, so it's in history
+    const messages = buildChatMessages(history, userName);
 
     // Set up streaming response headers
     res.setHeader('Content-Type', 'application/x-ndjson');
@@ -120,5 +129,37 @@ router.post('/', async (req: Request, res: Response) => {
     }
   }
 });
+
+/**
+ * Build the message array for Ollama including persona system prompt.
+ * On first user message, prefix with name disclosure and greeting.
+ */
+function buildChatMessages(
+  history: Array<{ role: 'user' | 'assistant'; content: string }>,
+  userName: string,
+): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
+  const systemMessage = { role: 'system' as const, content: buildSystemPrompt() };
+
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [systemMessage];
+
+  // If this is the first user message, inject persona greeting
+  const isFirstUserMessage = history.length === 1 && history[0]?.role === 'user';
+  if (isFirstUserMessage && userName) {
+    messages.push({ role: 'user', content: `My name is ${userName}.` });
+    messages.push({ role: 'assistant', content: generateGreeting(userName) });
+    // Now add the actual user message
+    messages.push({ role: 'user', content: history[0].content });
+  } else {
+    // Regular conversation history
+    for (const msg of history) {
+      messages.push({
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.content,
+      });
+    }
+  }
+
+  return messages;
+}
 
 export default router;

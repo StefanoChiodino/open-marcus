@@ -1,5 +1,7 @@
 import type { DatabaseService } from '../db/database.js';
 import type { Profile } from '../db/schema.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 /**
  * Profile service - handles profile business logic
@@ -10,7 +12,7 @@ export class ProfileService {
 
   constructor(dbGetter?: () => DatabaseService) {
     this.dbGetter = dbGetter || (() => {
-      // Dynamic import to avoid circular dependency issues
+      // ESM-compatible require via createRequire
       const { getDatabase } = require('../db/database.js');
       return getDatabase();
     });
@@ -97,3 +99,4 @@ export function getProfileService(dbGetter?: () => DatabaseService): ProfileServ
 export function resetProfileService(): void {
   profileServiceInstance = null;
 }
+

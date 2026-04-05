@@ -7,6 +7,7 @@ import OnboardingScreen from './components/OnboardingScreen';
 import AppLayout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useProfileStore } from './stores/profileStore';
+import MeditationChat from './components/MeditationChat';
 import type { ProfileFormData } from './shared/types';
 import './styles/App.css';
 import './App.css';
@@ -69,18 +70,6 @@ function ProfileGateway() {
 }
 
 /**
- * Placeholder session page - to be implemented by meditation-chat-ui feature
- */
-function SessionPage() {
-  return (
-    <div className="page-container">
-      <h2>Meditation Session</h2>
-      <p className="text-muted">Your meditation session will appear here.</p>
-    </div>
-  );
-}
-
-/**
  * Placeholder history page - to be implemented by session-history-ui feature
  */
 function HistoryPage() {
@@ -131,7 +120,7 @@ function App() {
             {/* Routes with app layout (sidebar navigation, toasts) */}
             <Route element={<AppLayout />}>
               <Route path="/" element={<ProfileGateway />} />
-              <Route path="/session" element={<SessionPage />} />
+              <Route path="/session" element={<MeditationChat />} />
               <Route path="/history" element={<HistoryPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<Settings />} />

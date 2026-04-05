@@ -2,6 +2,7 @@ import express from 'express';
 import { getDatabase } from './db/database.js';
 import profileRoutes from './routes/profile.js';
 import sessionRoutes from './routes/session.js';
+import contentRoutes from './routes/content.js';
 
 const app = express();
 const PORT = process.env.PORT || 3100;
@@ -17,6 +18,7 @@ app.get('/health', (_req, res) => {
 // API Routes
 app.use('/api/profile', profileRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/content', contentRoutes);
 
 // 404 handler
 app.use((_req, res) => {
@@ -35,6 +37,17 @@ async function main() {
     // Initialize database (runs migrations)
     getDatabase();
     console.log('Database initialized');
+    
+    // Seed content on startup
+    const { getContentService } = await import('./services/content.js');
+    const contentService = getContentService();
+    const seeded = contentService.getContentCount();
+    if (seeded === 0) {
+      contentService.seedContent();
+      console.log(`Stoic content library seeded`);
+    } else {
+      console.log(`Stoic content library already has ${seeded} items`);
+    }
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { MigrationRunner } from './migrate.js';
 import { encryptObject, decryptObject, EncryptedData } from '../crypto/encryption.js';
 import type { Profile, Session, Message, ActionItem } from './schema.js';
+import type { ContentItem } from '../lib/content-schema.js';
 
 const DB_PATH = './data/openmarcus.db';
 
@@ -325,6 +326,172 @@ export class DatabaseService {
     const stmt = this.db.prepare('DELETE FROM action_items WHERE id = ?');
     const result = stmt.run(id);
     return result.changes > 0;
+  }
+
+  // ==================== Stoic Content Operations ====================
+
+  /**
+   * Seed stoic content items into the database
+   */
+  seedContent(items: ContentItem[]): number {
+    const insertMany = this.db.transaction((contentItems: ContentItem[]) => {
+      let inserted = 0;
+      const insertStmt = this.db.prepare(`
+        INSERT OR REPLACE INTO stoic_content 
+          (id, author, source, book, section, letter, type, content, tags)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      for (const item of contentItems) {
+        const result = insertStmt.run(
+          item.id,
+          item.author,
+          item.source,
+          item.book || null,
+          item.section || null,
+          item.letter || null,
+          item.type,
+          item.content,
+          JSON.stringify(item.tags)
+        );
+        if (result.changes > 0) {
+          inserted++;
+        }
+      }
+      return inserted;
+    });
+    
+    return insertMany(items);
+  }
+
+  /**
+   * Get random stoic quotes
+   */
+  getRandomQuotes(count: number = 3): ContentItem[] {
+    const stmt = this.db.prepare(`
+      SELECT * FROM stoic_content
+      ORDER BY RANDOM()
+      LIMIT ?
+    `);
+    
+    const rows = stmt.all(count) as Array<Record<string, unknown>>;
+    return rows.map(row => this.rowToContentItem(row));
+  }
+
+  /**
+   * Search stoic content by query, tag, or author
+   */
+  searchContent(query?: string, tag?: string, author?: string, limit: number = 10): ContentItem[] {
+    let sql = 'SELECT * FROM stoic_content WHERE 1=1';
+    const params: (string | number)[] = [];
+
+    if (query) {
+      sql += ' AND (content LIKE ? OR tags LIKE ?)';
+      const searchPattern = `%${query}%`;
+      params.push(searchPattern, searchPattern);
+    }
+
+    if (tag) {
+      sql += ' AND tags LIKE ?';
+      params.push(`%"${tag}"%`);
+    }
+
+    if (author) {
+      sql += ' AND author = ?';
+      params.push(author);
+    }
+
+    sql += ' LIMIT ?';
+    params.push(limit);
+
+    const stmt = this.db.prepare(sql);
+    const rows = stmt.all(...params) as Array<Record<string, unknown>>;
+    return rows.map(row => this.rowToContentItem(row));
+  }
+
+  /**
+   * Get content by tag for RAG context injection
+   */
+  getContentByTags(tags: string[], limit: number = 5): ContentItem[] {
+    if (tags.length === 0) {
+      return this.getRandomQuotes(limit);
+    }
+
+    const tagPatterns = tags.map(t => `%"${t}"%`);
+    const placeholders = tagPatterns.map(() => 'tags LIKE ?').join(' OR ');
+    const sql = `
+      SELECT * FROM stoic_content
+      WHERE ${placeholders}
+      ORDER BY RANDOM()
+      LIMIT ?
+    `;
+
+    const stmt = this.db.prepare(sql);
+    const rows = stmt.all(...tagPatterns, limit) as Array<Record<string, unknown>>;
+    return rows.map(row => this.rowToContentItem(row));
+  }
+
+  /**
+   * Get content formatted for AI context injection (RAG)
+   */
+  getContextForAI(tags: string[], limit: number = 5): string {
+    const items = this.getContentByTags(tags, limit);
+    
+    if (items.length === 0) {
+      return '';
+    }
+
+    const contextLines = items.map(item => {
+      const source = [item.source, item.book, item.letter, item.section]
+        .filter(Boolean)
+        .join(', ');
+      return `"${item.content}" — ${item.author}, ${source}`;
+    });
+
+    return `Relevant stoic wisdom to draw from:\n${contextLines.join('\n')}`;
+  }
+
+  /**
+   * Get content count
+   */
+  getContentCount(): number {
+    const stmt = this.db.prepare('SELECT COUNT(*) as count FROM stoic_content');
+    return (stmt.get() as { count: number }).count;
+  }
+
+  /**
+   * Get all unique tags
+   */
+  getAllTags(): string[] {
+    const stmt = this.db.prepare('SELECT DISTINCT tags FROM stoic_content');
+    const rows = stmt.all() as Array<{ tags: string }>;
+    const tagSet = new Set<string>();
+    
+    for (const row of rows) {
+      const tags = JSON.parse(row.tags) as string[];
+      for (const tag of tags) {
+        tagSet.add(tag);
+      }
+    }
+    
+    return Array.from(tagSet).sort();
+  }
+
+  /**
+   * Convert a database row to a ContentItem
+   */
+  private rowToContentItem(row: Record<string, unknown>): ContentItem {
+    return {
+      id: row.id as string,
+      author: row.author as string,
+      source: row.source as string,
+      book: row.book as string | undefined,
+      section: row.section as string | undefined,
+      letter: row.letter as string | undefined,
+      type: row.type as 'quote' | 'saying' | 'excerpt',
+      content: row.content as string,
+      tags: JSON.parse(row.tags as string) as string[],
+    };
   }
 
   // ==================== Database Info ====================

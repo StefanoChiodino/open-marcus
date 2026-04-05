@@ -96,7 +96,31 @@ CREATE INDEX IF NOT EXISTS idx_messages_session_id ON messages(session_id);
 CREATE INDEX IF NOT EXISTS idx_action_items_session_id ON action_items(session_id);
 `;
 
+/**
+ * SQL to create the stoic_content table and seed initial data
+ */
+export const CREATE_STOIC_CONTENT_SQL = `
+-- Stoic content table: stores quotes, excerpts, and sayings from stoic philosophers
+CREATE TABLE IF NOT EXISTS stoic_content (
+  id TEXT PRIMARY KEY,
+  author TEXT NOT NULL,
+  source TEXT NOT NULL,
+  book TEXT,
+  section TEXT,
+  letter TEXT,
+  type TEXT NOT NULL CHECK(type IN ('quote', 'saying', 'excerpt')),
+  content TEXT NOT NULL,
+  tags TEXT NOT NULL, -- JSON array of tags
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Index for full-text search on content
+CREATE INDEX IF NOT EXISTS idx_stoic_content_tags ON stoic_content(tags);
+CREATE INDEX IF NOT EXISTS idx_stoic_content_author ON stoic_content(author);
+`;
+
 export const DROP_TABLES_SQL = `
+DROP TABLE IF EXISTS stoic_content;
 DROP TABLE IF EXISTS action_items;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS sessions;

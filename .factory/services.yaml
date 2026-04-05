@@ -1,0 +1,44 @@
+commands:
+  install: npm install
+  typecheck: npm run typecheck
+  build: npm run build
+  test: npm run test
+  test:e2e: npm run test:e2e
+  lint: npm run lint
+  dev: npm run dev
+
+services:
+  backend:
+    start: PORT=3100 npm run dev:backend
+    stop: lsof -ti :3100 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:3100/health
+    port: 3100
+    depends_on: []
+
+  frontend:
+    start: PORT=3101 npm run dev:frontend
+    stop: lsof -ti :3101 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:3101
+    port: 3101
+    depends_on: [backend]
+
+  ollama:
+    start: ollama serve
+    stop: pkill -f "ollama serve" 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:11434/api/tags
+    port: 11434
+    depends_on: []
+
+  stt:
+    start: node stt/server.mjs
+    stop: lsof -ti :8765 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:8765/health
+    port: 8765
+    depends_on: []
+
+  tts:
+    start: python3 tts/main.py
+    stop: lsof -ti :8766 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:8766/health
+    port: 8766
+    depends_on: []

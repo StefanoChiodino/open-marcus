@@ -37,7 +37,7 @@ services:
     depends_on: []
 
   tts:
-    start: python3 tts/main.py
+    start: cd /Users/stefano/repos/open-marcus/servers/tts && python3 server.py --port 8766
     stop: lsof -ti :8766 | xargs kill 2>/dev/null || true
     healthcheck: curl -sf http://localhost:8766/health
     port: 8766

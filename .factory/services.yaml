@@ -30,7 +30,7 @@ services:
     depends_on: []
 
   stt:
-    start: node stt/server.mjs
+    start: cd /Users/stefano/repos/open-marcus/servers/stt && node server.mjs --port 8765
     stop: lsof -ti :8765 | xargs kill 2>/dev/null || true
     healthcheck: curl -sf http://localhost:8765/health
     port: 8765

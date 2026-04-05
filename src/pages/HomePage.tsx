@@ -1,4 +1,12 @@
+import { useProfileStore } from '../stores/profileStore';
+import ProfileDisplay from '../components/ProfileDisplay';
+
 function HomePage() {
+  const { profile } = useProfileStore();
+  const handleEdit = () => {
+    useProfileStore.getState().startEditing();
+  };
+
   return (
     <div className="home-page">
       <header className="home-header">
@@ -7,6 +15,9 @@ function HomePage() {
       </header>
       <main className="home-main">
         <div className="welcome-card">
+          {profile && (
+            <ProfileDisplay profile={profile} onEdit={handleEdit} />
+          )}
           <h2>Welcome to OpenMarcus</h2>
           <p>
             Your personal Stoic companion, inspired by the wisdom of Marcus Aurelius.

@@ -4,6 +4,7 @@ import profileRoutes from './routes/profile.js';
 import sessionRoutes from './routes/session.js';
 import contentRoutes from './routes/content.js';
 import exportRoutes from './routes/export.js';
+import chatRoutes from './routes/chat.js';
 
 const app = express();
 const PORT = process.env.PORT || 3100;
@@ -21,6 +22,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/chat', chatRoutes);
 
 // 404 handler
 app.use((_req, res) => {

@@ -57,7 +57,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       set({ profile: savedProfile, status: 'loaded', isEditing: false });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save profile';
-      set({ error: message, status: 'loaded', isEditing: false });
+      set({ error: message, status: 'error', isEditing: false });
     }
   },
 

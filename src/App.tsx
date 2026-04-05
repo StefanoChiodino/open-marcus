@@ -8,6 +8,8 @@ import AppLayout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useProfileStore } from './stores/profileStore';
 import MeditationChat from './components/MeditationChat';
+import SessionHistory from './components/SessionHistory';
+import SessionDetail from './components/SessionDetail';
 import type { ProfileFormData } from './shared/types';
 import './styles/App.css';
 import './App.css';
@@ -70,16 +72,9 @@ function ProfileGateway() {
 }
 
 /**
- * Placeholder history page - to be implemented by session-history-ui feature
+ * Session History page - lists past sessions and allows viewing full session
+ * Fulfills: VAL-MEDIT-006, VAL-MEDIT-007, VAL-MEDIT-008
  */
-function HistoryPage() {
-  return (
-    <div className="page-container">
-      <h2>Session History</h2>
-      <p className="text-muted">No meditations yet. Begin your first meditation.</p>
-    </div>
-  );
-}
 
 /**
  * Placeholder profile settings page
@@ -121,7 +116,8 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="/" element={<ProfileGateway />} />
               <Route path="/session" element={<MeditationChat />} />
-              <Route path="/history" element={<HistoryPage />} />
+              <Route path="/history" element={<SessionHistory />} />
+              <Route path="/history/:sessionId" element={<SessionDetail />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<Settings />} />
             </Route>

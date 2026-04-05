@@ -29,6 +29,9 @@ export interface SessionDTO {
   ended_at: string | null;
   created_at: string;
   updated_at: string;
+  // Added by list sessions endpoint for history display
+  first_message?: string | null;
+  message_count?: number;
 }
 
 /**

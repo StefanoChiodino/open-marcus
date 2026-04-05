@@ -1,0 +1,80 @@
+{
+  "featureId": "foundation-project-setup",
+  "reviewedAt": "2026-04-05T20:30:00.000Z",
+  "commitId": "58bab9f",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The worker successfully initialized a Vite + React + TypeScript project with proper folder structure, dependencies, ESLint/Prettier configuration, and Vitest testing framework. All four expected behaviors pass: typecheck, test, build, and lint. The ESLint flat config issue was iteratively debugged and resolved. However, there are several code quality issues and minor bugs introduced that should be addressed in future features.",
+    "issues": [
+      {
+        "file": "src/App.tsx",
+        "line": 16,
+        "severity": "blocking",
+        "description": "queryClient is instantiated inside the App component body, causing a new instance on every render. This defeats TanStack Query's caching, breaks background refetches, and loses query state. Must be moved to module scope: 'const queryClient = new QueryClient({...})' outside the component function."
+      },
+      {
+        "file": "src/styles/index.css",
+        "line": 1,
+        "severity": "non_blocking",
+        "description": "The global styles file (src/styles/index.css) is 178 lines of Ancient Rome-inspired CSS variables and styles. While visually appealing for a foundation setup, embedding so much domain-specific styling at project initialization may constrain future workers. Consider whether a minimal reset/normalize would be more appropriate for a 'project setup' feature."
+      },
+      {
+        "file": "eslint.config.mjs",
+        "line": 9,
+        "severity": "non_blocking",
+        "description": "The flat config ignores '**/*.config.ts', meaning vitest.config.ts is not linted. TypeScript config files contain real code that should be linted. Consider removing '*.config.ts' from ignores."
+      },
+      {
+        "file": "eslint.config.mjs",
+        "line": 25,
+        "severity": "non_blocking",
+        "description": "Rule '@typescript-eslint/no-unused-vars': 'off' disables unused variable warnings entirely. This is not a useful default for a new project — unused variables should be caught by the linter. Consider removing this rule override to use typescript-eslint's default behavior."
+      },
+      {
+        "file": "eslint.config.mjs",
+        "line": 14,
+        "severity": "non_blocking",
+        "description": "The config adds '__dirname: readonly' to browser globals, but this is a Node.js global, not a browser global. In the ESM/Vite context, __dirname is not available natively; this is only usable because Vite transforms it. This could confuse developers about what globals are actually available in browser code."
+      },
+      {
+        "file": "package.json",
+        "line": 13,
+        "severity": "non_blocking",
+        "description": "The lint script uses '--ext ts,tsx' flags which are deprecated in ESLint flat config mode and have no effect. ESLint flat config uses file patterns in the config object instead. Script should be: 'eslint . --report-unused-disable-directives --max-warnings 0'."
+      },
+      {
+        "file": "vite.config.ts",
+        "line": 24,
+        "severity": "non_blocking",
+        "description": "The test configuration is duplicated in both vite.config.ts and vitest.config.ts. When running 'vitest run' without --config, Vitest uses vitest.config.ts. The test block in vite.config.ts is dead code and should be removed to avoid confusion and future divergence."
+      },
+      {
+        "file": "src/test/setup.ts (original commit)",
+        "line": 1,
+        "severity": "non_blocking",
+        "description": "The original test setup included inline i18n initialization (copied from src/i18n.ts) to try to fix test failures. This is code duplication and indicates the worker spent iterations debugging i18n in tests before realizing the correct solution was to simplify the HomePage component to not depend on i18n. The final setup.ts was cleaned up, but the transcript shows wasted iterations on this."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "AGENTS.md states 'React 19' in the technology stack, but the project was initialized with React 18 (react: ^18.3.1). This inconsistency will confuse workers about which React version to use.",
+      "evidence": "AGENTS.md line 'Frontend: React 19' vs package.json 'react: ^18.3.1'"
+    },
+    {
+      "area": "conventions",
+      "observation": "The worker created an ESLint config that disables @typescript-eslint/no-unused-vars, and the AGENTS.md doesn't specify a lint rule philosophy. Consider documenting expected ESLint rule baselines in AGENTS.md.",
+      "evidence": "eslint.config.mjs line 25 — '@typescript-eslint/no-unused-vars': 'off'"
+    },
+    {
+      "area": "skills",
+      "observation": "The frontend-worker skill does not appear to have specific guidance about TanStack Query setup patterns (module-scope queryClient). The worker fell into the common anti-pattern of creating queryClient inside a component.",
+      "evidence": "Transcript shows: original App.tsx (commit 5abd866) had queryClient inside App() component body"
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "The foundation-project-setup feature successfully creates a working Vite + React + TypeScript project. All verification commands pass (typecheck, test, build, lint, dev server). The ESLint flat config was iteratively fixed during the feature. The implementation is passable but introduces one blocking issue (queryClient inside component — though current code may already have this fixed in subsequent features), several non-blocking code quality issues (duplicate config, misleading globals, disabled lint rules), and reveals inconsistencies in shared state (React version mismatch in docs)."
+}

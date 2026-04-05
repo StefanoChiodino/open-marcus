@@ -1,5 +1,7 @@
 import type { DatabaseService } from '../db/database.js';
 import type { Session, Message } from '../db/schema.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 /**
  * Session service - handles session and message business logic
@@ -10,7 +12,7 @@ export class SessionService {
 
   constructor(dbGetter?: () => DatabaseService) {
     this.dbGetter = dbGetter || (() => {
-      // Dynamic import to avoid circular dependency issues
+      // ESM-compatible require via createRequire
       const { getDatabase } = require('../db/database.js');
       return getDatabase();
     });

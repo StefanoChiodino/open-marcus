@@ -9,7 +9,7 @@ commands:
 
 services:
   backend:
-    start: PORT=3100 npm run dev:backend
+    start: PORT=3100 npx tsx backend/server.ts
     stop: lsof -ti :3100 | xargs kill 2>/dev/null || true
     healthcheck: curl -sf http://localhost:3100/health
     port: 3100

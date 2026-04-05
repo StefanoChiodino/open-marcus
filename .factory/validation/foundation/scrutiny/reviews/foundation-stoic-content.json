@@ -1,0 +1,61 @@
+{
+  "featureId": "foundation-stoic-content",
+  "reviewedAt": "2026-04-05T19:12:00.000Z",
+  "commitId": "3c4ae09",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The implementation fully covers the feature requirements: 60 stoic quotes/excerpts from 3 philosophers (Marcus Aurelius, Seneca, Epictetus), API endpoints for random quotes and search, RAG context injection, database migration, ContentService, routes, and unit tests. The worker correctly followed TDD, iterated through bugs (ESM require issue, count=0 falsy edge case, import path correction from data/ to lib/), and delivered clean code that passes all 141 tests, typecheck, and lint. However, the route tests do not exercise the actual routes file — they define inline route handlers instead, leaving 3 of 6 content endpoints untested at the route level.",
+    "issues": [
+      {
+        "file": "backend/routes/content.test.ts",
+        "line": 17,
+        "severity": "non_blocking",
+        "description": "Route tests do not import or test the actual routes from backend/routes/content.ts. Instead, createTestApp() defines inline route handlers as duplications. This means GET /api/content/rag-context, GET /api/content/tags, POST /api/content/seed, and GET /api/content/count are NOT route-tested. The inline handlers in the test file are tested, but any divergence between test handlers and real route handlers would not be caught. Tests should import contentRoutes from '../routes/content.js' and use app.use('/api/content', contentRoutes)."
+      },
+      {
+        "file": "backend/services/content.ts",
+        "line": 62,
+        "severity": "non_blocking",
+        "description": "When getContextForAI is called with no query, it falls through to getContentByTags([], limit) which returns random quotes. This means a request to GET /api/content/rag-context without a query param returns random content rather than curated content. The fallback to getRandomQuotes is reasonable but should be documented or named more clearly (e.g., 'featured quotes' rather than implying tag-based retrieval)."
+      },
+      {
+        "file": "backend/db/database.ts",
+        "line": 393,
+        "severity": "non_blocking",
+        "description": "Tag search uses SQL LIKE with pattern %\"tag\"%. While this works for exact tag matches in the JSON array, it can produce false positives if one tag is a substring of another in the JSON serialization (e.g., searching tag 'mind' would match both '\"mind\"' and '\"mindfulness\"' since %\"mind\"% appears in '\"mindfulness\"'). This is a minor correctness issue with the tag-based search. A more robust approach would use a separate tags junction table or SQLite's json_each()."
+      },
+      {
+        "file": "backend/routes/content.ts",
+        "line": 42,
+        "severity": "non_blocking",
+        "description": "The route file has duplicate code: searchContent is called once in the GET /api/content/search handler, but in the test file the same logic is re-implemented inline. These are separate files with duplicated handler logic. See issue #1."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "backend-worker skill does not document the project's TDD-first approach explicitly. The worker followed TDD (creating tests before implementation) which matches the AGENTS.md Testing section, but the skill itself could explicitly instruct workers to write tests first to make this the default behavior.",
+      "evidence": "Transcript shows worker creating test files and running them before all other implementation. AGENTS.md mentions TDD under Testing conventions. worker skill procedure followedProcedure: true but doesn't emphasize this pattern."
+    },
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill's procedure should include guidance about testing route handlers by importing the actual route modules rather than redefining handlers inline in test files. The worker wrote route tests that duplicated inline handlers instead of testing the real routes, which is a common testing anti-pattern.",
+      "evidence": "backend/routes/content.test.ts:17 defines createTestApp() with inline route handlers that duplicate the actual routes at backend/routes/content.ts. Real route endpoints (rag-context, tags, seed, count) have no route-level tests."
+    },
+    {
+      "area": "conventions",
+      "observation": "No existing project convention documents where to place static data/content files. The worker initially used backend/data/ then discovered backend/lib/ was the existing convention for non-route, non-service backend code. This discovery should be recorded in AGENTS.md to save future workers time.",
+      "evidence": "Transcript shows worker exploring backend directory structure to determine if backend/lib/ or backend/data/ should be used for content files. Worker found src/backend/lib/ referenced in AGENTS.md project structure, moved files accordingly."
+    },
+    {
+      "area": "conventions",
+      "observation": "The ESM compatibility issue with require() in dynamic imports is not documented. The worker hit this when trying to use require('../db/database.js') in an ES module context. All services that might be called from server startup should use direct imports, not dynamic require().",
+      "evidence": "ContentService initially used require() pattern, failed when called from server startup (require is not defined). Worker fixed by using direct import. The worker's own non_blocking issue flagged this as a pattern affecting ProfileService and SessionService too."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Feature foundation-stoic-content is **accepted** with several non-blocking observations only.\n\n**What works well:**\n- 60 correctly structured stoic quotes/excerpts from 3 philosophers with proper metadata and tagging\n- ContentService, database migration, and search functionality are well-implemented and tested\n- RAG context injection format is appropriate for LLM system prompts\n- Worker correctly discovered and fixed ESM compatibility issue (require -> direct import)\n- Worker corrected import path from backend/data/ to backend/lib/ matching project conventions\n- All validators pass: 141 tests, typecheck, lint\n\n**Non-blocking concerns:**\n- Route tests (content.test.ts) do NOT import the actual routes file - they define inline duplicate handlers. 3 of 6 content endpoints (rag-context, tags, seed, count) have no route-level tests\n- Tag search uses fragile LIKE-based JSON matching that can produce false positives (e.g., 'mind' matches 'mindfulness')\n- getContextForAI fallback to random quotes when no query provided is undocumented and named misleadingly\n- AGENTS.md should document: TDD-first expectation, backend/lib/ convention for static content files, ESM import requirement for services, and the anti-pattern of duplicating route handlers in test files"
+}

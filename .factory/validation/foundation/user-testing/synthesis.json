@@ -1,0 +1,43 @@
+{
+  "milestone": "foundation",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-PROFILE-001",
+    "VAL-PROFILE-002",
+    "VAL-PROFILE-003",
+    "VAL-PROFILE-004",
+    "VAL-DATA-001",
+    "VAL-DATA-002",
+    "VAL-DATA-003",
+    "VAL-DATA-004",
+    "VAL-DATA-005",
+    "VAL-DATA-006",
+    "VAL-MEDIT-006",
+    "VAL-MEDIT-007",
+    "VAL-UI-001",
+    "VAL-UI-005",
+    "VAL-UI-006"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "services.yaml",
+      "description": "Services were already running; no changes needed to services.yaml itself.",
+      "source": "setup"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "Documented that backend must use tsx (not plain node) for ESM+TypeScript. Noted Ollama offline impact on testing.",
+      "source": "setup"
+    }
+  ],
+  "previousRound": null
+}

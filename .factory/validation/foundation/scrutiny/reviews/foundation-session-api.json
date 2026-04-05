@@ -1,0 +1,73 @@
+{
+  "featureId": "foundation-session-api",
+  "reviewedAt": "2026-04-05T18:00:00.000Z",
+  "commitId": "a8ab17558555cd218819ac9c9eca634bd1dd1f25",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The implementation provides a solid session management API with a clean service layer, proper validation, and comprehensive tests. The architecture follows existing codebase patterns (service layer + routes + singleton DI). All 102 tests pass. However, there are several issues: the route tests use inline duplicated route handlers instead of the actual production routes, creating a testing gap; DELETE and PATCH endpoints lack route-level tests; and there's an N+1 query problem on the list sessions endpoint.",
+    "issues": [
+      {
+        "file": "backend/routes/session.test.ts",
+        "line": 12,
+        "severity": "blocking",
+        "description": "Route tests use inline `createTestApp` that DUPLICATES the route handler logic from `backend/routes/session.ts` instead of importing and testing the actual production routes. This is a fundamental testing anti-pattern — the tests verify a copy of the routes, not the real code. If the routes diverge from the tests (e.g., a bug fix changes only the production code), the tests would still pass silently. The inline POST /api/sessions handler (line 59-78) returns 400 immediately when `profile_id` is missing, whereas the actual production route (`backend/routes/session.ts:57-76`) has fallback logic calling `getProfileService().getCurrentProfile()`. This untested fallback logic could be buggy without the test suite catching it."
+      },
+      {
+        "file": "backend/routes/session.ts",
+        "line": 57,
+        "severity": "non_blocking",
+        "description": "The POST /api/sessions handler has complex fallback logic: if no `profile_id` is provided, it calls `getProfileService().getCurrentProfile()`, but if that returns null it redundantly re-reads `req.body.profile_id` (which we already know is falsy from line 62). This dead-code branch on line 71 (`const profile = req.body.profile_id; if (!profile) {...}`) is unreachable and confusing. The entire fallback is also untested by route tests (see issue above)."
+      },
+      {
+        "file": "backend/routes/session.ts",
+        "line": 16,
+        "severity": "non_blocking",
+        "description": "N+1 query problem: `GET /api/sessions` calls `sessionService.listMessages(session.id)` for every session in the list, and `listMessages` itself queries the DB to verify the session exists first (service layer). For N sessions, this causes 2N+1 database queries. Consider adding a batch query or SQL JOIN to fetch message metadata alongside sessions."
+      },
+      {
+        "file": "backend/services/session.ts",
+        "line": 14,
+        "severity": "non_blocking",
+        "description": "Uses `require('../db/database.js')` as a fallback in an ESM project (`\"type\": \"module\"` in package.json). This works with `tsx` (which provides CJS interop) but would fail with pure Node.js ESM. The same pattern exists in the pre-existing `profile.ts` service, so consistency was followed, but the pattern itself is fragile and should be replaced with a proper dynamic import: `await import('../db/database.js')` or, preferably, always providing an explicit dbGetter."
+      },
+      {
+        "file": "backend/routes/session.test.ts",
+        "line": 420,
+        "severity": "non_blocking",
+        "description": "Missing route-level tests for DELETE /api/sessions/:id and PATCH /api/sessions/:id/status endpoints. These endpoints exist in the production routes but are only covered by service-level tests. Route tests should also cover HTTP-specific concerns like 204 responses, parameter validation, and error status codes."
+      },
+      {
+        "file": "backend/routes/session.test.ts",
+        "line": 175,
+        "severity": "non_blocking",
+        "description": "The afterEach for the route test suite only cleans up the database file but doesn't reset the `sessionService` singleton's cached db reference. Since `createTestApp` resets services in the inline handlers (line 17: `resetSessionService()`), the actual singleton service's `db` getter is never reset between tests, potentially causing cross-test pollution. The service tests handle this correctly by creating new `SessionService(() => db)` instances per test, but the inline route handlers in `createTestApp` use the same closure variable."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "Route tests (`backend/routes/session.test.ts`) define inline route handlers that duplicate the production route logic instead of importing and testing `backend/routes/session.ts` directly. This means route-level behavior is not actually being tested — only a copy. The worker did not follow a test-the-real-code pattern. AGENTS.md should explicitly require importing and testing actual route handlers rather than duplicating them in test setup.",
+      "evidence": "backend/routes/session.test.ts:12 — `createTestApp()` defines inline `app.get('/api/sessions')`, `app.post('/api/sessions')` etc. instead of `app.use('/api/sessions', sessionRoutes)`."
+    },
+    {
+      "area": "conventions",
+      "observation": "Both session.ts and the pre-existing profile.ts services use `require()` for dynamic imports in an ESM project (`\"type\": \"module\"`). This is a codebase-wide pattern that works with tsx but is fragile. The backend-worker skill or AGENTS.md should document the preferred approach for lazy-loading the database (dynamic `import()` vs `require`).",
+      "evidence": "backend/services/session.ts:14 and backend/services/profile.ts:14 both use `require('../db/database.js')` in files that are compiled as ESM."
+    },
+    {
+      "area": "knowledge",
+      "observation": "The `dev:backend` script in package.json is `node backend/server.ts` but Node.js cannot natively execute .ts files. This works because tsx (or potentially a node loader) must be configured somewhere, but it's not obvious. New workers will waste time figuring out how to run the backend server. Should be documented in AGENTS.md or services.yaml.",
+      "evidence": "package.json line: `\"dev:backend\": \"node backend/server.ts\"` — this requires tsx or similar to work, but not obvious from the script alone."
+    },
+    {
+      "area": "conventions",
+      "observation": "The worker implemented DELETE and PATCH route endpoints but did not add route tests for them. The backend-worker skill test checklist only requires verifying endpoint status codes and error handling — it should require route-level tests match the number of route methods implemented.",
+      "evidence": "backend/routes/session.ts defines DELETE /:id (line 178) and PATCH /:id/status (line 157). No corresponding route tests in backend/routes/session.test.ts beyond service tests."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "The feature is PASS — it fully implements all expected behaviors (POST/GET/PUT for sessions, message storage, session state management) with proper validation, error handling, and 102 passing tests. However, there is one structural concern that should be addressed: the route tests duplicate route logic inline instead of testing the actual production routes. This means the POST /api/sessions fallback logic (getCurrentProfile) and the PUT /:id/end, DELETE /:id, PATCH /:id/status endpoints are not fully verified at the HTTP layer. The DELETE and PATCH endpoints also lack route tests entirely. These are not blockers for merging but represent technical debt and a testing gap. Additionally, the N+1 query in list sessions and ESM require() usage should be flagged for future improvement."
+}

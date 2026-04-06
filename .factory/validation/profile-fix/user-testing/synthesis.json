@@ -1,0 +1,27 @@
+{
+  "milestone": "profile-fix",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 5,
+    "passed": 4,
+    "failed": 1,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-PROFILE-001",
+    "VAL-PROFILE-002",
+    "VAL-PROFILE-003",
+    "VAL-PROFILE-005"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-PROFILE-004",
+      "reason": "Reset Profile button does not actually clear profile data. After clicking reset, the API still returns the profile with name 'NewName456', and navigating to home still shows 'Welcome, NewName456'. The UI enters a cleared state but the backend data is not cleared."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null,
+  "notes": "Tested profile assertions via agent-browser. Edit Profile, Cancel, Save, and Profile display all work correctly. Reset Profile has a bug where it clears the UI state but does not actually clear the profile data in the database."
+}

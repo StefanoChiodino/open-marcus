@@ -1,0 +1,105 @@
+{
+  "groupId": "profile-assertions",
+  "testedAt": "2026-04-06T22:58:00.000Z",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "testingTool": "agent-browser",
+    "session": "052944413e14",
+    "data": "SQLite at data/openmarcus.db"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-PROFILE-001",
+      "title": "Edit Profile button shows edit form",
+      "status": "pass",
+      "steps": [
+        {"action": "Navigate to /profile", "expected": "Profile page with Edit button", "observed": "Profile page with 'Edit your profile' button"},
+        {"action": "Click 'Edit your profile'", "expected": "Edit form with pre-filled name/bio", "observed": "Edit form displayed with Name='Stefano' pre-filled"}
+      ],
+      "evidence": {
+        "screenshots": [
+          "evidence/profile-fix/profile-assertions/VAL-PROFILE-005-profile-display.png",
+          "evidence/profile-fix/profile-assertions/VAL-PROFILE-001-edit-form.png"
+        ],
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-PROFILE-002",
+      "title": "Edit form cancel returns to display mode",
+      "status": "pass",
+      "steps": [
+        {"action": "Click Edit profile, fill 'Modified Name'", "expected": "Name changed in form", "observed": "Name changed to 'Modified Name' in form"},
+        {"action": "Click Cancel", "expected": "Return to display mode with original name", "observed": "Returned to display mode, original name 'Stefano' preserved"}
+      ],
+      "evidence": {
+        "screenshots": [
+          "evidence/profile-fix/profile-assertions/VAL-PROFILE-002-after-cancel.png"
+        ],
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-PROFILE-003",
+      "title": "Edit form save persists changes",
+      "status": "pass",
+      "steps": [
+        {"action": "Click Edit profile, fill 'NewName456'", "expected": "Name changed in form", "observed": "Name changed to 'NewName456' in form"},
+        {"action": "Click 'Save Changes'", "expected": "Save and return to display mode with new name", "observed": "Returned to display mode, name shows 'NewName456', API confirms persisted"}
+      ],
+      "evidence": {
+        "screenshots": [
+          "evidence/profile-fix/profile-assertions/VAL-PROFILE-003-edit-form-filled.png",
+          "evidence/profile-fix/profile-assertions/VAL-PROFILE-003-after-save2.png"
+        ],
+        "consoleErrors": "none",
+        "network": "API PUT /api/profile returned updated profile with name 'NewName456'"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-PROFILE-004",
+      "title": "Reset Profile clears profile and shows onboarding",
+      "status": "fail",
+      "steps": [
+        {"action": "Click 'Reset your profile to default'", "expected": "Profile cleared, redirected to onboarding", "observed": "UI shows cleared state (no Edit/Reset buttons) but API still returns profile data with name 'NewName456'"}
+      ],
+      "evidence": {
+        "screenshots": [
+          "evidence/profile-fix/profile-assertions/VAL-PROFILE-004-profile-after-reset.png"
+        ],
+        "consoleErrors": "none",
+        "network": "API GET /api/profile still returns profile after reset click"
+      },
+      "issues": "Reset button does not actually clear profile data. UI enters a cleared state but API still has the profile. Inconsistent behavior - after reset, home page still shows 'Welcome, NewName456' but profile page shows no name."
+    },
+    {
+      "id": "VAL-PROFILE-005",
+      "title": "Profile page displays all profile fields",
+      "status": "pass",
+      "steps": [
+        {"action": "Navigate to /profile with existing profile", "expected": "Show name, bio (if set), and action buttons", "observed": "Profile page shows 'Name: NewName456' with 'Edit your profile' and 'Reset your profile to default' buttons"}
+      ],
+      "evidence": {
+        "screenshots": [
+          "evidence/profile-fix/profile-assertions/VAL-PROFILE-005-profile-display.png"
+        ],
+        "consoleErrors": "none"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "First save attempt with 'Test User 123' did not persist - had to retry with 'NewName456'",
+      "resolved": true,
+      "resolution": "Second save attempt worked correctly",
+      "affectedAssertions": ["VAL-PROFILE-003"]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 5 profile assertions: 4 passed (VAL-PROFILE-001, 002, 003, 005), 1 failed (VAL-PROFILE-004: Reset does not clear profile data)"
+}

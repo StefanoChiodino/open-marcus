@@ -1,0 +1,32 @@
+{
+  "groupId": "profile-reset-retest",
+  "testedAt": "2026-04-07T00:07:00.000Z",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "testingTool": "agent-browser",
+    "session": "7b10f3642c09",
+    "data": "SQLite at data/openmarcus.db"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-PROFILE-004",
+      "title": "Reset Profile clears profile and shows onboarding",
+      "status": "pass",
+      "steps": [
+        {"action": "Create profile with name 'ResetTestUser'", "expected": "Profile created, home page shown", "observed": "Onboarding completed, profile created successfully"},
+        {"action": "Navigate to /profile, click 'Reset your profile to default'", "expected": "Profile cleared, redirected to onboarding", "observed": "Profile page shows no buttons (onboarding state), home page shows onboarding form"},
+        {"action": "API check: GET /api/profile", "expected": "404 not found", "observed": "API returned 404 - profile actually deleted from backend"}
+      ],
+      "evidence": {
+        "screenshots": ["evidence/profile-fix/user-testing/profile-reset-retest/screenshot-after-reset.png"],
+        "consoleErrors": "none",
+        "network": "API GET /api/profile returns 404 after reset"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "VAL-PROFILE-004 now passes - Reset Profile properly calls profileAPI.deleteProfile() and clears both UI and backend data."
+}

@@ -1,0 +1,66 @@
+{
+  "groupId": "navigation-assertions",
+  "testedAt": "2026-04-07T00:08:00.000Z",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "testingTool": "agent-browser",
+    "session": "7b10f3642c09_nav",
+    "data": "SQLite at data/openmarcus.db"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-NAV-001",
+      "title": "Sidebar Home link navigates to home",
+      "status": "pass",
+      "steps": [
+        {"action": "Click Home in sidebar", "expected": "Navigate to home page", "observed": "Home page loaded with welcome message and buttons"}
+      ],
+      "evidence": {"screenshots": [], "consoleErrors": "none"},
+      "issues": null
+    },
+    {
+      "id": "VAL-NAV-002",
+      "title": "Sidebar Meditation link navigates to session page",
+      "status": "pass",
+      "steps": [
+        {"action": "Click Meditation in sidebar", "expected": "Navigate to /session", "observed": "Session page loaded with 'Begin meditation session' button"}
+      ],
+      "evidence": {"screenshots": [], "consoleErrors": "none"},
+      "issues": null
+    },
+    {
+      "id": "VAL-NAV-003",
+      "title": "Sidebar History link navigates to history page",
+      "status": "pass",
+      "steps": [
+        {"action": "Click History in sidebar", "expected": "Navigate to /history", "observed": "History page loaded with 'Begin Meditation' link"}
+      ],
+      "evidence": {"screenshots": [], "consoleErrors": "none"},
+      "issues": null
+    },
+    {
+      "id": "VAL-NAV-004",
+      "title": "Sidebar Profile link navigates to profile page",
+      "status": "pass",
+      "steps": [
+        {"action": "Click Profile in sidebar", "expected": "Navigate to /profile", "observed": "Profile page loaded with Edit and Reset buttons"}
+      ],
+      "evidence": {"screenshots": [], "consoleErrors": "none"},
+      "issues": null
+    },
+    {
+      "id": "VAL-NAV-005",
+      "title": "Sidebar Settings link navigates to settings page",
+      "status": "pass",
+      "steps": [
+        {"action": "Click Settings in sidebar", "expected": "Navigate to /settings", "observed": "Settings page loaded with AI Model, Export, Import, Clear All Data controls"}
+      ],
+      "evidence": {"screenshots": [], "consoleErrors": "none"},
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "All 5 navigation assertions pass - sidebar navigation works correctly to all pages."
+}

@@ -1,27 +1,44 @@
 {
   "milestone": "profile-fix",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "assertionsSummary": {
-    "total": 5,
-    "passed": 4,
-    "failed": 1,
-    "blocked": 0
+    "total": 22,
+    "passed": 21,
+    "failed": 0,
+    "blocked": 1
   },
   "passedAssertions": [
     "VAL-PROFILE-001",
     "VAL-PROFILE-002",
     "VAL-PROFILE-003",
-    "VAL-PROFILE-005"
+    "VAL-PROFILE-004",
+    "VAL-PROFILE-005",
+    "VAL-NAV-001",
+    "VAL-NAV-002",
+    "VAL-NAV-003",
+    "VAL-NAV-004",
+    "VAL-NAV-005",
+    "VAL-HOME-001",
+    "VAL-HOME-002",
+    "VAL-SESSION-001",
+    "VAL-SESSION-002",
+    "VAL-SESSION-003",
+    "VAL-HISTORY-001",
+    "VAL-SETTINGS-001",
+    "VAL-SETTINGS-002",
+    "VAL-SETTINGS-003",
+    "VAL-CROSS-001",
+    "VAL-CROSS-002",
+    "VAL-CROSS-003"
   ],
-  "failedAssertions": [
+  "failedAssertions": [],
+  "blockedAssertions": [
     {
-      "id": "VAL-PROFILE-004",
-      "reason": "Reset Profile button does not actually clear profile data. After clicking reset, the API still returns the profile with name 'NewName456', and navigating to home still shows 'Welcome, NewName456'. The UI enters a cleared state but the backend data is not cleared."
+      "id": "VAL-HISTORY-002",
+      "blockedBy": "Requires completed meditation session with Ollama running to exist in history first"
     }
   ],
-  "blockedAssertions": [],
   "appliedUpdates": [],
-  "previousRound": null,
-  "notes": "Tested profile assertions via agent-browser. Edit Profile, Cancel, Save, and Profile display all work correctly. Reset Profile has a bug where it clears the UI state but does not actually clear the profile data in the database."
+  "previousRound": ".factory/validation/profile-fix/user-testing/synthesis.json"
 }

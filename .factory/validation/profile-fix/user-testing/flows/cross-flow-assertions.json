@@ -1,0 +1,51 @@
+{
+  "groupId": "cross-flow-assertions",
+  "testedAt": "2026-04-07T00:11:00.000Z",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "testingTool": "agent-browser",
+    "session": "7b10f3642c09_cross",
+    "data": "SQLite at data/openmarcus.db"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-CROSS-001",
+      "title": "Onboarding → Home → Profile flow",
+      "status": "pass",
+      "steps": [
+        {"action": "No profile exists", "expected": "Onboarding shown", "observed": "Onboarding form with Name and About You fields shown"},
+        {"action": "Create profile with 'CrossTestUser'", "expected": "Redirected to home", "observed": "After save, home page loaded with 'Welcome, CrossTestUser'"},
+        {"action": "Navigate to /profile", "expected": "Profile displayed", "observed": "Profile page shows name 'CrossTestUser' with Edit and Reset buttons"}
+      ],
+      "evidence": {"screenshots": [], "consoleErrors": "none"},
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-002",
+      "title": "All pages accessible via navigation",
+      "status": "pass",
+      "steps": [
+        {"action": "Start from home, navigate through all pages via sidebar", "expected": "All pages load without errors", "observed": "Home → Meditation → History → Profile → Settings → Home all navigated successfully without errors"}
+      ],
+      "evidence": {"screenshots": [], "consoleErrors": "none"},
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-003",
+      "title": "Edit profile preserves data after navigation",
+      "status": "pass",
+      "steps": [
+        {"action": "Go to /profile", "expected": "Profile displayed", "observed": "Profile shows name 'CrossTestUser'"},
+        {"action": "Edit name to 'EditedName123', save", "expected": "Name updated", "observed": "After save, profile shows name 'EditedName123'"},
+        {"action": "Navigate to /settings", "expected": "Navigate away", "observed": "Settings page loaded"},
+        {"action": "Navigate back to /profile", "expected": "Edited name still shown", "observed": "Profile still shows 'Name: EditedName123' - data persisted"}
+      ],
+      "evidence": {"screenshots": [], "consoleErrors": "none"},
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "All 3 cross-flow assertions pass - onboarding flow works, full navigation sequence works, and edit persistence works correctly."
+}

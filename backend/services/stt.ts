@@ -4,7 +4,7 @@
  */
 
 export class SttOfflineError extends Error {
-  constructor(message: string = 'STT server is not running. Please ensure the STT server is started.') {
+  constructor(message: string = 'STT server is not running. To start it: cd servers/stt && node server.mjs --port 8765') {
     super(message);
     this.name = 'SttOfflineError';
   }

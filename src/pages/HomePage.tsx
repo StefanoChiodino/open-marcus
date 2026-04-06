@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useProfileStore } from '../stores/profileStore';
+import { useSessionStore } from '../stores/sessionStore';
 import ProfileDisplay from '../components/ProfileDisplay';
 import './HomePage.css';
 
@@ -12,6 +13,8 @@ function HomePage() {
   };
 
   const handleBeginMeditation = () => {
+    // Start session before navigating so /session shows active chat, not another begin prompt
+    useSessionStore.getState().beginSession(profile?.id);
     navigate('/session');
   };
 

@@ -119,3 +119,22 @@
   margin: 0;
   line-height: 1.4;
 }
+
+/* Mobile responsive */
+@media (max-width: 767px) {
+  .settings-page {
+    padding: 16px;
+  }
+
+  .settings-page__title {
+    font-size: 1.5rem;
+  }
+
+  .settings-section {
+    padding: 16px;
+  }
+
+  .settings-section__actions {
+    flex-direction: column;
+  }
+}

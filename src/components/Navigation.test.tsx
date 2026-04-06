@@ -79,6 +79,28 @@ describe('Navigation', () => {
 
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
+
+  it('hides toggle button when hideToggle is true', () => {
+    const onToggle = vi.fn();
+    renderWithRouter(<Navigation hideToggle onToggle={onToggle} />);
+
+    expect(screen.queryByRole('button', { name: /collapse|expand navigation/i })).not.toBeInTheDocument();
+  });
+
+  it('shows toggle button by default', () => {
+    renderWithRouter(<Navigation onToggle={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: /collapse navigation/i })).toBeInTheDocument();
+  });
+
+  it('hides toggle button on mobile/tablet viewports (hideToggle prop)', () => {
+    const onToggle = vi.fn();
+    renderWithRouter(<Navigation isCollapsed hideToggle onToggle={onToggle} />);
+
+    expect(screen.queryByRole('button', { name: /expand navigation/i })).not.toBeInTheDocument();
+    // Still renders with collapsed state
+    expect(screen.getByRole('navigation')).toHaveClass('navigation--collapsed');
+  });
 });
 
 describe('Navigation styling', () => {
@@ -94,5 +116,12 @@ describe('Navigation styling', () => {
 
     const nav = screen.getByRole('navigation');
     expect(nav).not.toHaveClass('navigation--collapsed');
+  });
+
+  it('applies collapsed class when hideToggle is true and isCollapsed is true', () => {
+    renderWithRouter(<Navigation isCollapsed hideToggle />);
+
+    const nav = screen.getByRole('navigation');
+    expect(nav).toHaveClass('navigation--collapsed');
   });
 });

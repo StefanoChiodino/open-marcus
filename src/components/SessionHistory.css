@@ -123,3 +123,23 @@
   color: var(--color-error, #b91c1c);
   font-size: 0.925rem;
 }
+
+/* Mobile responsive */
+@media (max-width: 767px) {
+  .session-history {
+    padding: 1.5rem 1rem;
+  }
+
+  .session-history__title {
+    font-size: 1.5rem;
+  }
+
+  .session-history-item {
+    padding: 1rem;
+  }
+
+  .session-history__empty {
+    padding: 2rem 1rem;
+    min-height: 250px;
+  }
+}

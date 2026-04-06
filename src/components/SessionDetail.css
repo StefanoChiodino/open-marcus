@@ -141,3 +141,19 @@
 .session-detail__error + .session-detail__back-btn {
   margin-top: 0.5rem;
 }
+
+/* Mobile responsive */
+@media (max-width: 767px) {
+  .session-detail {
+    padding: 1rem 1rem 1.5rem;
+  }
+
+  .session-detail__title {
+    font-size: 1.25rem;
+  }
+
+  .session-detail__summary,
+  .session-detail__actions {
+    padding: 1rem;
+  }
+}

@@ -186,7 +186,7 @@
   }
 }
 
-/* Tablet responsive */
+/* Tablet responsive (768px - 1023px) */
 @media (min-width: 768px) and (max-width: 1023px) {
   .navigation {
     width: 64px;
@@ -194,5 +194,40 @@
 
   .navigation__toggle {
     display: none;
+  }
+
+  .navigation__brand {
+    text-align: center;
+  }
+
+  .navigation__brand-link {
+    justify-content: center;
+  }
+
+  .navigation__list {
+    align-items: center;
+  }
+
+  .navigation__link {
+    justify-content: center;
+    padding: var(--space-3) var(--space-2);
+  }
+}
+
+/* Tablet wide (1024px - 1199px): slightly expanded sidebar */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .navigation {
+    width: 200px;
+  }
+
+  .navigation__toggle {
+    display: none;
+  }
+}
+
+/* Desktop (1200px+): full sidebar */
+@media (min-width: 1200px) {
+  .navigation {
+    width: 240px;
   }
 }

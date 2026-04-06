@@ -19,13 +19,42 @@
   flex: 1;
 }
 
-/* Mobile responsive */
+/* ============================================
+   Mobile responsive (< 768px)
+   Single-column layout with bottom navigation
+   ============================================ */
 @media (max-width: 767px) {
   .app-layout {
     flex-direction: column;
   }
 
   .app-layout__main {
-    padding-bottom: 72px; /* Space for bottom navigation */
+    padding-bottom: 80px; /* Space for bottom navigation */
+  }
+
+  /* Adjust disclaimer padding for mobile */
+  .app-layout__main .disclaimer {
+    font-size: var(--text-xs);
+    padding: var(--space-2) var(--space-3);
+  }
+}
+
+/* ============================================
+   Tablet responsive (768px - 1199px)
+   Collapsed icon-only sidebar
+   ============================================ */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .app-layout__main {
+    padding: var(--space-6);
+  }
+}
+
+/* ============================================
+   Desktop responsive (1200px+)
+   Full sidebar + spacious main content
+   ============================================ */
+@media (min-width: 1200px) {
+  .app-layout__main {
+    padding: var(--space-8);
   }
 }

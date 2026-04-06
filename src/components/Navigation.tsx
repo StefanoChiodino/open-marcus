@@ -5,22 +5,25 @@ import './Navigation.css';
 interface NavigationProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
+  hideToggle?: boolean;
 }
 
-function Navigation({ isCollapsed = false, onToggle }: NavigationProps) {
+function Navigation({ isCollapsed = false, onToggle, hideToggle = false }: NavigationProps) {
   return (
     <nav
       className={`navigation ${isCollapsed ? 'navigation--collapsed' : ''}`}
       aria-label="Main navigation"
     >
-      <button
-        className="navigation__toggle"
-        onClick={onToggle}
-        aria-label={isCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-        aria-expanded={!isCollapsed}
-      >
-        <MenuIcon isCollapsed={isCollapsed} />
-      </button>
+      {!hideToggle && (
+        <button
+          className="navigation__toggle"
+          onClick={onToggle}
+          aria-label={isCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+          aria-expanded={!isCollapsed}
+        >
+          <MenuIcon isCollapsed={isCollapsed} />
+        </button>
+      )}
 
       <div className="navigation__brand">
         <NavLink to="/" className="navigation__brand-link">

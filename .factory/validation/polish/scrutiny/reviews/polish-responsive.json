@@ -1,0 +1,54 @@
+{
+  "featureId": "polish-responsive",
+  "milestone": "polish",
+  "status": "fail",
+  "codeQuality": {
+    "rating": "good",
+    "notes": "Clean, well-structured implementation. Breakpoint constants are centralized in Layout.tsx. CSS is organized with clear section comments delineating mobile/tablet/desktop breakpoints. The Navigation component handles hideToggle prop correctly with conditional rendering. CSS uses CSS variables consistently for spacing and colors. Minor issue: unused `app-layout--mobile` class modifier is dead code. Resize event listeners lack throttling/debouncing which could cause excessive re-renders during window resize."
+  },
+  "testCoverage": {
+    "rating": "acceptable",
+    "notes": "Added 4 new unit tests covering Navigation's hideToggle prop (hide/show toggle, combined isCollapsed+hideToggle, collapsed class persistence). All 246 tests pass. However, there are NO tests for the Layout component's responsive behavior: useIsMobileBreakpoint, useIsTabletBreakpoint, auto-collapse via useEffect on tablet, or the integration of Layout passing hideToggle/isCollapsed/aria-hidden props to Navigation based on viewport. No automated e2e tests verify responsive rendering at the specified breakpoints (1200px, 900px, 375px); verification was done only via interactive browser checks in the handoff."
+  },
+  "integrationQuality": {
+    "rating": "acceptable",
+    "notes": "The responsive changes integrate well with existing Layout, Navigation, and page components. CSS media queries are layered on top of base styles without breaking existing layouts. The tablet split (768-1023px icon-only, 1024-1199px wider) is a reasonable enhancement. Potential issue: aria-hidden being set on the Navigation when mobile could conflict with accessibility requirements already established in the codebase's accessibility compliance feature."
+  },
+  "issues": [
+    {
+      "severity": "blocking",
+      "description": "Accessibility regression: Layout.tsx passes aria-hidden={isMobile} to the Navigation component (line 82). This sets aria-hidden=\"true\" on the <nav> element on mobile viewports, making the bottom navigation bar completely invisible to screen readers. The mobile bottom nav is the primary navigation method on small screens and MUST be accessible to assistive technology. Remove the aria-hidden prop and instead ensure the nav remains fully accessible with proper ARIA semantics."
+    },
+    {
+      "severity": "non-blocking",
+      "description": "Dead code: Layout.tsx adds class 'app-layout--mobile' (line 78) when isMobile is true, but no CSS rules target this class anywhere in the codebase. The mobile styles are handled entirely through @media queries in Layout.css. Either add CSS rules that use this class or remove it from the JSX."
+    },
+    {
+      "severity": "suggestion",
+      "description": "Performance: The resize event handlers in useIsMobileBreakpoint and useIsTabletBreakpoint (Layout.tsx lines 25-33, 42-52) fire synchronously on every resize event with no throttling or debouncing. During window drag-resizing, this can trigger excessive React state updates and re-renders. Consider using a throttle utility (e.g., from lodash or a custom implementation) with ~100ms delay."
+    },
+    {
+      "severity": "non-blocking",
+      "description": "The tablet breakpoint in Navigation.css is split into two sub-ranges: 768-1023px (64px icon-only) and 1024-1199px (200px bar). While visually reasonable, the Layout.tsx useIsTabletBreakpoint hook treats the entire 768-1199px range as one tablet state. This means the Layout auto-collapses and hides toggle for all tablet sizes uniformly. The 1024-1199px 'tablet wide' range with 200px width would have room for text labels, but the Navigation still hides them because isCollapsed=true is forced by Layout. Consider whether tablet-wide should show labels."
+    },
+    {
+      "severity": "suggestion",
+      "description": "The Navigation hover/focus pseudo-classes (e.g., :hover, :focus-visible) are not overridden in the mobile media query. On mobile devices these are unnecessary and may cause minor performance overhead. Consider wrapping hover/focus rules in @media (hover: hover) queries for mobile breakpoint."
+    }
+  ],
+  "sharedStateObservations": [
+    {
+      "observation": "The worker added viewport-aware responsive hooks (useIsMobileBreakpoint, useIsTabletBreakpoint) but no reusable hook utility like useViewportBreakpoint was centralized. The breakpoint constants (768, 1199, 767) are hardcoded in Layout.tsx. The architecture.md or AGENTS.md should document the pattern that breakpoint logic should live in Layout and be passed down as props rather than duplicated across components.",
+      "description": "Breakpoint constants are duplicated as magic numbers in both JS (Layout.tsx const TABLET_MIN = 768) and CSS (@media queries). Consider centralizing breakpoints in a shared constants file that both JS and CSS can reference (e.g., via CSS custom properties or a build-time approach). The pattern established here of handling viewport state in Layout and passing as props to children should be documented in AGENTS.md as the project's responsive design approach."
+    },
+    {
+      "observation": "The worker verified responsive design through interactive browser checks at 1200px, 900px, 768px, and 375px widths per the handoff, but no automated e2e Playwright tests were added to prevent regression. The existing e2e tests (full-journey.spec.ts, voice-session.spec.ts, offline-mode.spec.ts) run at default viewport size.",
+      "description": "The project's e2e test suite has no responsive design tests. The feature's verificationSteps specified agent-browser checks at multiple widths, which the worker completed interactively. However, without automated e2e tests at different viewport sizes, responsive regressions won't be caught in CI. Consider adding Playwright viewport tests or responsive assertions to the existing e2e tests."
+    },
+    {
+      "observation": "The feature mentions 'Settings' as one of the navigation items visible on mobile, but the worker's interactive verification confirmed its presence. The existing test file only checks for Home, Meditation, History, and Profile. Settings was not asserted in any test.",
+      "description": "The Navigation.test.tsx tests assert presence of Home, Meditation, History, and Profile nav items but not Settings. This is consistent with pre-existing tests (not the worker's responsibility to change), but worth noting for completeness of the test suite."
+    }
+  ],
+  "summary": "The responsive design implementation is largely complete and well-structured across all three breakpoints (desktop 1200px+, tablet 768-1199px, mobile <768px). CSS is properly organized with clear comments, and the Navigation hideToggle prop works correctly. However, there is a blocking accessibility bug: aria-hidden={isMobile} on the Navigation component makes the mobile bottom nav completely invisible to screen readers, defeating the purpose of responsive accessibility compliance. Additionally, there are no tests for the Layout-level responsive hooks and prop-passing logic, and the `app-layout--mobile` class is dead code. The implementation meets the core requirements but the accessibility regression must be addressed."
+}

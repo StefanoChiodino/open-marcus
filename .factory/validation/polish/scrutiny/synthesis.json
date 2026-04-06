@@ -1,0 +1,155 @@
+{
+  "milestone": "polish",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "npm run test",
+      "exitCode": 0,
+      "observation": "246 tests passed across 25 test files. All unit tests for components, stores, validators, and pages pass. Some stderr warnings about React Router future flags and unwrapped act() in Settings tests, but all assertions pass."
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "observation": "TypeScript compilation clean with no errors."
+    },
+    "lint": {
+      "passed": true,
+      "command": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+      "exitCode": 0,
+      "observation": "ESLint clean with no warnings or errors."
+    }
+  },
+  "reviewsSummary": {
+    "total": 6,
+    "passed": 4,
+    "failed": 2,
+    "failedFeatures": ["polish-model-selection", "polish-responsive"]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "polish-model-selection",
+      "severity": "blocking",
+      "description": "CRITICAL BUG: Frontend-backend type mismatch causes silent runtime failure. Backend SettingsResponse returns `recommendedTierDescription` (backend/routes/settings.ts line ~146) but frontend settingsApi.ts declares `recommendedModelDescription` and Settings.tsx reads that field. The 'Recommended:' text in the Settings UI will display undefined instead of the model tier description. The backend also sends `recommendedModel` and `recommendedModelAlt` fields that the frontend interface doesn't reference (frontend has `recommendedModelSize` instead)."
+    },
+    {
+      "featureId": "polish-responsive",
+      "severity": "blocking",
+      "description": "Accessibility regression: Layout.tsx passes aria-hidden={isMobile} to the Navigation component (line ~82). This sets aria-hidden='true' on the <nav> element on mobile viewports, making the bottom navigation bar completely invisible to screen readers. The mobile bottom nav is the primary navigation method on small screens and must be accessible to assistive technology. This directly conflicts with the accessibility compliance established in polish-accessibility."
+    }
+  ],
+  "nonBlockingIssues": [
+    {
+      "featureId": "polish-model-selection",
+      "description": "No validation that selected model exists in installed Ollama models list. PUT /api/settings accepts any model string, which could cause silent failures if the model doesn't exist."
+    },
+    {
+      "featureId": "polish-model-selection",
+      "description": "Offline dropdown shows recommended model string (e.g., 'gemma4:26b-a4b (Ollama offline)') which may not match any installed model — potentially confusing UI."
+    },
+    {
+      "featureId": "polish-accessibility",
+      "description": "SkipLink.css uses :focus instead of :focus-visible for the skip link reveal, inconsistent with the project's :focus-visible pattern used throughout other components."
+    },
+    {
+      "featureId": "polish-accessibility",
+      "description": "useFocusManagement hook adds blur event listeners without useEffect cleanup, potential minor memory concern if component unmounts before blur fires."
+    },
+    {
+      "featureId": "polish-responsive",
+      "description": "Dead code: 'app-layout--mobile' class added in JSX but no CSS rules target it anywhere in the codebase."
+    },
+    {
+      "featureId": "polish-responsive",
+      "description": "Tablet breakpoint auto-collapses navigation for all tablet sizes (768-1199px), including 1024-1199px where the 200px sidebar could accommodate text labels."
+    },
+    {
+      "featureId": "polish-responsive",
+      "description": "Resize event handlers fire synchronously on every resize event with no throttling or debouncing, could cause excessive re-renders during window drag-resizing."
+    },
+    {
+      "featureId": "polish-encryption-verification",
+      "description": "getRawProfileData() uses row?.encrypted_data || null which returns null for both missing row and empty string — slightly ambiguous behavior."
+    },
+    {
+      "featureId": "polish-encryption-verification",
+      "description": "Test isolation in 'wrong encryption key' test creates a second DatabaseService on the same file path, deviates from one-DB-per-test pattern."
+    },
+    {
+      "featureId": "polish-cross-flow-complete",
+      "description": "Inconsistent clearAllData helper error handling: full-journey.spec.ts throws on fetch failure, but voice-session.spec.ts and offline-mode.spec.ts silently ignore errors."
+    },
+    {
+      "featureId": "polish-cross-flow-complete",
+      "description": "Hardcoded waitForTimeout sleeps (8000ms, 1000ms) are brittle; prefer waitFor assertions on specific UI states."
+    },
+    {
+      "featureId": "polish-cross-flow-complete",
+      "description": "Playwright config lacks webServer configuration — services must be started manually before running e2e tests."
+    },
+    {
+      "featureId": "polish-cross-flow-complete",
+      "description": "Repetitive profile creation boilerplate (~10 lines) copy-pasted in every test file."
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Document that shared TypeScript types (e.g., SettingsResponse) between frontend and backend must be kept in sync. Either use a shared types file or establish a convention for API contract validation. The polish-model-selection review found a blocking bug caused by frontend/backend type mismatch.",
+      "evidence": "polish-model-selection review found frontend SettingsResponse interface in settingsApi.ts doesn't match backend's anonymous SettingsResponse in settings.ts, causing 'undefined' to display in UI.",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Add convention: use :focus-visible (not :focus) for all visible focus states. The polish-accessibility review found SkipLink uses :focus instead of :focus-visible, which is inconsistent with the project's established pattern in buttons, nav links, and toggles.",
+      "evidence": "polish-accessibility review flagged SkipLink.css using :focus instead of :focus-visible. All other focus states in the project use :focus-visible.",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Never add aria-hidden to primary navigation elements responsive breakpoints. When implementing responsive layouts, navigation must remain accessible to screen readers at all viewport sizes.",
+      "evidence": "polish-responsive added aria-hidden={isMobile} to Navigation component, making mobile bottom nav invisible to screen readers — directly conflicting with polish-accessibility's ARIA compliance work.",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Document the project's responsive design pattern: breakpoint logic should live in Layout.tsx and be passed down as props. Breakpoint values (768, 1199) should be centralized and not duplicated as magic numbers across CSS and JS.",
+      "evidence": "polish-responsive review found breakpoint constants hardcoded in both Layout.tsx JS (TABLET_MIN = 768) and CSS (@media queries) separately. No shared constants file exists.",
+      "isSystemic": false
+    },
+    {
+      "target": "skills/frontend-worker",
+      "suggestion": "Update skill to include 'Common Selectors' documentation: key ARIA labels, button text, and input labels used across the app. Examples: 'Begin Journey' button, 'Begin Meditation' button, textbox label 'Type your message to Marcus', nav link labels 'Meditation', 'History', 'Profile', 'Settings', 'Home'.",
+      "evidence": "polish-cross-flow-complete review found workers spending time figuring out selector names. Settings 'Clear All Data' button lacks aria-label, causing test selector workarounds.",
+      "isSystemic": true
+    },
+    {
+      "target": "services.yaml",
+      "suggestion": "Consider adding Playwright webServer configuration or documenting manual service startup requirement clearly. The e2e tests currently require the backend (:3100) and frontend (:3101) to be started manually before running.",
+      "evidence": "polish-cross-flow-complete review noted playwright.config.ts lacks webServer block despite worker attempting to add one. services.yaml fully documents both services but tests don't leverage them.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "Backend-worker skill file not found at expected path",
+      "reason": "The skill is documented in AGENTS.md and backend-worker features have been successfully completed. This is an artifact issue, not a guidance gap."
+    },
+    {
+      "observation": "init.sh script undocumented",
+      "reason": "init.sh is a simple environment setup script; documenting it in AGENTS.md would be low-value given it's a standard npm install + database init pattern."
+    },
+    {
+      "observation": "Layout CSS rules in LegalDisclaimer.css (minor scope concern)",
+      "reason": "The CSS rules are component-specific layout adjustments for the footer placement. Moving them to Layout.css would create coupling in the other direction. The current approach is self-contained."
+    },
+    {
+      "observation": "Frontend Settings.tsx has no component unit tests",
+      "reason": "The feature added comprehensive backend tests. Frontend page component testing is outside the scope of a backend-focused worker. This would be a good enhancement but is not a convention gap."
+    }
+  ],
+  "previousRound": null
+}

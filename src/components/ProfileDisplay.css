@@ -29,3 +29,20 @@
 .btn-edit-profile {
   align-self: flex-start;
 }
+
+/* Mobile responsive */
+@media (max-width: 767px) {
+  .profile-display {
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+
+  .profile-header {
+    margin-bottom: var(--space-2);
+  }
+
+  .profile-bio {
+    margin-bottom: var(--space-3);
+    font-size: var(--text-sm);
+  }
+}

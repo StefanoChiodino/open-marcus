@@ -11,6 +11,7 @@
   display: flex;
   flex-direction: column;
   padding: var(--space-8) var(--space-6);
+  min-height: 0;
 }
 
 .home-header {
@@ -31,6 +32,8 @@
 }
 
 .welcome-card {
+  flex: none;
+  align-self: center;
   background: var(--color-surface-elevated);
   border-radius: var(--radius-xl);
   padding: var(--space-8);
@@ -69,10 +72,31 @@
 
 @media (max-width: 767px) {
   .home-page {
-    padding: var(--space-6) var(--space-4);
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .home-main {
+    justify-content: flex-start;
   }
 
   .welcome-card {
-    padding: var(--space-6) var(--space-4);
+    padding: var(--space-4);
+  }
+
+  .welcome-card h2 {
+    margin: var(--space-3) 0 var(--space-2);
+  }
+
+  .welcome-card p {
+    margin-bottom: var(--space-3);
+  }
+
+  .home-page__begin-btn {
+    margin-bottom: var(--space-3);
+  }
+
+  /* Hide disclaimer on mobile - footer disclaimer is sufficient per VAL-HOME-003 */
+  .welcome-card .disclaimer {
+    display: none;
   }
 }

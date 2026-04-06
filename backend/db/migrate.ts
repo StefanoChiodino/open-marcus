@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { CREATE_TABLES_SQL, DROP_TABLES_SQL, CREATE_STOIC_CONTENT_SQL, CREATE_SETTINGS_TABLE_SQL } from './schema.js';
+import { CREATE_TABLES_SQL, DROP_TABLES_SQL, CREATE_STOIC_CONTENT_SQL, CREATE_SETTINGS_TABLE_SQL, CREATE_USERS_TABLE_SQL, ADD_USER_ID_COLUMNS_SQL } from './schema.js';
 
 export interface MigrationRecord {
   id: number;
@@ -25,6 +25,10 @@ export class MigrationRunner {
       {
         name: '003_settings_table',
         sql: CREATE_SETTINGS_TABLE_SQL,
+      },
+      {
+        name: '004_users_and_user_id',
+        sql: CREATE_USERS_TABLE_SQL + ADD_USER_ID_COLUMNS_SQL,
       },
     ];
   }

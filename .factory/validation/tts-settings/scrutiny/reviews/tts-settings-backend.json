@@ -1,0 +1,15 @@
+{
+  "featureId": "tts-settings-backend",
+  "reviewedAt": "2026-04-07T00:40:00.000Z",
+  "commitId": "25364c67e71c4bff129ea11c7762c5f65c1e6ad0",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "TTS settings backend implementation is complete and correct. AppSettings interface includes ttsVoice, ttsRate, ttsPitch. GET /api/settings returns TTS settings with defaults. PUT /api/settings validates TTS settings properly. All validation ranges match requirements.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Backend TTS settings implementation verified: 6 curated voices defined, rate range -50% to +100%, pitch range -50Hz to +50Hz. API validation returns 400 for invalid inputs. Tests added for all TTS settings functionality."
+}

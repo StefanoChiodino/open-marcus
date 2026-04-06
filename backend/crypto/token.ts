@@ -1,0 +1,107 @@
+/**
+ * Token generation and verification using HMAC-SHA256
+ * 
+ * This module provides secure session token generation for authentication.
+ * Tokens are signed with a secret key and include a timestamp for expiration.
+ * 
+ * Token format: base64(payload).base64(signature)
+ * Where payload = { userId, username, issuedAt, expiresAt }
+ */
+
+import { createHmac } from 'crypto';
+
+const TOKEN_SECRET = process.env.TOKEN_SECRET || 'development-token-secret-change-in-production';
+const TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+export interface TokenPayload {
+  userId: string;
+  username: string;
+  issuedAt: number;
+  expiresAt: number;
+}
+
+/**
+ * Generate a signed session token for a user
+ * 
+ * @param userId - The user's ID
+ * @param username - The user's username
+ * @returns A signed token string
+ */
+export function generateToken(userId: string, username: string): string {
+  const issuedAt = Date.now();
+  const expiresAt = issuedAt + TOKEN_EXPIRY_MS;
+  
+  const payload: TokenPayload = {
+    userId,
+    username,
+    issuedAt,
+    expiresAt,
+  };
+  
+  const payloadJson = JSON.stringify(payload);
+  const payloadBase64 = Buffer.from(payloadJson).toString('base64');
+  
+  const signature = createHmac('sha256', TOKEN_SECRET)
+    .update(payloadBase64)
+    .digest('base64');
+  
+  return `${payloadBase64}.${signature}`;
+}
+
+/**
+ * Verify and decode a session token
+ * 
+ * @param token - The token string to verify
+ * @returns The decoded payload if valid, null if invalid or expired
+ */
+export function verifyToken(token: string): TokenPayload | null {
+  try {
+    const [payloadBase64, signature] = token.split('.');
+    
+    if (!payloadBase64 || !signature) {
+      return null;
+    }
+    
+    // Verify signature
+    const expectedSignature = createHmac('sha256', TOKEN_SECRET)
+      .update(payloadBase64)
+      .digest('base64');
+    
+    // Timing-safe comparison
+  if (!timingSafeEqual(signature, expectedSignature)) {
+      return null;
+    }
+    
+    // Decode payload
+    const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf8');
+    const payload: TokenPayload = JSON.parse(payloadJson);
+    
+    // Check expiration
+    if (Date.now() > payload.expiresAt) {
+      return null;
+    }
+    
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Timing-safe string comparison to prevent timing attacks
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  
+  const aBytes = Buffer.from(a);
+  const bBytes = Buffer.from(b);
+  
+  let result = 0;
+  for (let i = 0; i < aBytes.length; i++) {
+    result |= aBytes[i] ^ bBytes[i];
+  }
+  
+  return result === 0;
+}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Navigation from './Navigation';
 import { ToastContainer } from './Toast';
+import LegalDisclaimer from './LegalDisclaimer';
 import './Layout.css';
 
 interface LayoutProps {
@@ -22,6 +23,7 @@ function AppLayout({ children }: LayoutProps) {
         {children || <Outlet />}
         <ToastContainer />
       </main>
+      <LegalDisclaimer />
     </div>
   );
 }

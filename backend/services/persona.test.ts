@@ -161,4 +161,29 @@ describe('Marcus Persona Service', () => {
       expect(messages[3].content).toBe('Hello');
     });
   });
+
+  describe('medical safety guidelines', () => {
+    it('instructs AI to never diagnose', () => {
+      expect(CONVERSATION_GUIDELINES).toContain('diagnose');
+      expect(CONVERSATION_GUIDELINES).toContain('NEVER');
+    });
+
+    it('instructs AI to never prescribe treatments', () => {
+      expect(CONVERSATION_GUIDELINES).toContain('prescribe');
+    });
+
+    it('instructs AI to never claim to replace professional care', () => {
+      expect(CONVERSATION_GUIDELINES).toContain('replace professional');
+    });
+
+    it('includes crisis guidance', () => {
+      expect(CONVERSATION_GUIDELINES).toMatch(/suicidal|self.harm|crisis/i);
+    });
+
+    it('medical safety is in the built system prompt', () => {
+      const prompt = buildSystemPrompt();
+      expect(prompt).toContain('diagnose');
+      expect(prompt).toContain('replace professional');
+    });
+  });
 });

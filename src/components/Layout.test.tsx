@@ -72,4 +72,16 @@ describe('AppLayout', () => {
     expect(layout).toBeInTheDocument();
     expect(layout).toHaveClass('app-layout');
   });
+
+  it('renders legal disclaimer', () => {
+    renderWithRouter(<AppLayout />);
+
+    expect(screen.getByText(/OpenMarcus is not therapy or medical advice/)).toBeInTheDocument();
+  });
+
+  it('includes crisis resources in disclaimer', () => {
+    renderWithRouter(<AppLayout />);
+
+    expect(screen.getByText(/crisis/)).toBeInTheDocument();
+  });
 });

@@ -1,0 +1,53 @@
+{
+  "milestone": "voice",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 6,
+    "passed": 4,
+    "failed": 0,
+    "blocked": 2
+  },
+  "passedAssertions": ["VAL-VOICE-001", "VAL-VOICE-002", "VAL-VOICE-005", "VAL-VOICE-006"],
+  "failedAssertions": [],
+  "blockedAssertions": [
+    {
+      "id": "VAL-VOICE-003",
+      "blockedBy": "Requires manual audio verification - cannot automate real microphone recording and transcription quality assessment in headless browser testing"
+    },
+    {
+      "id": "VAL-VOICE-004",
+      "blockedBy": "Requires manual audio verification - cannot automate TTS audio playback quality assessment in headless browser testing"
+    }
+  ],
+  "flowReports": [
+    "voice-permissions.json",
+    "voice-recording.json"
+  ],
+  "evidenceFiles": {
+    "voice-permissions": [
+      "voice/voice-permissions/VAL-VOICE-001-mic-permission-granted.png",
+      "voice/voice-permissions/VAL-VOICE-002-mic-denied-error.png",
+      "voice/voice-permissions/VAL-VOICE-006-a-input-only.png",
+      "voice/voice-permissions/VAL-VOICE-006-b-output-only.png",
+      "voice/voice-permissions/VAL-VOICE-006-c-both-enabled-final.png",
+      "voice/voice-permissions/VAL-VOICE-006-d-neither-disabled.png"
+    ],
+    "voice-recording": [
+      "voice/voice-recording/VAL-VOICE-005-recording-indicator.png"
+    ]
+  },
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Documented Playwright microphone permission denial is irreversible in browser context. Testing VAL-VOICE-006 via localStorage state manipulation works as alternative. VAL-VOICE-003 and VAL-VOICE-004 require manual audio testing.",
+      "source": "flow-report"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "Documented STT server model loads lazily on first request, TTS server runs as system service. All voice services now confirmed operational via health checks.",
+      "source": "setup"
+    }
+  ],
+  "previousRound": null
+}

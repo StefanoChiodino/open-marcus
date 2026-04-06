@@ -1,0 +1,18 @@
+{
+  "featureId": "fix-voice-controls-cleanup",
+  "originalFeatureId": "voice-ui-controls",
+  "milestone": "voice",
+  "status": "pass",
+  "summary": "The fix adequately addresses all three blocking issues identified in the original voice-ui-controls review. (1) Both useState-based cleanup patterns in VoiceControls.tsx (lines ~212 and ~383) were correctly replaced with useEffect, ensuring cleanup functions (manager cleanup, event listener removal) execute on component unmount. (2) voiceStore.ts setError was fixed to preserve 'permission-denied' status instead of unconditionally overwriting it with 'error', making the permission-denied UI reachable. A new test verifies this behavior. The diff is focused and minimal (+23/-6 across 3 files). All 41 voice tests pass, typecheck and lint are clean. The non-blocking issues from the original review (ScriptProcessorNode audio feedback, object URL leak in catch, dispatchSpeak using document.querySelector, eslint-disable) were intentionally left untouched as they fall outside the fix scope.",
+  "issues": [],
+  "fixAdequacy": {
+    "addressesOriginalFailures": true,
+    "details": "The fix addresses all three blocking issues from the original voice-ui-controls review: (1) VoiceControls.tsx line ~212: useState → useEffect for the main voice controls cleanup function — microphone cleanup and stopSpeaking now properly execute on unmount, fixing the active microphone and resource leak. (2) VoiceControls.tsx line ~383 (VoiceOutputBridge): useState → useEffect for the event listener registration — addEventListener/removesEventListener pair now correctly manages the 'marcus-speak' event listener lifecycle, preventing memory leaks and stale closures. (3) voiceStore.ts setError: changed from unconditional status overwrite to functional update that preserves 'permission-denied' status when an error is set, enabling the permission-denied UI branch in VoiceControls.tsx to render. A test case was added: 'preserves permission-denied status when setting an error' which verifies the fix."
+  },
+  "sharedStateObservations": [
+    {
+      "observation": "The original review's knowledge gap about useState vs useEffect cleanup was addressed implicitly by the fix, but this gotcha should be documented in AGENTS.md under Coding Conventions to prevent future workers from making the same mistake. The pattern 'useState initializer returning a cleanup function' does not work — the returned function becomes the state value, not a cleanup handler.",
+      "suggestedLocation": "AGENTS.md"
+    }
+  ]
+}

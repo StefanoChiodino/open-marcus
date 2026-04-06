@@ -1,13 +1,13 @@
 {
   "milestone": "voice",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
       "command": "npm run test",
       "exitCode": 0,
-      "output": "206 tests passed across 22 test files"
+      "output": "207 tests passed across 22 test files"
     },
     "typecheck": {
       "passed": true,
@@ -21,78 +21,53 @@
     }
   },
   "reviewsSummary": {
-    "total": 3,
-    "passed": 1,
-    "failed": 2,
-    "failedFeatures": ["voice-stt-server", "voice-ui-controls"],
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "failedFeatures": [],
     "details": [
       {
         "featureId": "voice-stt-server",
-        "status": "fail",
-        "summary": "STT server and backend proxy implemented correctly, but route tests duplicate logic inline instead of testing actual stt.ts module, and server.ts lacks express.raw() middleware for audio content types."
+        "status": "fix-passed",
+        "fixedIn": "fix-voice-stt-route",
+        "summary": "Original had blocking issues (inline route tests, missing express.raw()). Both fixed in fix-voice-stt-route: tests now import actual sttRoutes module, server.ts has express.raw() middleware scoped to /api/stt."
       },
       {
         "featureId": "voice-tts-server",
         "status": "pass",
-        "summary": "TTS server meets all expected behaviors: runs on port 8766, synthesize returns MP3, backend proxy works. Three non-blocking issues noted (request size limit, retry logic, input validation)."
+        "summary": "TTS server meets all expected behaviors. Three non-blocking issues noted (request size limit, retry logic, input validation)."
       },
       {
         "featureId": "voice-ui-controls",
-        "status": "fail",
-        "summary": "Blocking: useState used for cleanup instead of useEffect (mic stays active, event listeners leak). setStatus('permission-denied') overwritten to 'error' by setError, preventing permission-denied UI from rendering."
+        "status": "fix-passed",
+        "fixedIn": "fix-voice-controls-cleanup",
+        "summary": "Original had 3 blocking issues (useState-as-cleanup at lines 197 and 379, permission-denied status overwritten by setError). All fixed: both replaced with useEffect, setError preserves permission-denied status."
+      },
+      {
+        "featureId": "fix-voice-stt-route",
+        "status": "pass",
+        "summary": "Fix adequately addresses both original blocking issues. STT route tests use real route module, express.raw() middleware added. One non-blocking issue: test setup doesn't include express.json() (harmless for audio content types)."
+      },
+      {
+        "featureId": "fix-voice-controls-cleanup",
+        "status": "pass",
+        "summary": "Fix adequately addresses all three original blocking issues. useState → useEffect for cleanup, setError preserves permission-denied status with new test. Minimal diff (+23/-6 across 3 files)."
       }
     ]
   },
-  "blockingIssues": [
-    {
-      "featureId": "voice-stt-server",
-      "severity": "blocking",
-      "description": "Route tests (backend/routes/stt.test.ts) define inline route handlers that duplicate the routing logic instead of importing and testing the actual stt.ts module. Real route code changes are unvalidated.",
-      "suggestedFix": "Import sttRoutes from stt.ts and mount with app.use('/api/stt', sttRoutes) with appropriate middleware (express.raw({ type: 'audio/*' })) configured."
-    },
-    {
-      "featureId": "voice-stt-server",
-      "severity": "blocking",
-      "description": "server.ts does not configure express.raw() middleware for STT routes. The STT route falls back to manually reading the request stream which is fragile and not robust.",
-      "suggestedFix": "Add express.raw({ type: 'audio/*', limit: '50mb' }) middleware configured for the /api/stt route path."
-    },
-    {
-      "featureId": "voice-ui-controls",
-      "severity": "blocking",
-      "description": "VoiceControls.tsx:197 uses useState(() => { ... return () => cleanup }) to register cleanup on unmount. useState never calls the returned function as cleanup — the cleanup value is stored as state instead. Microphone stays active and audio resources leak on unmount.",
-      "suggestedFix": "Replace useState with useEffect that returns the cleanup function."
-    },
-    {
-      "featureId": "voice-ui-controls",
-      "severity": "blocking",
-      "description": "VoiceOutputBridge (VoiceControls.tsx:379) uses useState to register an event listener with cleanup. The removeEventListener is never called on unmount, causing memory leak and stale closures.",
-      "suggestedFix": "Replace useState with useEffect for the event listener registration and cleanup."
-    },
-    {
-      "featureId": "voice-ui-controls",
-      "severity": "blocking",
-      "description": "voiceStore.ts:95: setError unconditionally sets status to 'error' when error is truthy. When VoiceInputManager calls setStatus('permission-denied') then setError(), the status is overwritten to 'error', making permission-denied UI unreachable.",
-      "suggestedFix": "Either preserve 'permission-denied' status in setError, or prevent setError from being called after permission-denied status is set, or use a separate mechanism for permission-denied handling."
-    }
-  ],
+  "blockingIssues": [],
   "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "AGENTS.md",
       "suggestion": "Add coding convention: 'Always use useEffect for cleanup functions on unmount, never useState. useState only stores return values as state, it does not call the returned function as cleanup.'",
-      "evidence": "voice-ui-controls: VoiceControls.tsx uses useState(() => { return () => cleanup }) at lines 197 and 379 — cleanup never executes.",
+      "evidence": "voice-ui-controls: VoiceControls.tsx uses useState(() => { return () => cleanup }) at lines 197 and 379 — cleanup never executes. Fixed in fix-voice-controls-cleanup.",
       "isSystemic": true
     },
     {
       "target": "AGENTS.md",
       "suggestion": "Add pitfall documentation: 'When using setError in a store that also manages status, be aware that setStatus transitions may be overwritten. For specific status values like permission-denied, either use setStatus without setError, or modify setError to preserve specific status values.'",
-      "evidence": "voice-ui-controls: voiceStore.ts setError overwrites 'permission-denied' to 'error', preventing dedicated UI.",
-      "isSystemic": true
-    },
-    {
-      "target": "AGENTS.md",
-      "suggestion": "Update port range guidance to clarify that STT (8765) and TTS (8766) servers are approved exceptions to the 3100-3199 range, or expand the allowed range to include these ports.",
-      "evidence": "AGENTS.md states 3100-3199 but voice milestone uses 8765/8766. Contradiction may confuse future workers.",
+      "evidence": "voice-ui-controls: voiceStore.ts setError overwrites 'permission-denied' to 'error', preventing dedicated UI. Fixed in fix-voice-controls-cleanup with functional state update.",
       "isSystemic": true
     },
     {
@@ -102,35 +77,21 @@
       "isSystemic": true
     },
     {
-      "target": "AGENTS.md",
-      "suggestion": "Add setup documentation: 'Servers in subdirectories (e.g., servers/stt/, servers/tts/) require their own npm install / pip install steps. Add these to services.yaml or as project scripts so they run automatically.'",
-      "evidence": "servers/stt/package.json requires sherpa-onnx-node, but no npm install step exists for this subdirectory. STT server also references a download-model.sh script that doesn't exist.",
-      "isSystemic": true
-    },
-    {
-      "target": "AGENTS.md",
-      "suggestion": "Add coding rule: 'Every component that creates resources on mount (event listeners, media streams, intervals, subscriptions) must clean them up in a useEffect return function. This includes Web Audio API contexts, MediaRecorder, Audio elements, and WebSocket connections.'",
-      "evidence": "voice-ui-controls: VoiceInputManager creates MediaRecorder and Web Audio API connections but cleanup never runs.",
-      "isSystemic": false
-    },
-    {
       "target": "skills",
       "suggestion": "Add guidance to backend-worker skill for handling TDD with separate-process integrations (e.g., external servers that cannot be unit-tested with Vitest mocking). Clarify when manual testing vs automated testing is acceptable.",
-      "evidence": "STT worker deviated from TDD — implemented server.mjs and curl-tested manually before writing TypeScript tests, justified because standalone server cannot be tested with Vitest.",
+      "evidence": "The fix worker (fix-voice-stt-route) followed TDD correctly with proper test setup, unlike the original voice-stt-server worker.",
       "isSystemic": true
-    },
-    {
-      "target": "skills",
-      "suggestion": "Add guidance to frontend-worker skill about handling react-refresh/only-export-components ESLint rule when files need to export both React components and utility functions. Consider recommending extracting utilities to a separate module.",
-      "evidence": "voice-ui-controls: VoiceControls.tsx uses eslint-disable to bypass the rule for dispatchSpeak utility export.",
-      "isSystemic": false
     }
   ],
   "rejectedObservations": [
     {
       "observation": "RecordingIndicator component is dead code (never imported)",
       "reason": "already-documented"
+    },
+    {
+      "observation": "Test suite missing express.json() middleware (harmless for audio content types)",
+      "reason": "too-trivial"
     }
   ],
-  "previousRound": null
+  "previousRound": ".factory/validation/voice/scrutiny/synthesis.json"
 }

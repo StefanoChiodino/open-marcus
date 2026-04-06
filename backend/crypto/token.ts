@@ -10,8 +10,20 @@
 
 import { createHmac } from 'crypto';
 
-const TOKEN_SECRET = process.env.TOKEN_SECRET || 'development-token-secret-change-in-production';
-const TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+/**
+ * Token signing secret
+ * Supports both SERVER_SECRET and TOKEN_SECRET environment variables.
+ * SERVER_SECRET takes precedence if both are set.
+ */
+const TOKEN_SECRET = process.env.SERVER_SECRET || process.env.TOKEN_SECRET || 'development-token-secret-change-in-production';
+
+/**
+ * Token expiry duration in milliseconds.
+ * Configurable via TOKEN_EXPIRY_HOURS environment variable (default: 24 hours).
+ * Example: TOKEN_EXPIRY_HOURS=24 means tokens expire after 24 hours.
+ */
+const TOKEN_EXPIRY_HOURS = parseInt(process.env.TOKEN_EXPIRY_HOURS || '24', 10);
+const TOKEN_EXPIRY_MS = TOKEN_EXPIRY_HOURS * 60 * 60 * 1000;
 
 // In-memory token blacklist for invalidated tokens
 const tokenBlacklist = new Set<string>();
@@ -129,4 +141,12 @@ export function blacklistToken(token: string): void {
  */
 export function isTokenBlacklisted(token: string): boolean {
   return tokenBlacklist.has(token);
+}
+
+/**
+ * Clear the token blacklist (for testing purposes)
+ * WARNING: This should only be used in tests, never in production
+ */
+export function clearBlacklist(): void {
+  tokenBlacklist.clear();
 }

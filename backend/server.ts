@@ -9,12 +9,16 @@ import sttRoutes from './routes/stt.js';
 import ttsRoutes from './routes/tts.js';
 import settingsRoutes from './routes/settings.js';
 import authRoutes from './routes/auth.js';
+import { apiLogMiddleware } from './lib/apiLogMiddleware.js';
 
 const app = express();
 const PORT = process.env.PORT || 3100;
 
 // Middleware
 app.use(express.json());
+
+// API request logging middleware (development only)
+app.use(apiLogMiddleware);
 
 // Raw body middleware for STT routes (audio content types)
 app.use('/api/stt', express.raw({ type: 'audio/*', limit: '50mb' }));

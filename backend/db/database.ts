@@ -580,6 +580,9 @@ export class DatabaseService {
    * Seed stoic content items into the database
    */
   seedContent(items: ContentItem[]): number {
+    logTransaction({ action: 'begin' });
+    const getDuration = startQueryTimer();
+    
     const insertMany = this.db.transaction((contentItems: ContentItem[]) => {
       let inserted = 0;
       const insertStmt = this.db.prepare(`
@@ -607,20 +610,35 @@ export class DatabaseService {
       return inserted;
     });
     
-    return insertMany(items);
+    const result = insertMany(items);
+    
+    logTransaction({ action: 'commit', durationMs: getDuration() });
+    
+    return result;
   }
 
   /**
    * Get random stoic quotes
    */
   getRandomQuotes(count: number = 3): ContentItem[] {
-    const stmt = this.db.prepare(`
+    const sql = `
       SELECT * FROM stoic_content
       ORDER BY RANDOM()
       LIMIT ?
-    `);
+    `;
+    const getDuration = startQueryTimer();
     
+    const stmt = this.db.prepare(sql);
     const rows = stmt.all(count) as Array<Record<string, unknown>>;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: rows.length,
+    });
+    
     return rows.map(row => this.rowToContentItem(row));
   }
 
@@ -650,8 +668,19 @@ export class DatabaseService {
     sql += ' LIMIT ?';
     params.push(limit);
 
+    const getDuration = startQueryTimer();
+    
     const stmt = this.db.prepare(sql);
     const rows = stmt.all(...params) as Array<Record<string, unknown>>;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: rows.length,
+    });
+    
     return rows.map(row => this.rowToContentItem(row));
   }
 
@@ -671,9 +700,19 @@ export class DatabaseService {
       ORDER BY RANDOM()
       LIMIT ?
     `;
+    const getDuration = startQueryTimer();
 
     const stmt = this.db.prepare(sql);
     const rows = stmt.all(...tagPatterns, limit) as Array<Record<string, unknown>>;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: rows.length,
+    });
+    
     return rows.map(row => this.rowToContentItem(row));
   }
 
@@ -701,17 +740,41 @@ export class DatabaseService {
    * Get content count
    */
   getContentCount(): number {
-    const stmt = this.db.prepare('SELECT COUNT(*) as count FROM stoic_content');
-    return (stmt.get() as { count: number }).count;
+    const sql = 'SELECT COUNT(*) as count FROM stoic_content';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const result = stmt.get() as { count: number };
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: 1,
+    });
+    
+    return result.count;
   }
 
   /**
    * Get all unique tags
    */
   getAllTags(): string[] {
-    const stmt = this.db.prepare('SELECT DISTINCT tags FROM stoic_content');
+    const sql = 'SELECT DISTINCT tags FROM stoic_content';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
     const rows = stmt.all() as Array<{ tags: string }>;
     const tagSet = new Set<string>();
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: rows.length,
+    });
     
     for (const row of rows) {
       const tags = JSON.parse(row.tags) as string[];
@@ -914,8 +977,20 @@ export class DatabaseService {
    * Get a setting value by key
    */
   getSetting(key: string): string | null {
-    const stmt = this.db.prepare('SELECT value FROM settings WHERE key = ?');
+    const sql = 'SELECT value FROM settings WHERE key = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
     const row = stmt.get(key) as { value: string } | undefined;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: row ? 1 : 0,
+    });
+    
     return row?.value || null;
   }
 
@@ -923,16 +998,37 @@ export class DatabaseService {
    * Set or update a setting value
    */
   setSetting(key: string, value: string): void {
-    this.db.prepare(
-      'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?',
-    ).run(key, value, value);
+    const sql = 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    stmt.run(key, value, value);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+    });
   }
 
   /**
    * Delete a setting by key
    */
   deleteSetting(key: string): void {
-    this.db.prepare('DELETE FROM settings WHERE key = ?').run(key);
+    const sql = 'DELETE FROM settings WHERE key = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const result = stmt.run(key);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result.changes,
+    });
   }
 
   // ==================== User Operations ====================
@@ -943,12 +1039,21 @@ export class DatabaseService {
   createUser(username: string, passwordHash: string): User {
     const id = randomUUID();
     
-    const stmt = this.db.prepare(`
+    const sql = `
       INSERT INTO users (id, username, password_hash)
       VALUES (?, ?, ?)
-    `);
+    `;
+    const getDuration = startQueryTimer();
     
+    const stmt = this.db.prepare(sql);
     stmt.run(id, username, passwordHash);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+    });
     
     return this.getUserById(id)!;
   }
@@ -977,31 +1082,82 @@ export class DatabaseService {
    * Get a user by ID
    */
   getUserById(id: string): User | null {
-    const stmt = this.db.prepare('SELECT * FROM users WHERE id = ?');
-    return stmt.get(id) as User | null;
+    const sql = 'SELECT * FROM users WHERE id = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const result = stmt.get(id) as User | null;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result ? 1 : 0,
+    });
+    
+    return result;
   }
 
   /**
    * Get a user by username
    */
   getUserByUsername(username: string): User | null {
-    const stmt = this.db.prepare('SELECT * FROM users WHERE username = ?');
-    return stmt.get(username) as User | null;
+    const sql = 'SELECT * FROM users WHERE username = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const result = stmt.get(username) as User | null;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result ? 1 : 0,
+    });
+    
+    return result;
   }
 
   /**
    * Check if a username exists
    */
   usernameExists(username: string): boolean {
-    const stmt = this.db.prepare('SELECT 1 FROM users WHERE username = ?');
-    return stmt.get(username) !== undefined;
+    const sql = 'SELECT 1 FROM users WHERE username = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const result = stmt.get(username) !== undefined;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result ? 1 : 0,
+    });
+    
+    return result;
   }
 
   /**
    * Delete all users (for testing purposes)
    */
   deleteAllUsers(): void {
-    this.db.prepare('DELETE FROM users').run();
+    const sql = 'DELETE FROM users';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const result = stmt.run();
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result.changes,
+    });
   }
 
   // ==================== Database Info ====================
@@ -1010,10 +1166,20 @@ export class DatabaseService {
    * Get database statistics
    */
   getStats(): { profiles: number; sessions: number; messages: number; actionItems: number } {
+    const getDuration = startQueryTimer();
+    
     const profiles = (this.db.prepare('SELECT COUNT(*) as count FROM profiles').get() as { count: number }).count;
     const sessions = (this.db.prepare('SELECT COUNT(*) as count FROM sessions').get() as { count: number }).count;
     const messages = (this.db.prepare('SELECT COUNT(*) as count FROM messages').get() as { count: number }).count;
     const actionItems = (this.db.prepare('SELECT COUNT(*) as count FROM action_items').get() as { count: number }).count;
+    
+    logQuery({
+      sql: 'SELECT COUNT(*) FROM ... (batch stats query)',
+      queryType: 'SELECT',
+      table: 'multiple',
+      durationMs: getDuration(),
+      rowsReturned: 4,
+    });
     
     return { profiles, sessions, messages, actionItems };
   }

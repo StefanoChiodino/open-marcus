@@ -10,6 +10,7 @@ import ttsRoutes from './routes/tts.js';
 import settingsRoutes from './routes/settings.js';
 import authRoutes from './routes/auth.js';
 import { apiLogMiddleware } from './lib/apiLogMiddleware.js';
+import { authMiddleware } from './middleware/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 3100;
@@ -29,6 +30,9 @@ app.get('/health', (_req, res) => {
 });
 
 // API Routes
+// Apply auth middleware to all /api/* routes (public paths like /api/auth/* are skipped by the middleware)
+app.use('/api', authMiddleware);
+
 app.use('/api/profile', profileRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/content', contentRoutes);

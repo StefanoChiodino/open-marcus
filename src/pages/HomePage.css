@@ -1,9 +1,16 @@
-/* HomePage Styles */
+/* Main content wrapper */
+.home-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 
 .home-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: var(--space-8) var(--space-6);
-  max-width: 800px;
-  margin: 0 auto;
 }
 
 .home-header {
@@ -30,6 +37,9 @@
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--color-bg-tertiary);
   text-align: center;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 .welcome-card h2 {

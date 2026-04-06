@@ -1,6 +1,6 @@
 {
   "milestone": "tts-settings",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "assertionsSummary": {
     "total": 7,
@@ -11,12 +11,10 @@
   "passedAssertions": ["VAL-TTS-001", "VAL-TTS-002", "VAL-TTS-003", "VAL-TTS-004", "VAL-TTS-005"],
   "failedAssertions": [],
   "blockedAssertions": [
-    { "id": "VAL-TTS-006", "blockedBy": "Cannot access meditation session - onboarding form persists on home page even though profile exists" },
-    { "id": "VAL-CROSS-001", "blockedBy": "Cannot access meditation session - same onboarding flow issue" }
+    { "id": "VAL-TTS-006", "blockedBy": "Auth middleware (eb9dfb0) broke profile creation - POST /api/profile returns 401 Unauthorized because /api/profile is not a public path. Onboarding cannot complete." },
+    { "id": "VAL-CROSS-001", "blockedBy": "Same auth middleware issue - cannot access meditation session because onboarding flow is broken" }
   ],
-  "appliedUpdates": [
-    { "target": "user-testing.md", "description": "Added note about TTS sliders requiring scrolling to see below the fold in default viewport", "source": "flow-report" }
-  ],
-  "previousRound": null,
-  "notes": "5 of 7 TTS assertions passed. VAL-TTS-006 and VAL-CROSS-001 blocked due to inability to access meditation session. The home page shows onboarding form even after profile creation - this appears to be a pre-existing issue unrelated to TTS settings implementation."
+  "appliedUpdates": [],
+  "previousRound": ".factory/validation/tts-settings/user-testing/synthesis.json",
+  "notes": "Auth middleware was added after the prior validation run (eb9dfb0 after c3f0a04). The middleware protects all /api/* routes but did not add POST /api/profile to public paths. This broke the frontend's ability to create profiles during onboarding. The frontend calls POST /api/profile directly without auth tokens, but the auth middleware now blocks this request. Profile creation via curl with auth token works (verified manually). STT assertions (VAL-STT-001 to VAL-STT-008, VAL-CROSS-002, VAL-CROSS-003) remain untested because STT features are still pending implementation."
 }

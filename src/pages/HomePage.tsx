@@ -9,7 +9,7 @@ function HomePage() {
   const navigate = useNavigate();
 
   const handleEdit = () => {
-    useProfileStore.getState().startEditing();
+    navigate('/profile');
   };
 
   const handleBeginMeditation = () => {

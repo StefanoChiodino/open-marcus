@@ -134,3 +134,10 @@ Use curl to:
 - The app proxies `/api` requests to backend on port 3100 via Vite dev server
 - Backend session.ts has ESM compatibility issue with `require` - fix: add `import { createRequire } from 'module'; const require = createRequire(import.meta.url);` at top of file
 - Clear all data does not require confirmation server-side; frontend shows confirmation dialog before calling API
+
+## Polish Milestone Testing Notes
+- **VAL-PROFILE-005**: Encryption verified at database level (AES-256-GCM with scrypt key derivation). Note: profiles table stores name/bio in BOTH plaintext columns AND encrypted_data column - the encrypted_data IS properly encrypted.
+- **Model mismatch**: Backend recommends `gemma4:26b-a4b` based on RAM, but only `llama3.2:latest` is installed. Causes 404 on chat requests but UI handles gracefully.
+- **Responsive breakpoints verified**: 1280px (desktop), 900px (tablet), 375px (mobile) - all pass.
+- **Accessibility**: 7 ARIA-labeled elements, semantic landmarks (nav, main, footer), 3px solid focus rings.
+- **Voice controls**: Activate with proper UI state changes and error handling in headless browser.

@@ -106,6 +106,16 @@ export class DatabaseService {
   }
 
   /**
+   * Get the raw encrypted_data string from the database (for encryption verification)
+   * Returns the encrypted_data exactly as stored, without any decryption or parsing
+   */
+  getRawProfileData(id: string): string | null {
+    const stmt = this.db.prepare('SELECT encrypted_data FROM profiles WHERE id = ?');
+    const row = stmt.get(id) as { encrypted_data: string } | undefined;
+    return row?.encrypted_data || null;
+  }
+
+  /**
    * Verify profile data can be decrypted (for validation)
    */
   verifyProfileData(id: string): boolean {

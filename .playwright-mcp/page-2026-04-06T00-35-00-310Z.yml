@@ -1,0 +1,58 @@
+- generic [ref=e3]:
+  - navigation "Main navigation" [ref=e4]:
+    - button "Collapse navigation" [expanded] [ref=e5] [cursor=pointer]:
+      - img [ref=e6]
+    - link "OpenMarcus" [ref=e9] [cursor=pointer]:
+      - /url: /
+      - img [ref=e11]
+      - generic [ref=e13]: OpenMarcus
+    - list [ref=e14]:
+      - listitem [ref=e15]:
+        - link "Home" [ref=e16] [cursor=pointer]:
+          - /url: /
+          - img [ref=e18]
+          - generic [ref=e20]: Home
+      - listitem [ref=e21]:
+        - link "Meditation" [ref=e22] [cursor=pointer]:
+          - /url: /session
+          - img [ref=e24]
+          - generic [ref=e26]: Meditation
+      - listitem [ref=e27]:
+        - link "History" [ref=e28] [cursor=pointer]:
+          - /url: /history
+          - img [ref=e30]
+          - generic [ref=e32]: History
+      - listitem [ref=e33]:
+        - link "Profile" [ref=e34] [cursor=pointer]:
+          - /url: /profile
+          - img [ref=e36]
+          - generic [ref=e38]: Profile
+      - listitem [ref=e39]:
+        - link "Settings" [ref=e40] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e42]
+          - generic [ref=e44]: Settings
+  - main [ref=e45]:
+    - main "Active Meditation Session" [ref=e80]:
+      - generic [ref=e81]:
+        - heading "Meditation with Marcus" [level=2] [ref=e82]:
+          - img [ref=e83]
+          - text: Meditation with Marcus
+        - button "End meditation session" [ref=e85] [cursor=pointer]: End Session
+      - note [ref=e86]: OpenMarcus is not therapy or medical advice. It is a reflection tool based on stoic philosophy.
+      - log "Chat messages" [ref=e87]:
+        - generic [ref=e88]:
+          - paragraph [ref=e89]: I am Marcus. Greetings, Validation User. Speak your mind, and let us explore the terrain of your thoughts together.
+          - paragraph [ref=e90]: Type your thoughts, concerns, or questions below.
+      - generic [ref=e91]:
+        - generic [ref=e92]:
+          - toolbar "Voice controls" [ref=e93]:
+            - button "Enable voice input. Click to request microphone permission." [ref=e94] [cursor=pointer]:
+              - img [ref=e95]
+            - button "Enable voice output" [ref=e97] [cursor=pointer]:
+              - img [ref=e98]
+          - textbox "Type your message to Marcus" [active] [ref=e100]:
+            - /placeholder: Share your thoughts, concerns, or questions...
+          - button "Send message" [disabled] [ref=e101]:
+            - img [ref=e102]
+        - paragraph [ref=e104]: Press Enter to send · Shift+Enter for new line

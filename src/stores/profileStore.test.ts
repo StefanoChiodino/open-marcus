@@ -31,6 +31,61 @@ describe('profileStore', () => {
     vi.restoreAllMocks();
   });
 
+  describe('clearProfile', () => {
+    it('should call profileAPI.deleteProfile with the profile id', async () => {
+      const existingProfile = {
+        id: 'profile-1',
+        name: 'Test User',
+        bio: 'Test bio',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+      useProfileStore.setState({ profile: existingProfile, status: 'loaded' });
+
+      const store = useProfileStore.getState();
+      await store.clearProfile();
+
+      expect(profileAPI.deleteProfile).toHaveBeenCalledWith('profile-1');
+    });
+
+    it('should clear local state after successful delete', async () => {
+      const existingProfile = {
+        id: 'profile-1',
+        name: 'Test User',
+        bio: 'Test bio',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+      useProfileStore.setState({ profile: existingProfile, status: 'loaded' });
+
+      const store = useProfileStore.getState();
+      await store.clearProfile();
+
+      const state = useProfileStore.getState();
+      expect(state.profile).toBeNull();
+      expect(state.status).toBe('not_found');
+    });
+
+    it('should clear local state even if delete fails', async () => {
+      const existingProfile = {
+        id: 'profile-1',
+        name: 'Test User',
+        bio: 'Test bio',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+      useProfileStore.setState({ profile: existingProfile, status: 'loaded' });
+      vi.mocked(profileAPI.deleteProfile).mockRejectedValue(new Error('Server error'));
+
+      const store = useProfileStore.getState();
+      await store.clearProfile();
+
+      const state = useProfileStore.getState();
+      expect(state.profile).toBeNull();
+      expect(state.status).toBe('not_found');
+    });
+  });
+
   describe('saveProfile error handling', () => {
     it('sets status to "error" when profile creation fails', async () => {
       const errorMsg = 'Network error';

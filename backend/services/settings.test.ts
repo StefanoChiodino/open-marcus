@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import os from 'node:os';
 import * as fs from 'fs';
-import { SettingsService, getSettingsService, resetSettingsService } from './settings.js';
+import { SettingsService, getSettingsService, resetSettingsService, TTS_VOICES } from './settings.js';
 import { DatabaseService } from '../db/database.js';
 
 const testDir = './data/test-settings';
@@ -137,6 +137,59 @@ describe('SettingsService', () => {
       const info = freshService.getSystemInfo();
       expect(info.recommendedTier).toBe('27b-31b');
       expect(info.recommendedModel).toBe('gemma4:31b');
+    });
+  });
+
+  describe('TTS settings', () => {
+    it('should return default TTS settings when none saved', () => {
+      const settings = service.getSettings();
+      expect(settings.ttsVoice).toBe('en-US-GuyNeural');
+      expect(settings.ttsRate).toBe('+25%');
+      expect(settings.ttsPitch).toBe('+0Hz');
+    });
+
+    it('should save and retrieve TTS voice', () => {
+      service.updateSettings({ ttsVoice: 'en-US-JennyNeural' });
+      const settings = service.getSettings();
+      expect(settings.ttsVoice).toBe('en-US-JennyNeural');
+    });
+
+    it('should save and retrieve TTS rate', () => {
+      service.updateSettings({ ttsRate: '+50%' });
+      const settings = service.getSettings();
+      expect(settings.ttsRate).toBe('+50%');
+    });
+
+    it('should save and retrieve TTS pitch', () => {
+      service.updateSettings({ ttsPitch: '-20Hz' });
+      const settings = service.getSettings();
+      expect(settings.ttsPitch).toBe('-20Hz');
+    });
+
+    it('should update multiple TTS settings at once', () => {
+      service.updateSettings({
+        ttsVoice: 'en-GB-ThomasNeural',
+        ttsRate: '-10%',
+        ttsPitch: '+10Hz',
+      });
+      const settings = service.getSettings();
+      expect(settings.ttsVoice).toBe('en-GB-ThomasNeural');
+      expect(settings.ttsRate).toBe('-10%');
+      expect(settings.ttsPitch).toBe('+10Hz');
+    });
+
+    it('should persist TTS settings across service instances', () => {
+      service.updateSettings({
+        ttsVoice: 'en-US-ChristopherNeural',
+        ttsRate: '+100%',
+        ttsPitch: '-50Hz',
+      });
+
+      const freshService = new SettingsService(() => db);
+      const settings = freshService.getSettings();
+      expect(settings.ttsVoice).toBe('en-US-ChristopherNeural');
+      expect(settings.ttsRate).toBe('+100%');
+      expect(settings.ttsPitch).toBe('-50Hz');
     });
   });
 

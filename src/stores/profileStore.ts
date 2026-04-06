@@ -69,7 +69,15 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     set({ isEditing: false, error: null });
   },
 
-  clearProfile: () => {
+  clearProfile: async () => {
+    const { profile } = get();
+    if (profile?.id) {
+      try {
+        await profileAPI.deleteProfile(profile.id);
+      } catch {
+        // Ignore errors - profile may already be deleted or not found
+      }
+    }
     set({ profile: null, status: 'not_found', error: null, isEditing: false });
   },
 }));

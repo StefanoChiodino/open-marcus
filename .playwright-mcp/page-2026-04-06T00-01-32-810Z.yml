@@ -1,0 +1,15 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - heading "OpenMarcus" [level=1] [ref=e5]
+    - paragraph [ref=e6]: Your Stoic Mental Health Companion
+  - main [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - heading "Welcome, Test User" [level=2] [ref=e11]
+        - button "Edit profile" [ref=e12] [cursor=pointer]: Edit Profile
+      - heading "Welcome to OpenMarcus" [level=2] [ref=e13]
+      - paragraph [ref=e14]: Your personal Stoic companion, inspired by the wisdom of Marcus Aurelius. Begin your journey of self-reflection and philosophical exploration.
+      - button "Begin meditation session" [ref=e15] [cursor=pointer]: Begin Meditation
+      - generic [ref=e16]:
+        - strong [ref=e17]: "Note:"
+        - text: OpenMarcus is not therapy or medical advice. It is a reflection tool based on Stoic philosophy.

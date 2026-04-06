@@ -3,8 +3,9 @@ import request from 'supertest';
 import express from 'express';
 import * as fs from 'fs';
 import { DatabaseService } from '../db/database.js';
-import { SettingsService, resetSettingsService } from '../services/settings.js';
+import { SettingsService, getSettingsService, resetSettingsService, TTS_VOICES } from '../services/settings.js';
 import { getOllamaService, resetOllamaService } from '../services/ollama.js';
+import { settingsRouter } from './settings.js';
 
 const testDir = './data/test-settings-routes';
 const testDbPath = `${testDir}/test.db`;
@@ -12,130 +13,18 @@ const encryptionPassword = 'test-encryption-password';
 
 /**
  * Create a test Express app with settings route mounted
- * Uses isolated test database
+ * Uses isolated test database and actual router
  */
 function createApp(db: DatabaseService): express.Application {
   const app = express();
   app.use(express.json());
 
-  // Create a settings service with the test database
+  // Create a settings service with the test database and set as singleton
   const settingsService = new SettingsService(() => db);
-
-  // GET /api/settings
-  app.get('/api/settings', async (_req, res) => {
-    try {
-      const systemInfo = settingsService.getSystemInfo();
-
-      // Try to get installed models from Ollama
-      let installedModels: string[] = [];
-      let ollamaOnline = false;
-      try {
-        const ollamaService = getOllamaService();
-        ollamaOnline = await ollamaService.isOnline();
-        if (ollamaOnline) {
-          installedModels = await ollamaService.listModels();
-        }
-      } catch {
-        ollamaOnline = false;
-      }
-
-      res.json({
-        selectedModel: settingsService.getSettings().selectedModel,
-        systemInfo,
-        installedModels,
-        ollamaOnline,
-      });
-    } catch (error) {
-      console.error('Error reading settings:', error);
-      res.status(500).json({ error: 'Failed to read settings' });
-    }
-  });
-
-  // PUT /api/settings
-  app.put('/api/settings', async (req, res) => {
-    try {
-      const updates = req.body;
-
-      if (typeof updates !== 'object' || updates === null) {
-        res.status(400).json({ error: 'Settings body must be an object' });
-        return;
-      }
-
-      if ('selectedModel' in updates && typeof updates.selectedModel !== 'string') {
-        res.status(400).json({ error: 'selectedModel must be a string' });
-        return;
-      }
-
-      if ('selectedModel' in updates && updates.selectedModel.trim().length === 0) {
-        res.status(400).json({ error: 'selectedModel cannot be empty' });
-        return;
-      }
-
-      if ('selectedModel' in updates && updates.selectedModel.trim().length > 0) {
-        try {
-          const ollamaService = getOllamaService();
-          const isOnline = await ollamaService.isOnline();
-          if (isOnline) {
-            const installedModels = await ollamaService.listModels();
-            if (!installedModels.includes(updates.selectedModel.trim())) {
-              res.status(400).json({
-                error: `Model '${updates.selectedModel}' is not installed. Available models: ${installedModels.join(', ')}`,
-              });
-              return;
-            }
-          }
-        } catch (error) {
-          console.warn('Failed to verify model:', error);
-        }
-      }
-
-      const updatedSettings = settingsService.updateSettings(updates);
-      const systemInfo = settingsService.getSystemInfo();
-      let installedModels: string[] = [];
-      let ollamaOnline = false;
-      try {
-        const ollamaService = getOllamaService();
-        ollamaOnline = await ollamaService.isOnline();
-        if (ollamaOnline) {
-          installedModels = await ollamaService.listModels();
-        }
-      } catch {
-        ollamaOnline = false;
-      }
-
-      res.json({
-        selectedModel: updatedSettings.selectedModel,
-        systemInfo,
-        installedModels,
-        ollamaOnline,
-      });
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      res.status(500).json({ error: 'Failed to update settings' });
-    }
-  });
-
-  // GET /api/settings/ollama/models
-  app.get('/api/settings/ollama/models', async (_req, res) => {
-    try {
-      const ollamaService = getOllamaService();
-      const isOnline = await ollamaService.isOnline();
-      if (!isOnline) {
-        res.status(503).json({
-          error: 'Unable to connect to AI. Please ensure Ollama is running.',
-          models: [],
-          ollamaOnline: false,
-        });
-        return;
-      }
-      const models = await ollamaService.listModels();
-      res.json({ models, ollamaOnline: true });
-    } catch (error) {
-      console.error('Error listing Ollama models:', error);
-      const message = error instanceof Error ? error.message : 'Failed to list models';
-      res.status(500).json({ error: message, models: [], ollamaOnline: false });
-    }
-  });
+  // Override the singleton for testing
+  resetSettingsService();
+  
+  app.use('/api/settings', settingsRouter);
 
   // 404 handler
   app.use((_req, res) => {
@@ -159,6 +48,9 @@ describe('Settings Routes', () => {
     db = new DatabaseService(testDbPath, encryptionPassword);
     resetSettingsService();
     resetOllamaService();
+
+    // Create singleton with test database
+    getSettingsService(() => db);
 
     app = createApp(db);
 
@@ -311,6 +203,185 @@ describe('Settings Routes', () => {
       expect(response.body.ollamaOnline).toBe(false);
       expect(response.body.models).toEqual([]);
       expect(response.body.error).toContain('Ollama');
+    });
+  });
+
+  describe('TTS settings', () => {
+    it('should return default TTS settings on GET', async () => {
+      const response = await request(app).get('/api/settings').expect(200);
+
+      expect(response.body).toHaveProperty('ttsVoice');
+      expect(response.body).toHaveProperty('ttsRate');
+      expect(response.body).toHaveProperty('ttsPitch');
+      expect(response.body.ttsVoice).toBe('en-US-GuyNeural');
+      expect(response.body.ttsRate).toBe('+25%');
+      expect(response.body.ttsPitch).toBe('+0Hz');
+    });
+
+    it('should update TTS voice via PUT', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ ttsVoice: 'en-US-JennyNeural' })
+        .expect(200);
+
+      expect(response.body.ttsVoice).toBe('en-US-JennyNeural');
+    });
+
+    it('should update TTS rate via PUT', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ ttsRate: '+50%' })
+        .expect(200);
+
+      expect(response.body.ttsRate).toBe('+50%');
+    });
+
+    it('should update TTS pitch via PUT', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ ttsPitch: '-20Hz' })
+        .expect(200);
+
+      expect(response.body.ttsPitch).toBe('-20Hz');
+    });
+
+    it('should update multiple TTS settings at once', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({
+          ttsVoice: 'en-GB-ThomasNeural',
+          ttsRate: '-10%',
+          ttsPitch: '+10Hz',
+        })
+        .expect(200);
+
+      expect(response.body.ttsVoice).toBe('en-GB-ThomasNeural');
+      expect(response.body.ttsRate).toBe('-10%');
+      expect(response.body.ttsPitch).toBe('+10Hz');
+    });
+
+    it('should persist TTS settings across requests', async () => {
+      await request(app)
+        .put('/api/settings')
+        .send({
+          ttsVoice: 'en-US-ChristopherNeural',
+          ttsRate: '+100%',
+          ttsPitch: '-50Hz',
+        })
+        .expect(200);
+
+      const getResponse = await request(app).get('/api/settings').expect(200);
+      expect(getResponse.body.ttsVoice).toBe('en-US-ChristopherNeural');
+      expect(getResponse.body.ttsRate).toBe('+100%');
+      expect(getResponse.body.ttsPitch).toBe('-50Hz');
+    });
+
+    it('should return 400 for invalid TTS voice', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ ttsVoice: 'invalid-voice' })
+        .expect(400);
+
+      expect(response.body.error).toContain('ttsVoice must be one of');
+    });
+
+    it('should return 400 for invalid TTS rate format', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ ttsRate: 'not-a-percentage' })
+        .expect(400);
+
+      expect(response.body.error).toContain('ttsRate must be a percentage string');
+    });
+
+    it('should return 400 for TTS rate below minimum', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ ttsRate: '-60%' })
+        .expect(400);
+
+      expect(response.body.error).toContain('ttsRate must be between');
+    });
+
+    it('should return 400 for TTS rate above maximum', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ ttsRate: '+150%' })
+        .expect(400);
+
+      expect(response.body.error).toContain('ttsRate must be between');
+    });
+
+    it('should return 400 for invalid TTS pitch format', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ ttsPitch: 'not-a-hz' })
+        .expect(400);
+
+      expect(response.body.error).toContain('ttsPitch must be a Hz string');
+    });
+
+    it('should return 400 for TTS pitch below minimum', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ ttsPitch: '-60Hz' })
+        .expect(400);
+
+      expect(response.body.error).toContain('ttsPitch must be between');
+    });
+
+    it('should return 400 for TTS pitch above maximum', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ ttsPitch: '+60Hz' })
+        .expect(400);
+
+      expect(response.body.error).toContain('ttsPitch must be between');
+    });
+
+    it('should accept boundary TTS rate values', async () => {
+      const minResponse = await request(app)
+        .put('/api/settings')
+        .send({ ttsRate: '-50%' })
+        .expect(200);
+      expect(minResponse.body.ttsRate).toBe('-50%');
+
+      const maxResponse = await request(app)
+        .put('/api/settings')
+        .send({ ttsRate: '+100%' })
+        .expect(200);
+      expect(maxResponse.body.ttsRate).toBe('+100%');
+    });
+
+    it('should accept boundary TTS pitch values', async () => {
+      const minResponse = await request(app)
+        .put('/api/settings')
+        .send({ ttsPitch: '-50Hz' })
+        .expect(200);
+      expect(minResponse.body.ttsPitch).toBe('-50Hz');
+
+      const maxResponse = await request(app)
+        .put('/api/settings')
+        .send({ ttsPitch: '+50Hz' })
+        .expect(200);
+      expect(maxResponse.body.ttsPitch).toBe('+50Hz');
+    });
+
+    it('should allow combining model and TTS settings', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({
+          selectedModel: 'llama3.2:latest',
+          ttsVoice: 'en-US-BrianNeural',
+          ttsRate: '+0%',
+          ttsPitch: '+0Hz',
+        })
+        .expect(200);
+
+      expect(response.body.selectedModel).toBe('llama3.2:latest');
+      expect(response.body.ttsVoice).toBe('en-US-BrianNeural');
+      expect(response.body.ttsRate).toBe('+0%');
+      expect(response.body.ttsPitch).toBe('+0Hz');
     });
   });
 });

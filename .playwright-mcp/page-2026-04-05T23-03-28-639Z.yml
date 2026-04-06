@@ -1,0 +1,56 @@
+- generic [ref=e3]:
+  - navigation "Main navigation" [ref=e4]:
+    - button "Collapse navigation" [expanded] [ref=e5] [cursor=pointer]:
+      - img [ref=e6]
+    - link "OpenMarcus" [ref=e9] [cursor=pointer]:
+      - /url: /
+      - img [ref=e11]
+      - generic [ref=e13]: OpenMarcus
+    - list [ref=e14]:
+      - listitem [ref=e15]:
+        - link "Home" [ref=e16] [cursor=pointer]:
+          - /url: /
+          - img [ref=e18]
+          - generic [ref=e20]: Home
+      - listitem [ref=e21]:
+        - link "Meditation" [ref=e22] [cursor=pointer]:
+          - /url: /session
+          - img [ref=e24]
+          - generic [ref=e26]: Meditation
+      - listitem [ref=e27]:
+        - link "History" [ref=e28] [cursor=pointer]:
+          - /url: /history
+          - img [ref=e30]
+          - generic [ref=e32]: History
+      - listitem [ref=e33]:
+        - link "Profile" [ref=e34] [cursor=pointer]:
+          - /url: /profile
+          - img [ref=e36]
+          - generic [ref=e38]: Profile
+      - listitem [ref=e39]:
+        - link "Settings" [ref=e40] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e42]
+          - generic [ref=e44]: Settings
+  - main [ref=e45]:
+    - main "Active Meditation Session" [ref=e72]:
+      - generic [ref=e73]:
+        - heading "Meditation with Marcus" [level=2] [ref=e74]:
+          - img [ref=e75]
+          - text: Meditation with Marcus
+        - button "End meditation session" [ref=e77] [cursor=pointer]: End Session
+      - note [ref=e78]: OpenMarcus is not therapy or medical advice. It is a reflection tool based on stoic philosophy.
+      - log "Chat messages" [ref=e79]:
+        - article "Your message" [ref=e90]:
+          - img [ref=e92]
+          - generic [ref=e96]: I've been feeling overwhelmed with work lately and struggling to find peace of mind.
+        - article "Marcus response" [ref=e97]:
+          - img [ref=e99]
+          - generic [ref=e103]: "My friend Validation User, I too have known the weight of burdensome duties and the turmoil of an overactive mind. As Emperor, I faced many challenges, from wars to plagues, which tested my ability to remain steadfast in the face of uncertainty. In times like these, I recall the words of Epictetus: \"It's not what happens to you, but how you react to it that matters.\" (Discourses, Book 1, Chapter 12) As a Stoic, I've learned to distinguish between what lies within my control and what does not. Tell me, Validation User, where do you feel the overwhelm residing? Is it in your work itself, or perhaps in the expectations of others or even your own desires?"
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - textbox "Type your message to Marcus" [active] [ref=e85]:
+            - /placeholder: Share your thoughts, concerns, or questions...
+          - button "Send message" [disabled] [ref=e86]:
+            - img [ref=e87]
+        - paragraph [ref=e89]: Press Enter to send · Shift+Enter for new line

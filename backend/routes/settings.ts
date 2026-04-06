@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getSettingsService } from '../services/settings.js';
+import { getSettingsService, TTS_VOICES, TTS_MIN_RATE, TTS_MAX_RATE, TTS_MIN_PITCH, TTS_MAX_PITCH } from '../services/settings.js';
 import { getOllamaService } from '../services/ollama.js';
 
 const router = Router();
@@ -10,6 +10,9 @@ const router = Router();
  */
 interface SettingsResponse {
   selectedModel: string;
+  ttsVoice: string;
+  ttsRate: string;
+  ttsPitch: string;
   systemInfo: {
     totalRamGB: number;
     recommendedModel: string;
@@ -48,6 +51,9 @@ router.get('/', async (_req: Request, res: Response) => {
 
     const response: SettingsResponse = {
       selectedModel: settings.selectedModel,
+      ttsVoice: settings.ttsVoice,
+      ttsRate: settings.ttsRate,
+      ttsPitch: settings.ttsPitch,
       systemInfo,
       installedModels,
       ollamaOnline,
@@ -87,6 +93,58 @@ router.put('/', async (req: Request, res: Response) => {
       return;
     }
 
+    // Validate ttsVoice if provided
+    if ('ttsVoice' in updates) {
+      if (typeof updates.ttsVoice !== 'string') {
+        res.status(400).json({ error: 'ttsVoice must be a string' });
+        return;
+      }
+      if (!TTS_VOICES.includes(updates.ttsVoice as typeof TTS_VOICES[number])) {
+        res.status(400).json({
+          error: `ttsVoice must be one of: ${TTS_VOICES.join(', ')}`,
+        });
+        return;
+      }
+    }
+
+    // Validate ttsRate if provided
+    if ('ttsRate' in updates) {
+      if (typeof updates.ttsRate !== 'string') {
+        res.status(400).json({ error: 'ttsRate must be a string' });
+        return;
+      }
+      // Parse rate from string like "+25%" or "-10%"
+      const rateMatch = updates.ttsRate.match(/^([+-]?\d+)%$/);
+      if (!rateMatch) {
+        res.status(400).json({ error: 'ttsRate must be a percentage string like "+25%" or "-10%"' });
+        return;
+      }
+      const rateValue = parseInt(rateMatch[1], 10);
+      if (rateValue < TTS_MIN_RATE || rateValue > TTS_MAX_RATE) {
+        res.status(400).json({ error: `ttsRate must be between ${TTS_MIN_RATE}% and ${TTS_MAX_RATE}%` });
+        return;
+      }
+    }
+
+    // Validate ttsPitch if provided
+    if ('ttsPitch' in updates) {
+      if (typeof updates.ttsPitch !== 'string') {
+        res.status(400).json({ error: 'ttsPitch must be a string' });
+        return;
+      }
+      // Parse pitch from string like "+0Hz" or "-10Hz"
+      const pitchMatch = updates.ttsPitch.match(/^([+-]?\d+)Hz$/);
+      if (!pitchMatch) {
+        res.status(400).json({ error: 'ttsPitch must be a Hz string like "+0Hz" or "-10Hz"' });
+        return;
+      }
+      const pitchValue = parseInt(pitchMatch[1], 10);
+      if (pitchValue < TTS_MIN_PITCH || pitchValue > TTS_MAX_PITCH) {
+        res.status(400).json({ error: `ttsPitch must be between ${TTS_MIN_PITCH}Hz and ${TTS_MAX_PITCH}Hz` });
+        return;
+      }
+    }
+
     // Note: We don't validate that selectedModel exists in installed models here.
     // If the model isn't installed, Ollama will return an error at chat time which the UI handles gracefully.
     // This allows users to pre-select a recommended model before installing it.
@@ -116,6 +174,9 @@ router.put('/', async (req: Request, res: Response) => {
 
     const response: SettingsResponse = {
       selectedModel: updatedSettings.selectedModel,
+      ttsVoice: updatedSettings.ttsVoice,
+      ttsRate: updatedSettings.ttsRate,
+      ttsPitch: updatedSettings.ttsPitch,
       systemInfo,
       installedModels,
       ollamaOnline,

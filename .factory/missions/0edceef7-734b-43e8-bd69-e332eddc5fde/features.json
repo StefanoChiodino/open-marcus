@@ -1,0 +1,172 @@
+{
+  "features": [
+    {
+      "id": "fix-profile-page-edit-mode",
+      "description": "Fix ProfilePage component to check isEditing state and render ProfileForm when true. The startEditing() action sets isEditing=true but the component never checks this state to show the edit form.",
+      "skillName": "frontend-worker",
+      "milestone": "profile-fix",
+      "preconditions": [
+        "ProfilePage component exists at src/App.tsx",
+        "ProfileForm component exists at src/components/ProfileForm.tsx with isEditMode support",
+        "useProfileStore has startEditing, cancelEditing, isEditing state"
+      ],
+      "expectedBehavior": [
+        "When isEditing=false: show static profile display with Edit Profile and Reset Profile buttons",
+        "When isEditing=true: show ProfileForm with isEditMode=true, pre-filled with existing name/bio",
+        "ProfileForm in edit mode shows 'Save Changes' and 'Cancel' buttons",
+        "Cancel calls cancelEditing() and returns to display mode",
+        "Save calls saveProfile() and returns to display mode on success"
+      ],
+      "verificationSteps": [
+        "npm run typecheck",
+        "npm run test -- --grep 'ProfilePage'",
+        "agent-browser: Click Edit Profile, verify form appears with pre-filled data",
+        "agent-browser: Click Cancel, verify returns to display mode",
+        "agent-browser: Edit name, click Save, verify updated name displayed"
+      ],
+      "fulfills": ["VAL-PROFILE-001", "VAL-PROFILE-002", "VAL-PROFILE-003", "VAL-PROFILE-005"],
+      "status": "pending"
+    },
+    {
+      "id": "smoke-test-profile-page",
+      "description": "Add Playwright smoke tests for Profile page: edit button, cancel, save, reset profile flow.",
+      "skillName": "frontend-worker",
+      "milestone": "smoke-tests",
+      "preconditions": [
+        "Profile page fix is complete",
+        "e2e directory exists with full-journey.spec.ts"
+      ],
+      "expectedBehavior": [
+        "Test: edit button shows form with pre-filled values",
+        "Test: cancel returns to display mode without changes",
+        "Test: save persists changes and shows updated profile",
+        "Test: reset clears profile and shows onboarding"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- e2e/profile-smoke.spec.ts",
+        "All tests pass"
+      ],
+      "fulfills": ["VAL-PROFILE-001", "VAL-PROFILE-002", "VAL-PROFILE-003", "VAL-PROFILE-004"],
+      "status": "pending"
+    },
+    {
+      "id": "smoke-test-navigation",
+      "description": "Add Playwright smoke tests for all sidebar navigation links.",
+      "skillName": "frontend-worker",
+      "milestone": "smoke-tests",
+      "preconditions": [
+        "App has sidebar navigation with links to Home, Meditation, History, Profile, Settings"
+      ],
+      "expectedBehavior": [
+        "Each sidebar link navigates to correct page",
+        "All pages load without console errors",
+        "Active page is highlighted in sidebar"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- e2e/navigation-smoke.spec.ts",
+        "All tests pass"
+      ],
+      "fulfills": ["VAL-NAV-001", "VAL-NAV-002", "VAL-NAV-003", "VAL-NAV-004", "VAL-NAV-005"],
+      "status": "pending"
+    },
+    {
+      "id": "smoke-test-home-page",
+      "description": "Add Playwright smoke tests for Home page buttons and content.",
+      "skillName": "frontend-worker",
+      "milestone": "smoke-tests",
+      "preconditions": [
+        "Home page component exists at src/pages/HomePage.tsx"
+      ],
+      "expectedBehavior": [
+        "Welcome message with user name is displayed",
+        "Begin meditation session button is visible and navigates to /session"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- e2e/home-smoke.spec.ts",
+        "All tests pass"
+      ],
+      "fulfills": ["VAL-HOME-001", "VAL-HOME-002"],
+      "status": "pending"
+    },
+    {
+      "id": "smoke-test-session-page",
+      "description": "Add Playwright smoke tests for Session page: begin, send message, end session.",
+      "skillName": "frontend-worker",
+      "milestone": "smoke-tests",
+      "preconditions": [
+        "MeditationChat component exists at src/components/MeditationChat.tsx"
+      ],
+      "expectedBehavior": [
+        "Begin Meditation button starts session with Marcus greeting",
+        "Send message displays user message in chat",
+        "End session button ends session and shows summary"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- e2e/session-smoke.spec.ts",
+        "All tests pass"
+      ],
+      "fulfills": ["VAL-SESSION-001", "VAL-SESSION-002", "VAL-SESSION-003"],
+      "status": "pending"
+    },
+    {
+      "id": "smoke-test-history-page",
+      "description": "Add Playwright smoke tests for History page: session list and detail navigation.",
+      "skillName": "frontend-worker",
+      "milestone": "smoke-tests",
+      "preconditions": [
+        "SessionHistory component exists at src/components/SessionHistory.tsx",
+        "SessionDetail component exists at src/components/SessionDetail.tsx"
+      ],
+      "expectedBehavior": [
+        "History page shows list of past sessions",
+        "Clicking a session navigates to session detail"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- e2e/history-smoke.spec.ts",
+        "All tests pass"
+      ],
+      "fulfills": ["VAL-HISTORY-001", "VAL-HISTORY-002"],
+      "status": "pending"
+    },
+    {
+      "id": "smoke-test-settings-page",
+      "description": "Add Playwright smoke tests for Settings page: export, import, clear data.",
+      "skillName": "frontend-worker",
+      "milestone": "smoke-tests",
+      "preconditions": [
+        "Settings component exists at src/pages/Settings.tsx"
+      ],
+      "expectedBehavior": [
+        "Settings page loads without errors",
+        "Export button downloads data as JSON",
+        "Clear data (with confirmation) clears all data and redirects to onboarding"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- e2e/settings-smoke.spec.ts",
+        "All tests pass"
+      ],
+      "fulfills": ["VAL-SETTINGS-001", "VAL-SETTINGS-002", "VAL-SETTINGS-003"],
+      "status": "pending"
+    },
+    {
+      "id": "smoke-test-cross-flows",
+      "description": "Add Playwright tests for cross-area flows: onboarding→home→profile, navigation sequence, edit persistence.",
+      "skillName": "frontend-worker",
+      "milestone": "smoke-tests",
+      "preconditions": [
+        "All page smoke tests are implemented"
+      ],
+      "expectedBehavior": [
+        "Complete onboarding flow creates profile and shows home",
+        "Full navigation sequence through all pages works",
+        "Edit profile data persists after navigation away and back"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- e2e/cross-flow-smoke.spec.ts",
+        "All tests pass"
+      ],
+      "fulfills": ["VAL-CROSS-001", "VAL-CROSS-002", "VAL-CROSS-003"],
+      "status": "pending"
+    }
+  ]
+}

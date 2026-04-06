@@ -63,3 +63,29 @@ ENCRYPTION_KEY=your-32-byte-key-here
 - **Type**: SQLite 3
 - **Encryption**: AES-256-GCM
 - **Auto-migration**: Runs on server startup
+
+## Development Logging
+
+### Environment Modes
+```bash
+NODE_ENV=development   # Verbose file logging enabled
+NODE_ENV=production    # All logging disabled (zero overhead)
+```
+
+### Log Files (development only)
+- `./data/logs/auth.log` - Authentication events
+- `./data/logs/api.log` - HTTP request/response logs
+- `./data/logs/db.log` - Database query logs
+- `./data/logs/error.log` - Error and exception logs
+- `./data/logs/app.log` - General application logs
+
+### What Gets Logged (Development)
+- Auth events (login, logout, session creation/destruction)
+- All API requests (method, path, query params, status, timing)
+- All database queries (sanitized - no message content)
+- Errors with full stack traces and correlation IDs
+
+### What NEVER Gets Logged
+- Message content (user messages, AI responses)
+- Auth tokens, passwords, credentials
+- Personal identifiable information

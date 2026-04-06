@@ -13,15 +13,50 @@ const require = createRequire(import.meta.url);
  */
 export interface AppSettings {
   selectedModel: string;
+  ttsVoice: string;
+  ttsRate: string;
+  ttsPitch: string;
 }
+
+/**
+ * Curated TTS voices for the voice dropdown
+ * These are 6 English neural voices from edge-tts
+ */
+export const TTS_VOICES = [
+  'en-US-GuyNeural',
+  'en-US-ChristopherNeural',
+  'en-US-BrianNeural',
+  'en-GB-ThomasNeural',
+  'en-US-JennyNeural',
+  'en-US-MichelleNeural',
+] as const;
+
+export type TtsVoice = typeof TTS_VOICES[number];
+
+/**
+ * TTS rate range: -50% to +100%
+ * Expressed as percentage string, e.g., "+25%", "-10%"
+ */
+export const TTS_MIN_RATE = -50;
+export const TTS_MAX_RATE = 100;
+
+/**
+ * TTS pitch range: -50Hz to +50Hz
+ * Expressed as Hz string, e.g., "+0Hz", "-10Hz"
+ */
+export const TTS_MIN_PITCH = -50;
+export const TTS_MAX_PITCH = 50;
+
+const SETTINGS_KEY_MODEL = 'ollama.model';
+const SETTINGS_KEY_TTS_VOICE = 'tts.voice';
+const SETTINGS_KEY_TTS_RATE = 'tts.rate';
+const SETTINGS_KEY_TTS_PITCH = 'tts.pitch';
 
 /**
  * RAM tier for model recommendation
  * Based on research (April 2026): Gemma 4 and Qwen 3.5 are the top open-weight model families
  */
 export type ModelRamTier = '2b' | '4b' | '26b-a4b' | '27b-31b';
-
-const SETTINGS_KEY_MODEL = 'ollama.model';
 
 /**
  * Model recommendation based on available RAM
@@ -124,21 +159,41 @@ export class SettingsService {
   getSettings(): AppSettings {
     const db = this.getDb();
 
+    // Get TTS settings with defaults
+    const savedTtsVoice = db.getSetting(SETTINGS_KEY_TTS_VOICE);
+    const savedTtsRate = db.getSetting(SETTINGS_KEY_TTS_RATE);
+    const savedTtsPitch = db.getSetting(SETTINGS_KEY_TTS_PITCH);
+
     // Get selected model if set; otherwise use environment or default
     const savedModel = db.getSetting(SETTINGS_KEY_MODEL);
 
     if (savedModel) {
-      return { selectedModel: savedModel };
+      return {
+        selectedModel: savedModel,
+        ttsVoice: savedTtsVoice || 'en-US-GuyNeural',
+        ttsRate: savedTtsRate || '+25%',
+        ttsPitch: savedTtsPitch || '+0Hz',
+      };
     }
 
     const envModel = process.env.OLLAMA_MODEL;
     if (envModel) {
-      return { selectedModel: envModel };
+      return {
+        selectedModel: envModel,
+        ttsVoice: savedTtsVoice || 'en-US-GuyNeural',
+        ttsRate: savedTtsRate || '+25%',
+        ttsPitch: savedTtsPitch || '+0Hz',
+      };
     }
 
     // Default to llama3.2:latest - a safe choice that works on most systems
     // The Settings UI will show RAM-based recommendations for the user to choose
-    return { selectedModel: 'llama3.2:latest' };
+    return {
+      selectedModel: 'llama3.2:latest',
+      ttsVoice: savedTtsVoice || 'en-US-GuyNeural',
+      ttsRate: savedTtsRate || '+25%',
+      ttsPitch: savedTtsPitch || '+0Hz',
+    };
   }
 
   /**
@@ -155,6 +210,15 @@ export class SettingsService {
   updateSettings(updates: Partial<AppSettings>): AppSettings {
     if (updates.selectedModel !== undefined) {
       this.updateSetting(SETTINGS_KEY_MODEL, updates.selectedModel);
+    }
+    if (updates.ttsVoice !== undefined) {
+      this.updateSetting(SETTINGS_KEY_TTS_VOICE, updates.ttsVoice);
+    }
+    if (updates.ttsRate !== undefined) {
+      this.updateSetting(SETTINGS_KEY_TTS_RATE, updates.ttsRate);
+    }
+    if (updates.ttsPitch !== undefined) {
+      this.updateSetting(SETTINGS_KEY_TTS_PITCH, updates.ttsPitch);
     }
     return this.getSettings();
   }

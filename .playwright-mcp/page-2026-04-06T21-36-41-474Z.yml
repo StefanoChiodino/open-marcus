@@ -1,0 +1,75 @@
+- generic [ref=e3]:
+  - link "Skip to main content" [ref=e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e5]:
+    - navigation "Main navigation" [ref=e6]:
+      - list [ref=e7]:
+        - listitem [ref=e8]:
+          - link "Home" [ref=e9] [cursor=pointer]:
+            - /url: /
+            - img [ref=e11]
+            - generic [ref=e13]: Home
+        - listitem [ref=e14]:
+          - link "Meditation" [ref=e15] [cursor=pointer]:
+            - /url: /session
+            - img [ref=e17]
+            - generic [ref=e19]: Meditation
+        - listitem [ref=e20]:
+          - link "History" [ref=e21] [cursor=pointer]:
+            - /url: /history
+            - img [ref=e23]
+            - generic [ref=e25]: History
+        - listitem [ref=e26]:
+          - link "Profile" [ref=e27] [cursor=pointer]:
+            - /url: /profile
+            - img [ref=e29]
+            - generic [ref=e31]: Profile
+        - listitem [ref=e32]:
+          - link "Settings" [ref=e33] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e35]
+            - generic [ref=e37]: Settings
+    - main [ref=e38]:
+      - main "Settings" [ref=e52]:
+        - heading "Settings" [active] [level=2] [ref=e53]
+        - paragraph [ref=e54]: "Manage your data: export, import, or clear all your OpenMarcus data."
+        - region "AI Model Selection" [ref=e55]:
+          - heading "AI Model Selection" [level=3] [ref=e56]
+          - generic [ref=e57]:
+            - generic [ref=e58]: Active Model
+            - combobox "Active Model" [ref=e59] [cursor=pointer]:
+              - option "(Ollama offline)" [selected]
+            - paragraph [ref=e60]: "Ollama is offline. Install more models with `ollama pull <model>` to see them here."
+        - region "Export Data" [ref=e61]:
+          - heading "Export Data" [level=3] [ref=e62]
+          - paragraph [ref=e63]: Download all your profiles, sessions, messages, and settings as a JSON file.
+          - button "Download JSON Export" [ref=e65] [cursor=pointer]
+        - region "Import Data" [ref=e66]:
+          - heading "Import Data" [level=3] [ref=e67]
+          - paragraph [ref=e68]: Restore your data from a previously exported JSON file. This will replace all current data.
+          - button "Import from JSON File" [ref=e70] [cursor=pointer]
+        - region "Clear All Data" [ref=e71]:
+          - heading "Clear All Data" [level=3] [ref=e72]
+          - paragraph [ref=e73]: Permanently delete all your profiles, sessions, messages, and settings. This action cannot be undone.
+          - button "Permanently delete all your profiles, sessions, messages, and settings" [ref=e75] [cursor=pointer]: Clear All Data
+      - region "Notifications":
+        - alert [ref=e76]:
+          - img [ref=e77]
+          - generic [ref=e79]:
+            - generic [ref=e80]: Settings load failed
+            - generic [ref=e81]: Server error
+          - button "Dismiss notification" [ref=e82] [cursor=pointer]:
+            - img [ref=e83]
+        - alert [ref=e85]:
+          - img [ref=e86]
+          - generic [ref=e88]:
+            - generic [ref=e89]: Settings load failed
+            - generic [ref=e90]: Server error
+          - button "Dismiss notification" [ref=e91] [cursor=pointer]:
+            - img [ref=e92]
+  - contentinfo "Legal disclaimer" [ref=e41]:
+    - generic [ref=e42]:
+      - img [ref=e43]
+      - paragraph [ref=e45]:
+        - strong [ref=e46]: "Important:"
+        - text: OpenMarcus is not therapy or medical advice. It is a reflection tool based on stoic philosophy. If you're experiencing a crisis, please contact a mental health professional or call your local emergency services.

@@ -1,0 +1,67 @@
+- generic [ref=e3]:
+  - link "Skip to main content" [ref=e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e5]:
+    - navigation "Main navigation" [ref=e6]:
+      - button "Collapse navigation" [expanded] [ref=e7] [cursor=pointer]:
+        - img [ref=e8]
+      - link "OpenMarcus" [ref=e11] [cursor=pointer]:
+        - /url: /
+        - img [ref=e13]
+        - generic [ref=e15]: OpenMarcus
+      - list [ref=e16]:
+        - listitem [ref=e17]:
+          - link "Home" [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img [ref=e20]
+            - generic [ref=e22]: Home
+        - listitem [ref=e23]:
+          - link "Meditation" [ref=e24] [cursor=pointer]:
+            - /url: /session
+            - img [ref=e26]
+            - generic [ref=e28]: Meditation
+        - listitem [ref=e29]:
+          - link "History" [ref=e30] [cursor=pointer]:
+            - /url: /history
+            - img [ref=e32]
+            - generic [ref=e34]: History
+        - listitem [ref=e35]:
+          - link "Profile" [ref=e36] [cursor=pointer]:
+            - /url: /profile
+            - img [ref=e38]
+            - generic [ref=e40]: Profile
+        - listitem [ref=e41]:
+          - link "Settings" [ref=e42] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e44]
+            - generic [ref=e46]: Settings
+    - main [ref=e47]:
+      - main "Active Meditation Session" [ref=e64]:
+        - generic [ref=e65]:
+          - heading "Meditation with Marcus" [level=2] [ref=e66]:
+            - img [ref=e67]
+            - text: Meditation with Marcus
+          - button "End meditation session" [ref=e69] [cursor=pointer]: End Session
+        - note [ref=e70]: OpenMarcus is not therapy or medical advice. It is a reflection tool based on stoic philosophy.
+        - log "Chat messages" [ref=e71]:
+          - generic [ref=e72]:
+            - paragraph [ref=e73]: I am Marcus. Speak your mind, and let us explore the terrain of your thoughts together.
+            - paragraph [ref=e74]: Type your thoughts, concerns, or questions below.
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - toolbar "Voice controls" [ref=e77]:
+              - button "Enable voice input. Click to request microphone permission." [ref=e78] [cursor=pointer]:
+                - img [ref=e79]
+              - button "Enable voice output" [ref=e81] [cursor=pointer]:
+                - img [ref=e82]
+            - textbox "Type your message to Marcus" [active] [ref=e84]:
+              - /placeholder: Share your thoughts, concerns, or questions...
+            - button "Send message" [disabled] [ref=e85]:
+              - img [ref=e86]
+          - paragraph [ref=e88]: Press Enter to send · Shift+Enter for new line
+  - contentinfo "Legal disclaimer" [ref=e58]:
+    - generic [ref=e59]:
+      - img [ref=e60]
+      - paragraph [ref=e62]:
+        - strong [ref=e63]: "Important:"
+        - text: OpenMarcus is not therapy or medical advice. It is a reflection tool based on stoic philosophy. If you're experiencing a crisis, please contact a mental health professional or call your local emergency services.

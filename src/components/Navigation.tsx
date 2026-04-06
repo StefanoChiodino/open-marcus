@@ -41,6 +41,7 @@ function Navigation({ isCollapsed = false, onToggle, hideToggle = false }: Navig
           <li className="navigation__item" key={item.path}>
             <NavLink
               to={item.path}
+              end={item.path === '/'}
               className={({ isActive }) =>
                 `navigation__link ${isActive ? 'navigation__link--active' : ''}`
               }

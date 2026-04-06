@@ -1,0 +1,78 @@
+{
+  "featureId": "voice-stt-server",
+  "reviewedAt": "2026-04-06T00:00:00.000Z",
+  "commitId": "29c0b66",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The STT server and backend proxy are generally well-structured with correct error handling, singleton management, and proper TypeScript types. The standalone server (servers/stt/server.mjs) has good model auto-detection, WAV parsing, and lazy model loading. The backend service and routes follow the project conventions. However, there are two blocking issues: (1) the route tests duplicate the route logic inline instead of testing the actual stt.ts route file, meaning the real route code is untested, and (2) server.ts does not configure raw body parsing middleware for STT routes, relying on fragile manual stream reading instead.",
+    "issues": [
+      {
+        "file": "backend/routes/stt.test.ts",
+        "line": 19,
+        "severity": "blocking",
+        "description": "Route tests create inline route handlers with duplicated routing logic instead of importing and testing the actual stt.ts route module. This means changes to the real route code (backend/routes/stt.ts) are not validated by these tests. Both the unit test suite (describe 'STT Routes') and the integration test suite (describe 'STT Routes - integration') define inline app.post/app.get handlers that mirror but are not the same as stt.ts. The tests should import sttRoutes and mount it with app.use('/api/stt', sttRoutes) like the actual server.ts does, with appropriate middleware configured."
+      },
+      {
+        "file": "backend/server.ts",
+        "line": 28,
+        "severity": "blocking",
+        "description": "server.ts does not configure express.raw() middleware for STT routes. Only express.json() is used globally (line 14), which skips non-JSON content types. The STT route (backend/routes/stt.ts:31-34) falls back to manually reading the request stream with 'for await (const chunk of req)' which is fragile and could conflict if express.json() partially consumes the stream. The route should ideally have express.raw({ type: 'audio/*', limit: '50mb' }) middleware applied to the /api/stt route path. This gap is masked by the fact that manual stream reading happens to work, but it's not as robust as using the proper middleware."
+      },
+      {
+        "file": "servers/stt/server.mjs",
+        "line": 203,
+        "severity": "non_blocking",
+        "description": "The collectBody function in the STT standalone server has no maximum body size limit. A malicious client could send an arbitrarily large request causing memory exhaustion. Should implement a size limit before Buffer.concat()."
+      },
+      {
+        "file": ".factory/services.yaml",
+        "line": 31,
+        "severity": "non_blocking",
+        "description": "The STT service start command uses a hardcoded absolute path: 'cd /Users/stefano/repos/open-marcus/servers/stt && node server.mjs --port 8765'. This will not work on other machines or in CI/CD. Should use a relative path or the 'servers/stt/server.mjs' working directory with the 'workingDir' field if supported, or use 'node servers/stt/server.mjs --port 8765' from the repo root."
+      },
+      {
+        "file": "backend/services/stt.ts",
+        "line": 75,
+        "severity": "non_blocking",
+        "description": "transcribe() method performs two HTTP calls: first isOnline() fetches /health, then a second fetch posts to /transcribe. If the STT server goes down between the two calls, the transcribe call will fail with a generic error instead of SttOfflineError. Could be optimized by doing a single call and inferring online status from the response, but this is a minor efficiency concern."
+      },
+      {
+        "file": "backend/services/stt.test.ts",
+        "line": 1,
+        "severity": "non_blocking",
+        "description": "Service tests only cover constructor, isOnline (offline), transcribe (offline throws), and singleton management. Missing tests for: (a) successful online transcribe flow (mocked fetch response), (b) healthCheck success path, (c) healthCheck when server returns non-200. The only online testing is in the route integration tests. Given TDD was partially skipped, these unit tests are thin."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "Worker deviated from TDD procedure (step 2: Write Tests First). The backend-worker skill explicitly requires writing tests before implementation. The worker implemented the STT server and backend routes first, then wrote tests. Justification: the standalone STT server (servers/stt/server.mjs) is a separate Node.js process that can't be unit-tested with Vitest mocking, so the worker set it up and verified it works manually before writing backend TypeScript tests. This deviation is reasonable, but the skill procedure should clarify how to handle separate-process integrations.",
+      "evidence": "handoff.skillFeedback.shows deviated: true. Deviation step 2. worker-transcripts.jsonl shows server.mjs started and curl-tested (steps before any test files were created), then backend/services/stt.ts and backend/routes/stt.ts written before test files."
+    },
+    {
+      "area": "services",
+      "observation": "services.yaml stt.start uses a hardcoded absolute path '/Users/stefano/repos/open-marcus/servers/stt'. This is not portable — it will break on any other machine. The other services (backend, frontend, ollama) use relative commands or standard tool invocations. The STT service should use 'node servers/stt/server.mjs --port 8765' from the repo root with workingDir set, or follow the same pattern as other services.",
+      "evidence": ".factory/services.yaml line 31: 'start: cd /Users/stefano/repos/open-marcus/servers/stt && node server.mjs --port 8765' — compare to backend: 'start: PORT=3100 npx tsx backend/server.ts' which uses relative paths."
+    },
+    {
+      "area": "conventions",
+      "observation": "The AGENTS.md states a port boundary: 'Port Range: 3100-3199. Never start services outside this range.' However, the STT server uses port 8765 and TTS uses port 8766. These are listed in 'Ports In Use' exceptions, but the boundary statement and the exceptions list are contradictory. Workers may be confused about whether 8765/8766 are allowed.",
+      "evidence": "AGENTS.md: 'Port Range: 3100-3199' vs 'Ports In Use: 8765: STT server (sherpa-onnx), 8766: TTS server (edge-tts)'. The STT and TTS ports are outside the stated 3100-3199 range."
+    },
+    {
+      "area": "services",
+      "observation": "No download-model.sh script exists despite being referenced in the STT server's error message. The error says 'Run: cd servers/stt && bash download-model.sh' but this script was not created as part of the feature. The model is instead symlinked from an external repo (/Users/stefano/repos/aigent/stt/sherpa-onnx-whisper-tiny.en). This means the STT server cannot be used on a fresh machine without manually creating this symlink or the missing download script.",
+      "evidence": "servers/stt/server.mjs line 67 error message references download-model.sh. 'ls servers/stt/' shows no download-model.sh. The model is a symlink (servers/stt/sherpa-onnx-whisper-tiny.en) pointing to /Users/stefano/repos/aigent/stt/sherpa-onnx-whisper-tiny.en."
+    },
+    {
+      "area": "conventions",
+      "observation": "The servers/stt/ directory contains a separate package.json with sherpa-onnx-node dependency, but npm install was not run for this subdirectory (no node_modules committed). The worker ran 'cd servers/stt && npm install' manually (visible in transcript) but there's no npm install step in the services.yaml or project scripts. A fresh repo clone + services start would fail because sherpa-onnx-node is not installed.",
+      "evidence": "servers/stt/package.json exists with sherpa-onnx-node dependency. Root package.json does not include sherpa-onnx-node. services.yaml only has 'install: npm install' for the root project. The worker ran npm install in servers/stt/ as a one-off step during the session."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "The STT server feature implements the core requirements: a sherpa-onnx Whisper server on port 8765, a backend proxy at /api/stt/transcribe, and a health endpoint. The implementation is verified to work end-to-end via curl and integration tests. However, the review finds two blocking issues: (1) the route tests duplicate route logic inline rather than testing the actual stt.ts route module, leaving the real route code effectively untested, and (2) the server.ts does not configure express.raw() middleware for audio content types, relying on fragile manual stream reading. Additionally, the services.yaml uses a hardcoded absolute path, no download-model.sh script was created despite being referenced in error messages, the standalone server lacks request size limits, and the TDD procedure was deviated from with thin test coverage for the service layer. The feature should fail until the critical test quality issues are addressed."
+}

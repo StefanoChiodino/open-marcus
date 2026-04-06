@@ -1,0 +1,45 @@
+{
+  "featureId": "voice-tts-server",
+  "reviewedAt": "2026-04-06T00:15:00.000Z",
+  "commitId": "f3224ad",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The TTS server feature implements the core requirements: an edge-tts server on port 8766, a backend proxy at /api/tts/synthesize, and a health endpoint. The implementation meets all expected behaviors (TTS on port 8766, MP3 synthesis via POST, backend proxy to TTS server). The server configuration supports voice, rate, and pitch settings. Three non-blocking issues and two shared state observations were noted.",
+    "issues": [
+      {
+        "file": "servers/tts/server.py",
+        "line": null,
+        "severity": "non_blocking",
+        "description": "Missing request size limit on the synthesize endpoint could lead to resource exhaustion with very large text inputs. A reasonable character limit should be enforced."
+      },
+      {
+        "file": "backend/services/tts.ts",
+        "line": null,
+        "severity": "non_blocking",
+        "description": "The TTS service does not retry transient failures. A single failed request to the TTS server results in an immediate error without retry logic."
+      },
+      {
+        "file": "backend/routes/tts.ts",
+        "line": null,
+        "severity": "non_blocking",
+        "description": "The TTS route handler could validate the text input length before sending to the TTS server, providing faster error feedback for empty or excessively long inputs."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "services",
+      "observation": "The TTS server start command in services.yaml uses a hardcoded absolute path for the working directory. Should use relative paths for portability.",
+      "evidence": ".factory/services.yaml: 'start: cd /Users/stefano/repos/open-marcus/servers/tts && python3 server.py --port 8766' — compare to other services using relative paths."
+    },
+    {
+      "area": "conventions",
+      "observation": "The ports used (8765 for STT, 8766 for TTS) are outside the stated port range boundary of 3100-3199 in AGENTS.md. While listed as exceptions, this contradiction may confuse workers.",
+      "evidence": "AGENTS.md states port range 3100-3199, but STT uses 8765 and TTS uses 8766."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "The TTS server feature implements all expected behaviors: TTS server runs on port 8766, POST /synthesize returns MP3 audio, and backend proxies to TTS server. Three non-blocking issues noted (request size limit, retry logic, input validation) and two shared state observations (hardcoded paths, port range contradiction). Overall status: pass."
+}

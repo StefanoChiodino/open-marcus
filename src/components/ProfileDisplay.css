@@ -1,11 +1,7 @@
-/* Profile Display Styles */
+/* Profile Display Styles - renders as inline content within parent card, no own card styling */
 
 .profile-display {
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  padding: var(--space-8);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--color-bg-tertiary);
+  /* No border/shadow/background - rendered as inline content within welcome-card */
   margin-bottom: var(--space-6);
 }
 
@@ -33,16 +29,6 @@
 /* Mobile responsive */
 @media (max-width: 767px) {
   .profile-display {
-    padding: var(--space-4);
     margin-bottom: var(--space-4);
-  }
-
-  .profile-header {
-    margin-bottom: var(--space-2);
-  }
-
-  .profile-bio {
-    margin-bottom: var(--space-3);
-    font-size: var(--text-sm);
   }
 }

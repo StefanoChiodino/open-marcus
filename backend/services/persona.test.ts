@@ -23,7 +23,7 @@ describe('Marcus Persona Service', () => {
     });
 
     it('should mention personal experience', () => {
-      expect(MARCUS_CHARACTER).toContain('empire');
+      expect(MARCUS_CHARACTER).toContain('imperial');
     });
   });
 

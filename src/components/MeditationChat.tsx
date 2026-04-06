@@ -315,7 +315,7 @@ function MeditationChat() {
             placeholder={
               isStreaming
                 ? 'Waiting for Marcus to finish...'
-                : 'Share your thoughts, concerns, or questions...'
+                : 'Share your thoughts or questions...'
             }
             disabled={isStreaming || status === 'ending'}
             className="meditation-chat__textarea"

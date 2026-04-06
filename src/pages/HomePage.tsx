@@ -17,10 +17,6 @@ function HomePage() {
 
   return (
     <div className="home-page">
-      <header className="home-header">
-        <h1>OpenMarcus</h1>
-        <p className="tagline">Your Stoic Mental Health Companion</p>
-      </header>
       <main className="home-main">
         <div className="welcome-card">
           {profile && (

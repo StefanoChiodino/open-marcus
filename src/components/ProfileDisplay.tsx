@@ -20,7 +20,7 @@ function ProfileDisplay({ profile, onEdit }: ProfileDisplayProps) {
       )}
 
       <button
-        className="btn btn-secondary btn-edit-profile"
+        className="button button--secondary"
         onClick={onEdit}
         aria-label="Edit profile"
       >

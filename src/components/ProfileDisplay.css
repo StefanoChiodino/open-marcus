@@ -22,10 +22,6 @@
   font-style: italic;
 }
 
-.btn-edit-profile {
-  align-self: flex-start;
-}
-
 /* Mobile responsive */
 @media (max-width: 767px) {
   .profile-display {

@@ -120,7 +120,7 @@ function ProfileForm({
         {onCancel && (
           <button
             type="button"
-            className="btn btn-secondary"
+            className="button button--secondary"
             onClick={handleCancel}
             disabled={isSubmitting}
           >
@@ -129,7 +129,7 @@ function ProfileForm({
         )}
         <button
           type="submit"
-          className="btn btn-primary"
+          className="button button--primary"
           disabled={isSubmitting}
           aria-busy={isSubmitting}
         >

@@ -13,6 +13,9 @@ import { createHmac } from 'crypto';
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'development-token-secret-change-in-production';
 const TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+// In-memory token blacklist for invalidated tokens
+const tokenBlacklist = new Set<string>();
+
 export interface TokenPayload {
   userId: string;
   username: string;
@@ -62,6 +65,11 @@ export function verifyToken(token: string): TokenPayload | null {
       return null;
     }
     
+    // Check if token is blacklisted (invalidated by logout)
+    if (tokenBlacklist.has(token)) {
+      return null;
+    }
+    
     // Verify signature
     const expectedSignature = createHmac('sha256', TOKEN_SECRET)
       .update(payloadBase64)
@@ -104,4 +112,21 @@ function timingSafeEqual(a: string, b: string): boolean {
   }
   
   return result === 0;
+}
+
+/**
+ * Blacklist a token (invalidate it for server-side logout)
+ * @param token - The token string to invalidate
+ */
+export function blacklistToken(token: string): void {
+  tokenBlacklist.add(token);
+}
+
+/**
+ * Check if a token is blacklisted
+ * @param token - The token string to check
+ * @returns true if the token is blacklisted (invalidated), false otherwise
+ */
+export function isTokenBlacklisted(token: string): boolean {
+  return tokenBlacklist.has(token);
 }

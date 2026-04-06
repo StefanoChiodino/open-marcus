@@ -11,7 +11,7 @@
 import { Router, Request, Response } from 'express';
 import { getDatabase } from '../db/database.js';
 import { hash, verify } from '../crypto/password.js';
-import { generateToken, verifyToken } from '../crypto/token.js';
+import { generateToken, verifyToken, blacklistToken } from '../crypto/token.js';
 import { logLoginSuccess, logLoginFailure, logLogout, logAuthError } from '../lib/authLogger.js';
 import { getCorrelationId } from '../lib/logger.js';
 
@@ -207,28 +207,39 @@ router.get('/verify', (req: Request, res: Response) => {
 /**
  * POST /api/auth/logout
  * 
- * Logout a user. Note: Since we're using stateless tokens,
- * this is mainly for logging purposes.
+ * Logout a user by invalidating their session token.
+ * The client should discard the token after a successful logout.
  * 
- * Request body:
- *   { profile_id: string }
+ * Headers:
+ *   Authorization: Bearer <token>
  * 
  * Response:
  *   - 200: { success: true } on success
- *   - 400: { error: 'Profile ID is required' } if profile_id is missing
+ *   - 401: { error: 'Invalid or expired token' } if token is invalid or missing
  */
 router.post('/logout', (req: Request, res: Response) => {
   const correlationId = getCorrelationId();
   
   try {
-    const { profile_id } = req.body;
+    const authHeader = req.headers.authorization;
 
-    if (!profile_id) {
-      res.status(400).json({ error: 'Profile ID is required' });
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Invalid or expired token' });
       return;
     }
 
-    logLogout(profile_id, correlationId);
+    const token = authHeader.slice(7); // Remove 'Bearer ' prefix
+    const payload = verifyToken(token);
+
+    if (!payload) {
+      res.status(401).json({ error: 'Invalid or expired token' });
+      return;
+    }
+
+    // Blacklist the token so it can no longer be used
+    blacklistToken(token);
+
+    logLogout(payload.userId, correlationId);
 
     res.status(200).json({ success: true });
   } catch (error) {

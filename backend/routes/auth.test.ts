@@ -7,7 +7,7 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import { DatabaseService } from '../db/database.js';
 import { hash, verify } from '../crypto/password.js';
-import { generateToken, verifyToken } from '../crypto/token.js';
+import { generateToken, verifyToken, blacklistToken } from '../crypto/token.js';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -149,6 +149,34 @@ describe('Auth Routes', () => {
         });
       } catch (error) {
         console.error('Error during token verification:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
+    // POST /api/auth/logout
+    authApp.post('/api/auth/logout', (req, res) => {
+      try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          res.status(401).json({ error: 'Invalid or expired token' });
+          return;
+        }
+
+        const token = authHeader.slice(7); // Remove 'Bearer ' prefix
+        const payload = verifyToken(token);
+
+        if (!payload) {
+          res.status(401).json({ error: 'Invalid or expired token' });
+          return;
+        }
+
+        // Blacklist the token so it can no longer be used
+        blacklistToken(token);
+
+        res.status(200).json({ success: true });
+      } catch (error) {
+        console.error('Error during logout:', error);
         res.status(500).json({ error: 'Internal server error' });
       }
     });
@@ -422,6 +450,72 @@ describe('Auth Routes', () => {
     it('should return 401 with malformed Authorization header', async () => {
       const response = await request(app)
         .get('/api/auth/verify')
+        .set('Authorization', 'NotBearer sometoken');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Invalid or expired token');
+    });
+  });
+
+  describe('POST /api/auth/logout', () => {
+    it('should logout successfully with valid token and return 200', async () => {
+      // First register to get a token
+      const registerResponse = await request(app)
+        .post('/api/auth/register')
+        .send({ username: 'testuser', password: 'testpassword123' });
+
+      const token = registerResponse.body.token;
+
+      const response = await request(app)
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    it('should invalidate token so subsequent requests return 401', async () => {
+      // First register to get a token
+      const registerResponse = await request(app)
+        .post('/api/auth/register')
+        .send({ username: 'testuser', password: 'testpassword123' });
+
+      const token = registerResponse.body.token;
+
+      // Logout first
+      await request(app)
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${token}`);
+
+      // Try to use the now-invalidated token
+      const verifyResponse = await request(app)
+        .get('/api/auth/verify')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(verifyResponse.status).toBe(401);
+      expect(verifyResponse.body.error).toBe('Invalid or expired token');
+    });
+
+    it('should return 401 without Authorization header', async () => {
+      const response = await request(app)
+        .post('/api/auth/logout');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Invalid or expired token');
+    });
+
+    it('should return 401 with invalid token', async () => {
+      const response = await request(app)
+        .post('/api/auth/logout')
+        .set('Authorization', 'Bearer invalid.token.here');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Invalid or expired token');
+    });
+
+    it('should return 401 with malformed Authorization header', async () => {
+      const response = await request(app)
+        .post('/api/auth/logout')
         .set('Authorization', 'NotBearer sometoken');
 
       expect(response.status).toBe(401);

@@ -14,43 +14,85 @@ export interface AppSettings {
 }
 
 /**
- * System information relevant for model recommendations
+ * RAM tier for model recommendation
+ * Based on research (April 2026): Gemma 4 and Qwen 3.5 are the top open-weight model families
  */
-export interface SystemInfo {
-  totalRamGB: number;
-  recommendedModelSize: string;
-  recommendedModelDescription: string;
-}
+export type ModelRamTier = '2b' | '4b' | '26b-a4b' | '27b-31b';
 
 const SETTINGS_KEY_MODEL = 'ollama.model';
 
 /**
- * Determine recommended model based on available RAM
+ * Model recommendation based on available RAM
+ *
+ * Research findings (April 2026):
+ * - Gemma 4 26B-A4B MoE achieves ~97% of dense 31B quality at 8x less compute
+ * - Gemma 4 leads in coding (80% LiveCodeBench vs Qwen's ~43%) and reasoning
+ * - Qwen 3.5 leads in 2B/4B static benchmarks but Gemma has audio support at those sizes
+ * - Both families use Apache 2.0 license (no commercial restrictions)
  */
-function getRecommendationForRam(ramGB: number): { size: string; description: string } {
-  if (ramGB >= 64) {
-    return {
-      size: '70b',
-      description: '70B+ model recommended (e.g., llama3.1:70b, qwen2.5:72b)',
-    };
+interface RamRecommendation {
+  tier: ModelRamTier;
+  recommendedModel: string;       // Primary recommendation (best quality/speed balance)
+  altModels: string[];            // Alternative models at same tier
+  minRamGB: number;
+  description: string;
+}
+
+const MODEL_RECOMMENDATIONS: RamRecommendation[] = [
+  {
+    tier: '2b',
+    recommendedModel: 'gemma4:2b',
+    altModels: ['qwen3.5:2b', 'llama3.2:2b'],
+    minRamGB: 2,
+    description: '2B models for mobile/low-RAM devices (~1.5-2GB memory)',
+  },
+  {
+    tier: '4b',
+    recommendedModel: 'gemma4:4b',
+    altModels: ['qwen3.5:4b', 'llama3.2:3b'],
+    minRamGB: 4,
+    description: '4B models for compact inference (~3-5GB memory)',
+  },
+  {
+    tier: '26b-a4b',
+    recommendedModel: 'gemma4:26b-a4b',
+    altModels: ['qwen3.5:27b', 'llama3.2:14b'],
+    minRamGB: 8,
+    description: '26B MoE (4B active) — best quality/speed balance (~8-12GB memory)',
+  },
+  {
+    tier: '27b-31b',
+    recommendedModel: 'gemma4:31b',
+    altModels: ['qwen3.5:27b', 'gemma4:26b-a4b'],
+    minRamGB: 16,
+    description: 'Dense 27-31B models for best quality (~18-35GB memory)',
+  },
+];
+
+/**
+ * Find the best model tier for available RAM
+ */
+function getRecommendationForRam(ramGB: number): RamRecommendation {
+  // Find the highest tier that fits in available RAM
+  // Iterate from highest to lowest, return first that fits
+  for (let i = MODEL_RECOMMENDATIONS.length - 1; i >= 0; i--) {
+    if (ramGB >= MODEL_RECOMMENDATIONS[i].minRamGB) {
+      return MODEL_RECOMMENDATIONS[i];
+    }
   }
-  if (ramGB >= 32) {
-    return {
-      size: '14b',
-      description: '14B model recommended (e.g., llama3.2:14b, qwen2.5:14b)',
-    };
-  }
-  if (ramGB >= 16) {
-    return {
-      size: '7b',
-      description: '7B–8B model recommended (e.g., llama3.2:latest, qwen2.5:7b)',
-    };
-  }
-  // Less than 16 GB
-  return {
-    size: '3b',
-    description: '3B model recommended (e.g., llama3.2:3b, qwen2.5:3b)',
-  };
+  // Fallback to smallest if somehow RAM is < 2GB
+  return MODEL_RECOMMENDATIONS[0];
+}
+
+/**
+ * System information relevant for model recommendations
+ */
+export interface SystemInfo {
+  totalRamGB: number;
+  recommendedModel: string;              // Best model for this RAM tier
+  recommendedModelAlt: string[];         // Alternative models at same tier
+  recommendedTier: ModelRamTier;         // RAM tier category
+  recommendedTierDescription: string;    // Human-readable description
 }
 
 /**
@@ -63,15 +105,24 @@ export class SettingsService {
   getSettings(): AppSettings {
     const db = getDatabase();
 
-    // Get selected model if set; otherwise use environment or default
+    // Get selected model if set; otherwise use environment or RAM-based default
     const savedModel = db.getSetting(SETTINGS_KEY_MODEL);
 
-    const selectedModel =
-      savedModel ||
-      process.env.OLLAMA_MODEL ||
-      'llama3.2:latest';
+    if (savedModel) {
+      return { selectedModel: savedModel };
+    }
 
-    return { selectedModel };
+    const envModel = process.env.OLLAMA_MODEL;
+    if (envModel) {
+      return { selectedModel: envModel };
+    }
+
+    // Use RAM-based recommendation as default
+    const totalBytes = os.totalmem();
+    const totalRamGB = Math.round(totalBytes / (1024 * 1024 * 1024));
+    const recommendation = getRecommendationForRam(totalRamGB);
+
+    return { selectedModel: recommendation.recommendedModel };
   }
 
   /**
@@ -102,8 +153,10 @@ export class SettingsService {
 
     return {
       totalRamGB,
-      recommendedModelSize: recommendation.size,
-      recommendedModelDescription: recommendation.description,
+      recommendedModel: recommendation.recommendedModel,
+      recommendedModelAlt: recommendation.altModels,
+      recommendedTier: recommendation.tier,
+      recommendedTierDescription: recommendation.description,
     };
   }
 }

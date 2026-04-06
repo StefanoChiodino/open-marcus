@@ -29,13 +29,35 @@ describe('SettingsService', () => {
       db.deleteSetting('ollama.model');
 
       const originalModel = process.env.OLLAMA_MODEL;
+      process.env.OLLAMA_MODEL = 'custom-model:7b';
+
+      // Reset to get fresh instance
+      resetSettingsService();
+      const tempService = new SettingsService();
+      const settings = tempService.getSettings();
+      expect(settings.selectedModel).toBe('custom-model:7b');
+
+      if (originalModel) {
+        process.env.OLLAMA_MODEL = originalModel;
+      } else {
+        delete process.env.OLLAMA_MODEL;
+      }
+    });
+
+    it('should return RAM-based default when no setting or env var exists', () => {
+      // Clear any persisted model setting (DB singleton persists between tests)
+      const db = getDatabase();
+      db.deleteSetting('ollama.model');
+
+      const originalModel = process.env.OLLAMA_MODEL;
       delete process.env.OLLAMA_MODEL;
 
       // Reset to get fresh instance
       resetSettingsService();
       const tempService = new SettingsService();
       const settings = tempService.getSettings();
-      expect(settings.selectedModel).toBe('llama3.2:latest');
+      // Should be RAM-based default (gemma4:26b-a4b for 8GB+ typical systems)
+      expect(settings.selectedModel).toMatch(/^gemma4:|^qwen3\.5:|^llama3\.2:/);
 
       if (originalModel) process.env.OLLAMA_MODEL = originalModel;
     });
@@ -70,45 +92,50 @@ describe('SettingsService', () => {
       const info = service.getSystemInfo();
       expect(info.totalRamGB).toBeGreaterThan(0);
       expect(typeof info.totalRamGB).toBe('number');
-      expect(info.recommendedModelSize).toBeTruthy();
-      expect(info.recommendedModelDescription).toBeTruthy();
+      expect(info.recommendedModel).toBeTruthy();
+      expect(info.recommendedTier).toBeTruthy();
+      expect(info.recommendedTierDescription).toBeTruthy();
+      expect(info.recommendedModelAlt).toBeInstanceOf(Array);
     });
 
-    it('should recommend 3b model for < 16 GB RAM', () => {
+    it('should recommend 2b model for < 4 GB RAM', () => {
+      vi.spyOn(os, 'totalmem').mockReturnValue(2 * 1024 * 1024 * 1024);
+
+      resetSettingsService();
+      const freshService = new SettingsService();
+      const info = freshService.getSystemInfo();
+      expect(info.recommendedTier).toBe('2b');
+      expect(info.recommendedModel).toBe('gemma4:2b');
+    });
+
+    it('should recommend 4b model for 4-7 GB RAM', () => {
+      vi.spyOn(os, 'totalmem').mockReturnValue(6 * 1024 * 1024 * 1024);
+
+      resetSettingsService();
+      const freshService = new SettingsService();
+      const info = freshService.getSystemInfo();
+      expect(info.recommendedTier).toBe('4b');
+      expect(info.recommendedModel).toBe('gemma4:4b');
+    });
+
+    it('should recommend 26b-a4b MoE model for 8-15 GB RAM', () => {
       vi.spyOn(os, 'totalmem').mockReturnValue(8 * 1024 * 1024 * 1024);
 
       resetSettingsService();
       const freshService = new SettingsService();
       const info = freshService.getSystemInfo();
-      expect(info.recommendedModelSize).toBe('3b');
-      expect(info.recommendedModelDescription).toContain('3B');
+      expect(info.recommendedTier).toBe('26b-a4b');
+      expect(info.recommendedModel).toBe('gemma4:26b-a4b');
     });
 
-    it('should recommend 7b model for 16-31 GB RAM', () => {
-      vi.spyOn(os, 'totalmem').mockReturnValue(16 * 1024 * 1024 * 1024);
-
-      resetSettingsService();
-      const freshService = new SettingsService();
-      const info = freshService.getSystemInfo();
-      expect(info.recommendedModelSize).toBe('7b');
-    });
-
-    it('should recommend 14b model for 32-63 GB RAM', () => {
+    it('should recommend 27b-31b model for 16+ GB RAM', () => {
       vi.spyOn(os, 'totalmem').mockReturnValue(32 * 1024 * 1024 * 1024);
 
       resetSettingsService();
       const freshService = new SettingsService();
       const info = freshService.getSystemInfo();
-      expect(info.recommendedModelSize).toBe('14b');
-    });
-
-    it('should recommend 70b model for 64+ GB RAM', () => {
-      vi.spyOn(os, 'totalmem').mockReturnValue(64 * 1024 * 1024 * 1024);
-
-      resetSettingsService();
-      const freshService = new SettingsService();
-      const info = freshService.getSystemInfo();
-      expect(info.recommendedModelSize).toBe('70b');
+      expect(info.recommendedTier).toBe('27b-31b');
+      expect(info.recommendedModel).toBe('gemma4:31b');
     });
   });
 

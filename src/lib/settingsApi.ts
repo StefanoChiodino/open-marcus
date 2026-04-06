@@ -11,8 +11,10 @@ export interface SettingsResponse {
   selectedModel: string;
   systemInfo: {
     totalRamGB: number;
-    recommendedModelSize: string;
-    recommendedModelDescription: string;
+    recommendedModel: string;
+    recommendedModelAlt: string[];
+    recommendedTier: string;
+    recommendedTierDescription: string;
   } | null;
   installedModels: string[];
   ollamaOnline: boolean;

@@ -84,15 +84,15 @@ describe('Settings Routes', () => {
     });
 
     it('should persist the updated model', async () => {
-      // First update
+      // First update - using a model that's in the installed models list
       await request(app)
         .put('/api/settings')
-        .send({ selectedModel: 'llama3.1:8b' })
+        .send({ selectedModel: 'qwen2.5:7b' })
         .expect(200);
 
       // Then verify it persists on next GET
       const getResponse = await request(app).get('/api/settings').expect(200);
-      expect(getResponse.body.selectedModel).toBe('llama3.1:8b');
+      expect(getResponse.body.selectedModel).toBe('qwen2.5:7b');
     });
 
     it('should return 400 for empty selectedModel', async () => {
@@ -120,6 +120,37 @@ describe('Settings Routes', () => {
         .expect(400);
 
       expect(response.body.error).toContain('object');
+    });
+
+    it('should return 400 when selectedModel is not in installed models list', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ selectedModel: 'nonexistent:model' })
+        .expect(400);
+
+      expect(response.body.error).toContain('not installed');
+      expect(response.body.error).toContain('nonexistent:model');
+    });
+
+    it('should allow update when selectedModel is in installed models list', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ selectedModel: 'llama3.2:latest' })
+        .expect(200);
+
+      expect(response.body.selectedModel).toBe('llama3.2:latest');
+    });
+
+    it('should allow update when Ollama is offline (cannot verify installed models)', async () => {
+      const mockOllamaService = getOllamaService();
+      vi.spyOn(mockOllamaService, 'isOnline').mockResolvedValue(false);
+
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ selectedModel: 'any-model:works' })
+        .expect(200);
+
+      expect(response.body.selectedModel).toBe('any-model:works');
     });
   });
 

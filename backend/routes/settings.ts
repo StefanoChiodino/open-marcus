@@ -12,8 +12,10 @@ interface SettingsResponse {
   selectedModel: string;
   systemInfo: {
     totalRamGB: number;
-    recommendedModelSize: string;
-    recommendedModelDescription: string;
+    recommendedModel: string;
+    recommendedModelAlt: string[];
+    recommendedTier: string;
+    recommendedTierDescription: string;
   } | null;
   installedModels: string[];
   ollamaOnline: boolean;
@@ -83,6 +85,26 @@ router.put('/', async (req: Request, res: Response) => {
     if ('selectedModel' in updates && updates.selectedModel.trim().length === 0) {
       res.status(400).json({ error: 'selectedModel cannot be empty' });
       return;
+    }
+
+    // Validate that selectedModel exists in installed models list (if Ollama is online)
+    if ('selectedModel' in updates && updates.selectedModel.trim().length > 0) {
+      try {
+        const ollamaService = getOllamaService();
+        const isOnline = await ollamaService.isOnline();
+        if (isOnline) {
+          const installedModels = await ollamaService.listModels();
+          if (!installedModels.includes(updates.selectedModel.trim())) {
+            res.status(400).json({
+              error: `Model '${updates.selectedModel}' is not installed. Available models: ${installedModels.join(', ')}`,
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        // If listing models fails, treat Ollama as offline and allow the update
+        console.warn('Failed to verify model against installed list:', error);
+      }
     }
 
     const settingsService = getSettingsService();

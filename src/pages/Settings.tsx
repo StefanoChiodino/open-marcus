@@ -219,7 +219,7 @@ function Settings() {
                   System RAM: {settingsData.systemInfo.totalRamGB} GB
                 </span>
                 <span className="model-selection__recommendation" aria-label="Recommended model">
-                  Recommended: {settingsData.systemInfo.recommendedModelDescription}
+                  Recommended: {settingsData.systemInfo.recommendedTierDescription}
                 </span>
               </div>
             )}

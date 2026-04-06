@@ -1,0 +1,258 @@
+/* VoiceControls Component Styles */
+
+.voice-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ---- Base Button Styles ---- */
+.voice-controls__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--color-bg-tertiary);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.voice-controls__button:hover:not(:disabled) {
+  border-color: var(--color-gold-primary);
+  color: var(--color-gold-primary);
+}
+
+.voice-controls__button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.voice-controls__button--active {
+  border-color: var(--color-gold-primary);
+  color: var(--color-gold-primary);
+  background: rgba(201, 162, 39, 0.1);
+}
+
+/* ---- Microphone Button ---- */
+.voice-controls__mic {
+  position: relative;
+}
+
+.voice-controls__mic--recording {
+  border-color: var(--color-error);
+  color: var(--color-error);
+  background: rgba(166, 61, 47, 0.08);
+  animation: voice-mic-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes voice-mic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(166, 61, 47, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(166, 61, 47, 0);
+  }
+}
+
+/* Pulse animation for the icon during recording */
+.voice-controls__pulse-icon {
+  animation: icon-pulse 1s ease-in-out infinite;
+}
+
+@keyframes icon-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* ---- Speaker Button ---- */
+.voice-controls__speaker {
+  position: relative;
+}
+
+.voice-controls__speaker--speaking {
+  border-color: var(--color-gold-primary);
+  color: var(--color-gold-primary);
+  background: rgba(201, 162, 39, 0.1);
+}
+
+.voice-controls__speaker--speaking::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-gold-primary);
+  animation: voice-speaker-wave 1s ease-out infinite;
+}
+
+@keyframes voice-speaker-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* ---- Error Messages ---- */
+.voice-controls__error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  max-width: 280px;
+  animation: fade-in 0.3s ease-out;
+}
+
+.voice-controls__dismiss {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 var(--space-1);
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
+
+.voice-controls__dismiss:hover {
+  opacity: 1;
+}
+
+/* ---- Processing Indicator ---- */
+.voice-controls__processing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  animation: fade-in 0.3s ease-out;
+}
+
+.voice-controls__processing-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.voice-controls__processing-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-text-secondary);
+  animation: processing-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.voice-controls__processing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.voice-controls__processing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes processing-dot-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* ---- Recording Indicator ---- */
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  animation: fade-in 0.2s ease-out;
+}
+
+.recording-indicator__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-error);
+  animation: record-dot-pulse 1s ease-in-out infinite;
+}
+
+@keyframes record-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+.recording-indicator__text {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* ---- Voice Output Bridge ---- */
+.voice-output-bridge {
+  display: none;
+}
+
+/* ---- Animation ---- */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-1));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 767px) {
+  .voice-controls__button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .voice-controls__button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .voice-controls__error {
+    max-width: 220px;
+  }
+}

@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useProfileStore } from '../stores/profileStore';
 import { useSessionStore } from '../stores/sessionStore';
+import { useVoiceStore } from '../stores/voiceStore';
+import { dispatchSpeak } from './VoiceControls';
+import VoiceControls from './VoiceControls';
 import ChatMessage from './ChatMessage';
 import SessionSummary from './SessionSummary';
 import LoadingSpinner from './LoadingSpinner';
@@ -28,15 +31,48 @@ function MeditationChat() {
     restoreSession,
   } = useSessionStore();
 
+  const { voiceOutputEnabled } = useVoiceStore();
+
   // Restore active session from localStorage on mount (handles page refresh)
   useEffect(() => {
     restoreSession();
   }, [restoreSession]);
 
   const [inputValue, setInputValue] = useState('');
+  const [justStreamed, setJustStreamed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isWaitingForGreeting = status === 'starting';
+
+  // Track when streaming just completed (for speaking the response)
+  useEffect(() => {
+    if (!isStreaming && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg?.role === 'assistant' && lastMsg.content.length > 0) {
+        setJustStreamed(true);
+      }
+    }
+  }, [isStreaming, messages.length, messages]);
+
+  // Speak the last assistant response if voice output is enabled
+  useEffect(() => {
+    if (justStreamed && voiceOutputEnabled && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg?.role === 'assistant' && lastMsg.content.length > 0) {
+        dispatchSpeak(lastMsg.content);
+      }
+      setJustStreamed(false);
+    }
+  }, [justStreamed, voiceOutputEnabled, messages.length]);
+
+  // Handle voice transcription - insert transcribed text into input field
+  const handleVoiceTranscript = useCallback((text: string) => {
+    setInputValue(text);
+    // Focus the textarea so user can review/edit before sending
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
+  }, []);
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -260,6 +296,10 @@ function MeditationChat() {
       {/* Input area */}
       <div className="meditation-chat__input-area">
         <div className="meditation-chat__input-wrapper">
+          <VoiceControls
+            onTranscript={handleVoiceTranscript}
+            disabled={isStreaming || status === 'ending'}
+          />
           <textarea
             ref={textareaRef}
             value={inputValue}

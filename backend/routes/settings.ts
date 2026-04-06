@@ -87,25 +87,9 @@ router.put('/', async (req: Request, res: Response) => {
       return;
     }
 
-    // Validate that selectedModel exists in installed models list (if Ollama is online)
-    if ('selectedModel' in updates && updates.selectedModel.trim().length > 0) {
-      try {
-        const ollamaService = getOllamaService();
-        const isOnline = await ollamaService.isOnline();
-        if (isOnline) {
-          const installedModels = await ollamaService.listModels();
-          if (!installedModels.includes(updates.selectedModel.trim())) {
-            res.status(400).json({
-              error: `Model '${updates.selectedModel}' is not installed. Available models: ${installedModels.join(', ')}`,
-            });
-            return;
-          }
-        }
-      } catch (error) {
-        // If listing models fails, treat Ollama as offline and allow the update
-        console.warn('Failed to verify model against installed list:', error);
-      }
-    }
+    // Note: We don't validate that selectedModel exists in installed models here.
+    // If the model isn't installed, Ollama will return an error at chat time which the UI handles gracefully.
+    // This allows users to pre-select a recommended model before installing it.
 
     const settingsService = getSettingsService();
     const updatedSettings = settingsService.updateSettings(updates);

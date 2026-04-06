@@ -10,6 +10,7 @@ import { useProfileStore } from './stores/profileStore';
 import MeditationChat from './components/MeditationChat';
 import SessionHistory from './components/SessionHistory';
 import SessionDetail from './components/SessionDetail';
+import ProfileForm from './components/ProfileForm';
 import type { ProfileFormData } from './shared/types';
 import './styles/App.css';
 import './App.css';
@@ -77,11 +78,27 @@ function ProfileGateway() {
  */
 
 /**
- * Placeholder profile settings page
+ * Profile settings page with edit mode support
  */
 function ProfilePage() {
-  const { profile, startEditing, clearProfile } = useProfileStore();
+  const { profile, isEditing, startEditing, cancelEditing, clearProfile, saveProfile } = useProfileStore();
 
+  // When in edit mode, show the ProfileForm
+  if (isEditing && profile) {
+    return (
+      <div className="page-container">
+        <ProfileForm
+          initialName={profile.name}
+          initialBio={profile.bio || ''}
+          onSubmit={saveProfile}
+          onCancel={cancelEditing}
+          isEditMode={true}
+        />
+      </div>
+    );
+  }
+
+  // When not editing, show static profile display
   return (
     <div className="page-container">
       <h2>Profile Settings</h2>

@@ -5,7 +5,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dataExportAPI } from '../lib/dataExportApi';
-import { settingsAPI } from '../lib/settingsApi';
+import { settingsAPI, TTS_VOICES, TtsVoice, TTS_MIN_RATE, TTS_MAX_RATE, TTS_MIN_PITCH, TTS_MAX_PITCH } from '../lib/settingsApi';
 import type { SettingsResponse } from '../lib/settingsApi';
 import { useToastStore } from '../stores/toastStore';
 import { useProfileStore } from '../stores/profileStore';
@@ -32,6 +32,12 @@ function Settings() {
   const [isSavingModel, setIsSavingModel] = useState(false);
   const [selectedModel, setSelectedModel] = useState('');
 
+  // TTS settings state
+  const [selectedVoice, setSelectedVoice] = useState<TtsVoice>('en-US-GuyNeural');
+  const [rateValue, setRateValue] = useState(25); // default +25%
+  const [pitchValue, setPitchValue] = useState(0); // default +0Hz
+  const [isSavingTts, setIsSavingTts] = useState(false);
+
   /**
    * Load settings on mount
    */
@@ -41,6 +47,18 @@ function Settings() {
         const data = await settingsAPI.getSettings();
         setSettingsData(data);
         setSelectedModel(data.selectedModel);
+        // Set TTS settings from API response
+        setSelectedVoice(data.ttsVoice as TtsVoice);
+        // Parse rate value from string like "+25%" to number 25
+        const rateMatch = data.ttsRate.match(/^([+-]?\d+)%$/);
+        if (rateMatch) {
+          setRateValue(parseInt(rateMatch[1], 10));
+        }
+        // Parse pitch value from string like "+0Hz" to number 0
+        const pitchMatch = data.ttsPitch.match(/^([+-]?\d+)Hz$/);
+        if (pitchMatch) {
+          setPitchValue(parseInt(pitchMatch[1], 10));
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load settings';
         addToast({
@@ -83,6 +101,110 @@ function Settings() {
       setSelectedModel(settingsData?.selectedModel || '');
     } finally {
       setIsSavingModel(false);
+    }
+  };
+
+  /**
+   * Handle TTS voice selection change
+   */
+  const handleVoiceChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newVoice = event.target.value as TtsVoice;
+    setSelectedVoice(newVoice);
+
+    setIsSavingTts(true);
+    try {
+      const updated = await settingsAPI.updateSettings({ ttsVoice: newVoice });
+      setSettingsData(updated);
+      addToast({
+        type: 'success',
+        title: 'Voice updated',
+        message: `Now using ${newVoice}.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update voice';
+      addToast({
+        type: 'error',
+        title: 'Voice update failed',
+        message,
+      });
+      // Revert to previous value
+      setSelectedVoice(settingsData?.ttsVoice as TtsVoice || 'en-US-GuyNeural');
+    } finally {
+      setIsSavingTts(false);
+    }
+  };
+
+  /**
+   * Handle TTS rate slider change
+   */
+  const handleRateChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newRate = parseInt(event.target.value, 10);
+    setRateValue(newRate);
+
+    // Format rate as percentage string: "+25%" or "-10%"
+    const rateString = newRate >= 0 ? `+${newRate}%` : `${newRate}%`;
+
+    setIsSavingTts(true);
+    try {
+      const updated = await settingsAPI.updateSettings({ ttsRate: rateString });
+      setSettingsData(updated);
+      addToast({
+        type: 'success',
+        title: 'Rate updated',
+        message: `Speech rate set to ${rateString}.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update rate';
+      addToast({
+        type: 'error',
+        title: 'Rate update failed',
+        message,
+      });
+      // Revert to previous value from settingsData
+      const prevRate = settingsData?.ttsRate || '+25%';
+      const prevRateMatch = prevRate.match(/^([+-]?\d+)%$/);
+      if (prevRateMatch) {
+        setRateValue(parseInt(prevRateMatch[1], 10));
+      }
+    } finally {
+      setIsSavingTts(false);
+    }
+  };
+
+  /**
+   * Handle TTS pitch slider change
+   */
+  const handlePitchChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newPitch = parseInt(event.target.value, 10);
+    setPitchValue(newPitch);
+
+    // Format pitch as Hz string: "+0Hz" or "-10Hz"
+    const pitchString = newPitch >= 0 ? `+${newPitch}Hz` : `${newPitch}Hz`;
+
+    setIsSavingTts(true);
+    try {
+      const updated = await settingsAPI.updateSettings({ ttsPitch: pitchString });
+      setSettingsData(updated);
+      addToast({
+        type: 'success',
+        title: 'Pitch updated',
+        message: `Speech pitch set to ${pitchString}.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update pitch';
+      addToast({
+        type: 'error',
+        title: 'Pitch update failed',
+        message,
+      });
+      // Revert to previous value from settingsData
+      const prevPitch = settingsData?.ttsPitch || '+0Hz';
+      const prevPitchMatch = prevPitch.match(/^([+-]?\d+)Hz$/);
+      if (prevPitchMatch) {
+        setPitchValue(parseInt(prevPitchMatch[1], 10));
+      }
+    } finally {
+      setIsSavingTts(false);
     }
   };
 
@@ -235,16 +357,18 @@ function Settings() {
                 value={selectedModel}
                 onChange={handleModelChange}
                 disabled={isSavingModel || (!settingsData?.ollamaOnline && settingsData?.installedModels.length === 0)}
-                aria-describedby="model-selection-help"
+                aria-describedby="model-selection-help model-ram-explanation"
               >
                 {isSavingModel ? (
                   <option value="">Updating model...</option>
                 ) : (
                   <>
                     {/* Show installed models (available online or offline) */}
-                    {settingsData?.installedModels.map((model) => (
-                      <option key={model} value={model}>
-                        {selectedModel === model ? `✓ ${model}` : model}
+                    {settingsData?.installedModelsInfo.map((modelInfo) => (
+                      <option key={modelInfo.name} value={modelInfo.name}>
+                        {selectedModel === modelInfo.name
+                          ? `✓ ${modelInfo.name}`
+                          : modelInfo.name} ({modelInfo.ramUsageLabel})
                       </option>
                     ))}
                     {/* Show recommended models that aren't installed yet */}
@@ -279,8 +403,96 @@ function Settings() {
                 {settingsData?.ollamaOnline && settingsData.installedModels.length > 0 &&
                   'Select an installed model or choose a recommended one below. Changes take effect on your next meditation session.'}
               </p>
+              <p id="model-ram-explanation" className="model-selection__ram-explanation">
+                <strong>About model size and RAM:</strong> The size shown next to each model (e.g., "~2 GB RAM") is an estimate of how much memory the model needs when running. This includes the model weights, plus working memory for processing. You are responsible for ensuring you have enough RAM available on your computer before selecting a model. Larger models generally provide better responses but require more memory. If you're unsure, choose a smaller model or one recommended for your system's RAM.</p>
             </div>
           </>
+        )}
+      </section>
+
+      {/* Voice Output Section */}
+      <section className="settings-section" aria-labelledby="tts-heading">
+        <h3 className="settings-section__title" id="tts-heading">Voice Output</h3>
+
+        {isLoadingSettings ? (
+          <div className="loading-spinner" role="status" aria-label="Loading TTS settings">
+            Loading TTS settings...
+          </div>
+        ) : (
+          <div className="tts-settings">
+            {/* Voice Selection */}
+            <div className="tts-settings__control">
+              <label htmlFor="tts-voice-select" className="tts-settings__label">
+                Voice
+              </label>
+              <select
+                id="tts-voice-select"
+                className="tts-settings__dropdown"
+                value={selectedVoice}
+                onChange={handleVoiceChange}
+                disabled={isSavingTts}
+              >
+                {TTS_VOICES.map((voice) => (
+                  <option key={voice} value={voice}>
+                    {voice}
+                  </option>
+                ))}
+              </select>
+              <p className="tts-settings__help">
+                Select the voice used for text-to-speech output during meditation sessions.
+              </p>
+            </div>
+
+            {/* Rate Slider */}
+            <div className="tts-settings__control">
+              <label htmlFor="tts-rate-slider" className="tts-settings__label">
+                Speed: <span className="tts-settings__value">{rateValue >= 0 ? `+${rateValue}%` : `${rateValue}%`}</span>
+              </label>
+              <div className="tts-settings__slider-container">
+                <span className="tts-settings__slider-range">{TTS_MIN_RATE}%</span>
+                <input
+                  id="tts-rate-slider"
+                  type="range"
+                  className="tts-settings__slider"
+                  min={TTS_MIN_RATE}
+                  max={TTS_MAX_RATE}
+                  value={rateValue}
+                  onChange={handleRateChange}
+                  disabled={isSavingTts}
+                  aria-describedby="tts-rate-help"
+                />
+                <span className="tts-settings__slider-range">{TTS_MAX_RATE}%</span>
+              </div>
+              <p id="tts-rate-help" className="tts-settings__help">
+                Adjust speech speed. Default is +25% (faster than normal).
+              </p>
+            </div>
+
+            {/* Pitch Slider */}
+            <div className="tts-settings__control">
+              <label htmlFor="tts-pitch-slider" className="tts-settings__label">
+                Pitch: <span className="tts-settings__value">{pitchValue >= 0 ? `+${pitchValue}Hz` : `${pitchValue}Hz`}</span>
+              </label>
+              <div className="tts-settings__slider-container">
+                <span className="tts-settings__slider-range">{TTS_MIN_PITCH}Hz</span>
+                <input
+                  id="tts-pitch-slider"
+                  type="range"
+                  className="tts-settings__slider"
+                  min={TTS_MIN_PITCH}
+                  max={TTS_MAX_PITCH}
+                  value={pitchValue}
+                  onChange={handlePitchChange}
+                  disabled={isSavingTts}
+                  aria-describedby="tts-pitch-help"
+                />
+                <span className="tts-settings__slider-range">+{TTS_MAX_PITCH}Hz</span>
+              </div>
+              <p id="tts-pitch-help" className="tts-settings__help">
+                Adjust speech pitch. Default is +0Hz (natural pitch).
+              </p>
+            </div>
+          </div>
         )}
       </section>
 

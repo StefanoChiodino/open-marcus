@@ -98,7 +98,16 @@ export const useVoiceStore = create<VoiceState>((set) => ({
 
   setStatus: (status) => set({ status }),
 
-  setError: (error) => set({ error, status: error ? 'error' : 'idle' }),
+  setError: (error) =>
+    set((state) => ({
+      error,
+      // Preserve 'permission-denied' status — don't overwrite it with 'error'
+      status: error
+        ? state.status === 'permission-denied'
+          ? state.status
+          : 'error'
+        : 'idle',
+    })),
 
   clearError: () => set({ error: null, status: 'idle' }),
 }));

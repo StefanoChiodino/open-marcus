@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useVoiceStore } from '../stores/voiceStore';
 import { VoiceInputManager } from '../lib/voiceInputManager';
 import { voiceAPI } from '../lib/voiceApi';
@@ -209,12 +209,12 @@ function VoiceControls({ onTranscript, onSpeechEnd, disabled = false }: VoiceCon
   }, [setStatus]);
 
   // Cleanup on unmount
-  useState(() => {
+  useEffect(() => {
     return () => {
       managerRef.current?.cleanup();
       stopSpeaking();
     };
-  });
+  }, [stopSpeaking]);
 
   const isRecording = status === 'recording';
   const isPermissionDenied = status === 'permission-denied';
@@ -380,7 +380,7 @@ function VoiceOutputBridge({ speak }: VoiceOutputBridgeProps) {
   // Listen for custom 'marcus-speak' events on this element
   const ref = useRef<HTMLDivElement>(null);
 
-  useState(() => {
+  useEffect(() => {
     const element = ref.current;
     if (!element) return;
 
@@ -394,7 +394,7 @@ function VoiceOutputBridge({ speak }: VoiceOutputBridgeProps) {
     return () => {
       element.removeEventListener('marcus-speak', handler as EventListener);
     };
-  });
+  }, [speak]);
 
   return <div ref={ref} className="voice-output-bridge" hidden aria-hidden="true" />;
 }

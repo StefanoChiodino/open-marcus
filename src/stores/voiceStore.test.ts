@@ -134,6 +134,14 @@ describe('VoiceStore', () => {
       expect(state.error).toBeNull();
       expect(state.status).toBe('idle');
     });
+
+    it('preserves permission-denied status when setting an error', () => {
+      useVoiceStore.getState().setStatus('permission-denied');
+      useVoiceStore.getState().setError('Microphone access denied');
+      const state = useVoiceStore.getState();
+      expect(state.error).toBe('Microphone access denied');
+      expect(state.status).toBe('permission-denied');
+    });
   });
 
   describe('clearError', () => {

@@ -11,8 +11,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-// Log directory path (relative to project root)
-const LOG_DIR = path.join(process.cwd(), 'data', 'logs');
+// Log directory path (evaluated at runtime to support test environment)
+function getLogDir(): string {
+  return path.join(process.cwd(), 'data', 'logs');
+}
 
 // Log levels
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -40,8 +42,9 @@ export function isProduction(): boolean {
  * Ensure the log directory exists
  */
 export function ensureLogDir(): void {
-  if (!fs.existsSync(LOG_DIR)) {
-    fs.mkdirSync(LOG_DIR, { recursive: true });
+  const logDir = getLogDir();
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
   }
 }
 
@@ -108,7 +111,7 @@ function writeLog(level: LogLevel, message: string, context?: Record<string, unk
   };
 
   // Write as JSON Lines format
-  const logPath = path.join(LOG_DIR, `${level}.log`);
+  const logPath = path.join(getLogDir(), `${level}.log`);
   const line = JSON.stringify(entry) + '\n';
   
   fs.writeFileSync(logPath, line, { flag: 'a' });

@@ -1,7 +1,7 @@
 {
   "milestone": "polish",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
@@ -11,7 +11,7 @@
     },
     "typecheck": {
       "passed": true,
-      "command": "npm run typecheck",
+      "command": "tsc --noEmit",
       "exitCode": 0,
       "observation": "TypeScript compilation clean with no errors."
     },
@@ -22,76 +22,98 @@
       "observation": "ESLint clean with no warnings or errors."
     }
   },
-  "reviewsSummary": {
-    "total": 6,
-    "passed": 4,
-    "failed": 2,
-    "failedFeatures": ["polish-model-selection", "polish-responsive"]
+  "priorRoundSummary": {
+    "round": 1,
+    "status": "fail",
+    "failedFeatures": ["polish-model-selection", "polish-responsive"],
+    "fixFeatures": ["fix-model-selection-types", "fix-responsive-aria-hidden"]
   },
-  "blockingIssues": [
+  "reviewsSummary": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "fixReviewResults": [
     {
-      "featureId": "polish-model-selection",
-      "severity": "blocking",
-      "description": "CRITICAL BUG: Frontend-backend type mismatch causes silent runtime failure. Backend SettingsResponse returns `recommendedTierDescription` (backend/routes/settings.ts line ~146) but frontend settingsApi.ts declares `recommendedModelDescription` and Settings.tsx reads that field. The 'Recommended:' text in the Settings UI will display undefined instead of the model tier description. The backend also sends `recommendedModel` and `recommendedModelAlt` fields that the frontend interface doesn't reference (frontend has `recommendedModelSize` instead)."
+      "featureId": "fix-model-selection-types",
+      "commitId": "d221750",
+      "status": "pass",
+      "summary": "Blocking type mismatch fully resolved. Frontend SettingsResponse interface now matches backend fields exactly (recommendedModel, recommendedModelAlt, recommendedTier, recommendedTierDescription). Non-blocking model validation issue also addressed — PUT /api/settings now validates selected model exists in installed Ollama models list with graceful offline fallback. All tests pass (246 frontend + 24 backend settings)."
     },
     {
-      "featureId": "polish-responsive",
-      "severity": "blocking",
-      "description": "Accessibility regression: Layout.tsx passes aria-hidden={isMobile} to the Navigation component (line ~82). This sets aria-hidden='true' on the <nav> element on mobile viewports, making the bottom navigation bar completely invisible to screen readers. The mobile bottom nav is the primary navigation method on small screens and must be accessible to assistive technology. This directly conflicts with the accessibility compliance established in polish-accessibility."
+      "featureId": "fix-responsive-aria-hidden",
+      "commitId": "db02c87",
+      "status": "pass",
+      "summary": "Blocking accessibility regression fully resolved. Removed aria-hidden={isMobile} prop from Navigation component in Layout.tsx. The prop was being silently dropped by React since Navigation's interface doesn't include it, but removing it eliminates misleading code. Navigation already has proper ARIA semantics. All validators pass."
     }
   ],
+  "blockingIssues": [],
   "nonBlockingIssues": [
     {
       "featureId": "polish-model-selection",
-      "description": "No validation that selected model exists in installed Ollama models list. PUT /api/settings accepts any model string, which could cause silent failures if the model doesn't exist."
-    },
-    {
-      "featureId": "polish-model-selection",
-      "description": "Offline dropdown shows recommended model string (e.g., 'gemma4:26b-a4b (Ollama offline)') which may not match any installed model — potentially confusing UI."
+      "source": "fix-model-selection-types review",
+      "description": "The route-level SettingsResponse interface in backend/routes/settings.ts duplicates the SystemInfo interface from backend/services/settings.ts. Risk of drift if someone adds a field to one but not the other."
     },
     {
       "featureId": "polish-accessibility",
-      "description": "SkipLink.css uses :focus instead of :focus-visible for the skip link reveal, inconsistent with the project's :focus-visible pattern used throughout other components."
+      "source": "round 1 review (still applicable)",
+      "description": "SkipLink.css uses :focus instead of :focus-visible for the skip link reveal, inconsistent with the project's :focus-visible pattern."
     },
     {
       "featureId": "polish-accessibility",
+      "source": "round 1 review (still applicable)",
       "description": "useFocusManagement hook adds blur event listeners without useEffect cleanup, potential minor memory concern if component unmounts before blur fires."
     },
     {
       "featureId": "polish-responsive",
+      "source": "round 1 review (still applicable)",
       "description": "Dead code: 'app-layout--mobile' class added in JSX but no CSS rules target it anywhere in the codebase."
     },
     {
       "featureId": "polish-responsive",
+      "source": "round 1 review (still applicable)",
       "description": "Tablet breakpoint auto-collapses navigation for all tablet sizes (768-1199px), including 1024-1199px where the 200px sidebar could accommodate text labels."
     },
     {
       "featureId": "polish-responsive",
+      "source": "round 1 review (still applicable)",
       "description": "Resize event handlers fire synchronously on every resize event with no throttling or debouncing, could cause excessive re-renders during window drag-resizing."
     },
     {
       "featureId": "polish-encryption-verification",
+      "source": "round 1 review (still applicable)",
       "description": "getRawProfileData() uses row?.encrypted_data || null which returns null for both missing row and empty string — slightly ambiguous behavior."
     },
     {
       "featureId": "polish-encryption-verification",
+      "source": "round 1 review (still applicable)",
       "description": "Test isolation in 'wrong encryption key' test creates a second DatabaseService on the same file path, deviates from one-DB-per-test pattern."
     },
     {
       "featureId": "polish-cross-flow-complete",
+      "source": "round 1 review (still applicable)",
       "description": "Inconsistent clearAllData helper error handling: full-journey.spec.ts throws on fetch failure, but voice-session.spec.ts and offline-mode.spec.ts silently ignore errors."
     },
     {
       "featureId": "polish-cross-flow-complete",
+      "source": "round 1 review (still applicable)",
       "description": "Hardcoded waitForTimeout sleeps (8000ms, 1000ms) are brittle; prefer waitFor assertions on specific UI states."
     },
     {
       "featureId": "polish-cross-flow-complete",
+      "source": "round 1 review (still applicable)",
       "description": "Playwright config lacks webServer configuration — services must be started manually before running e2e tests."
     },
     {
       "featureId": "polish-cross-flow-complete",
+      "source": "round 1 review (still applicable)",
       "description": "Repetitive profile creation boilerplate (~10 lines) copy-pasted in every test file."
+    },
+    {
+      "featureId": "export-route",
+      "source": "fix-model-selection-types review (discovered)",
+      "description": "Pre-existing database isolation issue in backend/routes/export.test.ts — profile data from other tests leaks, causing test failures. Test infrastructure issue, not a production bug."
     }
   ],
   "appliedUpdates": [],
@@ -151,5 +173,5 @@
       "reason": "The feature added comprehensive backend tests. Frontend page component testing is outside the scope of a backend-focused worker. This would be a good enhancement but is not a convention gap."
     }
   ],
-  "previousRound": null
+  "previousRound": ".factory/validation/polish/scrutiny/synthesis.json (round 1)"
 }

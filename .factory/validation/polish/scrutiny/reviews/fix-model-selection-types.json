@@ -1,0 +1,34 @@
+{
+  "featureId": "fix-model-selection-types",
+  "reviewedAt": "2026-04-06T12:51:00.000Z",
+  "commitId": "d221750",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The fix correctly addresses the blocking frontend/backend type mismatch in model selection. Four fields in the frontend `SettingsResponse.systemInfo` interface were updated to match the backend's actual response: `recommendedModelDescription` → `recommendedTierDescription`, and three additional fields (`recommendedModel`, `recommendedModelAlt`, `recommendedTier`) were added instead of the old `recommendedModelSize`. The `Settings.tsx` component was updated to read the correct `recommendedTierDescription` field. Additionally, a validation was added to the PUT `/api/settings` route that checks whether the selected model exists in the installed Ollama models list, with graceful fallback when Ollama is offline. The backend route tests were updated (existing tests changed from `llama3.1:8b` to `qwen2.5:7b` to match the mocked installed models list), and three new tests cover the validation scenarios. The backend `SystemInfo` interface in `settings.ts` was also refactored to expose the correct fields, and the service tests were updated with new RAM tier boundaries and assertions. All validators pass (typecheck, lint, 246 frontend tests, 24 backend settings tests).",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "The route-level `SettingsResponse` interface in `backend/routes/settings.ts` duplicates the `SystemInfo` interface from `backend/services/settings.ts`. Since both were modified in this fix, there's a risk they drift apart if someone adds a field to one but not the other.",
+      "evidence": "backend/routes/settings.ts lines 8-19 define a manual `SettingsResponse` with inline `systemInfo`, while backend/services/settings.ts lines 80-88 define `SystemInfo`. The commit updated both manually. AGENTS.md documents the backend-worker skill but not the convention for sharing types between route and service layers.",
+      "description": "Consider extracting the `SystemInfo` type and using it in the route response to keep a single source of truth. This is low risk since both interfaces are in the same commit in the same direction, but future additions would be fragile."
+    },
+    {
+      "area": "skills",
+      "observation": "The worker skill procedure was followed correctly. The transcript shows the worker read the prior scrutiny review, understood the blocking issue, made targeted fixes to both frontend and backend, updated tests, ran all validators, and committed. No deviations were reported.",
+      "evidence": "handoff.skillFeedback.followedProcedure: true, handoff.skillFeedback.deviations: []. Transcript skeleton confirms systematic approach: read prior review → grep for mismatched fields → read affected files → edit → run validators → commit.",
+      "description": "No skill gap detected. The backend-worker skill's procedure appears well-calibrated for type mismatch fixes."
+    },
+    {
+      "area": "knowledge",
+      "observation": "The worker discovered and documented a pre-existing database isolation issue in backend/routes/export.test.ts where profile data from other tests leaks, causing test failures. This is unrelated to the model selection fix but is a known codebase quirk.",
+      "evidence": "full backend test output shows 'backend/routes/export.test.ts > Data Export API > returns empty arrays when no data exists' fails. Worker noted this in handoff.discoveredIssues.",
+      "description": "This is a test infrastructure issue, not a production bug. It would be useful to record this in the library or AGENTS.md so future workers don't waste time investigating."
+    }
+  ],
+  "addressesFailureFrom": "/Users/stefano/repos/open-marcus/.factory/validation/polish/scrutiny/reviews/polish-model-selection.json",
+  "summary": "The fix-model-selection-types feature successfully resolves the blocking bug from polish-model-selection. The type mismatch is fully fixed: the frontend `SettingsResponse.systemInfo` interface now declares the exact fields the backend sends (`recommendedModel`, `recommendedModelAlt`, `recommendedTier`, `recommendedTierDescription`), and the `Settings.tsx` component reads `recommendedTierDescription` correctly. The non-blocking validation issue is also addressed: the PUT `/api/settings` route now checks that the selected model exists in Ollama's installed models list (when Ollama is online) and returns a 400 with a helpful error message listing available models. When Ollama is offline, the validation is gracefully skipped. All tests pass (246 frontend, 24 backend settings), typecheck passes, and lint passes. No new issues found."
+}

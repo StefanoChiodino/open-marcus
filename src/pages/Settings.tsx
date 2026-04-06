@@ -239,23 +239,45 @@ function Settings() {
               >
                 {isSavingModel ? (
                   <option value="">Updating model...</option>
-                ) : settingsData?.ollamaOnline ? (
-                  settingsData.installedModels.map((model) => (
-                    <option key={model} value={model}>
-                      {selectedModel === model ? `✓ ${model}` : model}
-                    </option>
-                  ))
                 ) : (
-                  <option value={selectedModel}>{selectedModel} (Ollama offline)</option>
+                  <>
+                    {/* Show installed models (available online or offline) */}
+                    {settingsData?.installedModels.map((model) => (
+                      <option key={model} value={model}>
+                        {selectedModel === model ? `✓ ${model}` : model}
+                      </option>
+                    ))}
+                    {/* Show recommended models that aren't installed yet */}
+                    {settingsData?.systemInfo && (() => {
+                      const recommendedModels = [
+                        settingsData.systemInfo.recommendedModel,
+                        ...(settingsData.systemInfo.recommendedModelAlt || [])
+                      ].filter(m => m && !settingsData.installedModels.includes(m));
+                      
+                      if (recommendedModels.length === 0) return null;
+                      
+                      return (
+                        <>
+                          <optgroup label="Recommended for your system">
+                            {recommendedModels.map((model) => (
+                              <option key={model} value={model}>
+                                {selectedModel === model ? `✓ ${model}` : model}
+                              </option>
+                            ))}
+                          </optgroup>
+                        </>
+                      );
+                    })()}
+                  </>
                 )}
               </select>
               <p id="model-selection-help" className="model-selection__help">
-                {!settingsData?.ollamaOnline &&
+                {!settingsData?.ollamaOnline && settingsData?.installedModels.length === 0 &&
                   'Ollama is offline. Install more models with `ollama pull <model>` to see them here.'}
                 {settingsData?.ollamaOnline && settingsData.installedModels.length === 0 &&
-                  'No models installed. Install a model with `ollama pull <model>`.'}
+                  'No models installed. Install a model with `ollama pull <model>`. Recommended models are shown below.'}
                 {settingsData?.ollamaOnline && settingsData.installedModels.length > 0 &&
-                  'Changes take effect on your next meditation session.'}
+                  'Select an installed model or choose a recommended one below. Changes take effect on your next meditation session.'}
               </p>
             </div>
           </>

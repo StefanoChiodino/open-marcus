@@ -189,13 +189,6 @@ function VoiceControls({ onTranscript, onSpeechEnd, disabled = false }: VoiceCon
   );
 
   /**
-   * Toggle voice output
-   */
-  const handleToggleOutput = useCallback(() => {
-    toggleVoiceOutput();
-  }, [toggleVoiceOutput]);
-
-  /**
    * Cancel any ongoing speech
    */
   const stopSpeaking = useCallback(() => {
@@ -207,6 +200,18 @@ function VoiceControls({ onTranscript, onSpeechEnd, disabled = false }: VoiceCon
     speechPromiseRef.current = null;
     setStatus('idle');
   }, [setStatus]);
+
+  /**
+   * Toggle voice output
+   */
+  const handleToggleOutput = useCallback(() => {
+    const currentEnabled = useVoiceStore.getState().voiceOutputEnabled;
+    toggleVoiceOutput();
+    // If disabling while speaking, stop the current speech
+    if (currentEnabled && audioRef.current) {
+      stopSpeaking();
+    }
+  }, [toggleVoiceOutput, stopSpeaking]);
 
   // Cleanup on unmount
   useEffect(() => {

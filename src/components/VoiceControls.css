@@ -88,7 +88,7 @@
 
 /* Speaker icon base */
 .voice-controls__speaker-icon {
-  transition: opacity var(--transition-fast);
+  /* No transitions to prevent flickering during state changes */
 }
 
 /* Disabled state: muted speaker - grey/outlined style */

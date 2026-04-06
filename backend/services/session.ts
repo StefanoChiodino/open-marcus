@@ -1,6 +1,8 @@
 import type { DatabaseService } from '../db/database.js';
 import type { Session, Message } from '../db/schema.js';
 import { createRequire } from 'module';
+import { logSessionCreated, logAuthError } from '../lib/authLogger.js';
+import { getCorrelationId } from '../lib/logger.js';
 const require = createRequire(import.meta.url);
 
 /**
@@ -39,7 +41,20 @@ export class SessionService {
       throw new ValidationError('Profile not found');
     }
 
-    return this.getDb().createSession(profileId);
+    try {
+      const session = this.getDb().createSession(profileId);
+      
+      // Log session creation for auth auditing
+      logSessionCreated(session.id, profileId, getCorrelationId());
+      
+      return session;
+    } catch (error) {
+      // Log auth errors
+      if (error instanceof Error) {
+        logAuthError(error, getCorrelationId());
+      }
+      throw error;
+    }
   }
 
   /**

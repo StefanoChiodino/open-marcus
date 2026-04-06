@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import { MigrationRunner } from './migrate.js';
 import { encryptObject, decryptObject, EncryptedData } from '../crypto/encryption.js';
-import type { Profile, Session, Message, ActionItem } from './schema.js';
+import type { Profile, Session, Message, ActionItem, User } from './schema.js';
 import type { ContentItem } from '../lib/content-schema.js';
 
 const DB_PATH = './data/openmarcus.db';
@@ -689,6 +689,55 @@ export class DatabaseService {
    */
   deleteSetting(key: string): void {
     this.db.prepare('DELETE FROM settings WHERE key = ?').run(key);
+  }
+
+  // ==================== User Operations ====================
+
+  /**
+   * Create a new user
+   */
+  createUser(username: string, passwordHash: string): User {
+    const id = randomUUID();
+    
+    const stmt = this.db.prepare(`
+      INSERT INTO users (id, username, password_hash)
+      VALUES (?, ?, ?)
+    `);
+    
+    stmt.run(id, username, passwordHash);
+    
+    return this.getUserById(id)!;
+  }
+
+  /**
+   * Get a user by ID
+   */
+  getUserById(id: string): User | null {
+    const stmt = this.db.prepare('SELECT * FROM users WHERE id = ?');
+    return stmt.get(id) as User | null;
+  }
+
+  /**
+   * Get a user by username
+   */
+  getUserByUsername(username: string): User | null {
+    const stmt = this.db.prepare('SELECT * FROM users WHERE username = ?');
+    return stmt.get(username) as User | null;
+  }
+
+  /**
+   * Check if a username exists
+   */
+  usernameExists(username: string): boolean {
+    const stmt = this.db.prepare('SELECT 1 FROM users WHERE username = ?');
+    return stmt.get(username) !== undefined;
+  }
+
+  /**
+   * Delete all users (for testing purposes)
+   */
+  deleteAllUsers(): void {
+    this.db.prepare('DELETE FROM users').run();
   }
 
   // ==================== Database Info ====================

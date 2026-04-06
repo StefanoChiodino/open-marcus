@@ -37,10 +37,6 @@ function HomePage() {
           >
             Begin Meditation
           </button>
-          <div className="disclaimer">
-            <strong>Note:</strong> OpenMarcus is not therapy or medical advice.
-            It is a reflection tool based on Stoic philosophy.
-          </div>
         </div>
       </main>
     </div>

@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run dev:ollama\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "concurrently \"npm run dev:ollama\" \"npm run dev:stt\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:stt": "cd servers/stt && node server.mjs --port 8765",
     "dev:frontend": "vite",
     "dev:backend": "tsx backend/server.ts",
     "dev:ollama": "node scripts/start-ollama.mjs",

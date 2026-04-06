@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Navigation from './Navigation';
 import { ToastContainer } from './Toast';
-import LegalDisclaimer from './LegalDisclaimer';
 import SkipLink from './SkipLink';
 import { useFocusManagement } from '../lib/useFocusManagement';
 import './Layout.css';
@@ -89,7 +88,6 @@ function AppLayout({ children }: LayoutProps) {
           <ToastContainer />
         </main>
       </div>
-      <LegalDisclaimer />
     </div>
   );
 }

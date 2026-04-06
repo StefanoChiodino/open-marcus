@@ -14,15 +14,6 @@ describe('HomePage', () => {
     expect(screen.getByText(/Welcome to OpenMarcus/)).toBeInTheDocument();
   });
 
-  it('renders the disclaimer', () => {
-    render(
-      <BrowserRouter>
-        <HomePage />
-      </BrowserRouter>
-    );
-    expect(screen.getByText(/OpenMarcus is not therapy/)).toBeInTheDocument();
-  });
-
   it('renders profile display when profile exists', () => {
     // Set up profile in store
     const mockProfile = {

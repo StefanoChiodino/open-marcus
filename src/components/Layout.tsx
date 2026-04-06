@@ -82,7 +82,6 @@ function AppLayout({ children }: LayoutProps) {
         isCollapsed={navCollapsed || isTablet}
         onToggle={handleToggleNav}
         hideToggle={isMobile || isTablet}
-        aria-hidden={isMobile}
       />
       <main className="app-layout__main" id="main-content" tabIndex={-1}>
         {children || <Outlet />}

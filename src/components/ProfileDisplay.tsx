@@ -10,7 +10,7 @@ function ProfileDisplay({ profile, onEdit }: ProfileDisplayProps) {
   return (
     <div className="profile-display" data-testid="profile-display">
       <div className="profile-header">
-        <h2 data-testid="profile-name">Welcome, {profile.name}</h2>
+        <h1 data-testid="profile-name">Welcome, {profile.name}</h1>
       </div>
 
       {profile.bio && (

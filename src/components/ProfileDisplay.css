@@ -9,9 +9,12 @@
   margin-bottom: var(--space-4);
 }
 
-.profile-header h2 {
+.profile-header h1 {
   color: var(--color-text-primary);
   font-family: var(--font-serif);
+  font-size: var(--text-4xl);
+  font-weight: 600;
+  margin: 0;
 }
 
 .profile-bio {

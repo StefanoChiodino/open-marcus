@@ -22,7 +22,7 @@ function HomePage() {
           {profile && (
             <ProfileDisplay profile={profile} onEdit={handleEdit} />
           )}
-          <h2>Welcome to OpenMarcus</h2>
+          <h3>Welcome to OpenMarcus</h3>
           <p>
             Your personal Stoic companion, inspired by the wisdom of Marcus Aurelius.
             Begin your journey of self-reflection and philosophical exploration.

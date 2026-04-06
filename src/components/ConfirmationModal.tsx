@@ -97,6 +97,7 @@ function ConfirmationModal({
             className="button button--secondary"
             onClick={handleClose}
             ref={cancelBtnRef}
+            aria-label={confirmText === 'Yes, Clear Everything' ? 'Cancel and keep your data' : 'Cancel action'}
           >
             {cancelText}
           </button>
@@ -104,6 +105,7 @@ function ConfirmationModal({
             type="button"
             className={`button ${danger ? 'button--danger' : 'button--primary'}`}
             onClick={handleConfirm}
+            aria-label={danger ? `${confirmText} - this is a destructive action` : confirmText}
           >
             {confirmText}
           </button>

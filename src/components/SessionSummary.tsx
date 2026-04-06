@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import './SessionSummary.css';
 
 interface SessionSummaryProps {
@@ -11,6 +12,13 @@ interface SessionSummaryProps {
  * Displays Marcus's session summary and action items after ending a meditation.
  */
 function SessionSummary({ summary, actionItems, onReset }: SessionSummaryProps) {
+  const resetBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Focus the "Begin New Meditation" button when summary appears
+  // This ensures keyboard/screen-reader users know the session has ended
+  useEffect(() => {
+    resetBtnRef.current?.focus();
+  }, []);
   return (
     <div className="session-summary" role="region" aria-label="Session Summary">
       <div className="session-summary__header">
@@ -70,6 +78,7 @@ function SessionSummary({ summary, actionItems, onReset }: SessionSummaryProps) 
 
       <div className="session-summary__actions">
         <button
+          ref={resetBtnRef}
           onClick={onReset}
           className="button button--primary"
           aria-label="Begin a new meditation session"

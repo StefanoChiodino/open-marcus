@@ -61,6 +61,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             </p>
             <button
               className="error-boundary__button"
+              aria-label="Refresh the page to try again"
               onClick={() => {
                 this.setState({ hasError: false, error: null });
                 window.location.reload();

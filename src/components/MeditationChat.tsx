@@ -253,7 +253,14 @@ function MeditationChat() {
       )}
 
       {/* Messages area */}
-      <div className="meditation-chat__messages" role="log" aria-label="Chat messages" aria-live="polite">
+      <div
+        className="meditation-chat__messages"
+        role="log"
+        aria-label="Chat messages"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-atomic="false"
+      >
         {messages.length === 0 && !isStreaming ? (
           <div className="meditation-chat__empty">
             <p className="text-serif meditation-chat__greeting">

@@ -90,10 +90,10 @@ function ProfilePage() {
           <p><strong>Name:</strong> {profile.name}</p>
           {profile.bio && <p><strong>Bio:</strong> {profile.bio}</p>}
           <div className="profile-settings__actions">
-            <button onClick={startEditing} className="button button--primary">
+            <button onClick={startEditing} className="button button--primary" aria-label="Edit your profile">
               Edit Profile
             </button>
-            <button onClick={clearProfile} className="button button--secondary">
+            <button onClick={clearProfile} className="button button--secondary" aria-label="Reset your profile to default">
               Reset Profile
             </button>
           </div>

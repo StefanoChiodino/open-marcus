@@ -65,7 +65,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
 
-    const button = screen.getByRole('button', { name: /refresh page/i });
+    const button = screen.getByRole('button', { name: /refresh the page to try again/i });
     expect(button).toBeInTheDocument();
 
     consoleSpy.mockRestore();

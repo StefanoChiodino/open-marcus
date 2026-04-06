@@ -335,6 +335,7 @@ function Settings() {
             className="button button--danger"
             onClick={() => setShowClearConfirm(true)}
             disabled={isClearing}
+            aria-label="Permanently delete all your profiles, sessions, messages, and settings"
           >
             Clear All Data
           </button>

@@ -467,6 +467,23 @@ img, svg {
   cursor: not-allowed;
 }
 
+.button:focus-visible {
+  outline: 3px solid var(--color-gold-primary);
+  outline-offset: 2px;
+}
+
+.button--danger {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+  border-color: var(--color-error);
+}
+
+.button--danger:hover,
+.button--danger:focus-visible {
+  background: #b4473a;
+  border-color: #b4473a;
+}
+
 /* ==========================
    Profile Settings
    ========================== */

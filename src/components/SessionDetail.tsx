@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { sessionAPI } from '../lib/sessionApi';
 import ChatMessage from './ChatMessage';
@@ -45,6 +45,14 @@ function SessionDetail() {
   const [detail, setDetail] = useState<SessionDetailType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const headerRef = useRef<HTMLHeadingElement | null>(null);
+
+  useEffect(() => {
+    // Focus the header heading when session loads for screen reader context
+    if (detail && headerRef.current) {
+      headerRef.current.focus();
+    }
+  }, [detail]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -125,7 +133,7 @@ function SessionDetail() {
           Back to History
         </Link>
         <div className="session-detail__meta">
-          <h2 className="session-detail__title">Session Review</h2>
+          <h2 ref={headerRef} tabIndex={-1} className="session-detail__title">Session Review</h2>
           <div className="session-detail__meta-info">
             <time className="session-detail__date" dateTime={session.started_at}>
               {formatDate(session.started_at)}

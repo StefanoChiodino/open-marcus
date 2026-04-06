@@ -90,7 +90,7 @@ describe('Settings Page', () => {
       renderWithRouter();
 
       expect(screen.getByRole('heading', { name: /clear all data/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /clear all data/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /permanently delete/i })).toBeInTheDocument();
     });
   });
 
@@ -223,7 +223,7 @@ describe('Settings Page', () => {
 
       renderWithRouter();
 
-      const clearButton = screen.getByRole('button', { name: /clear all data/i });
+      const clearButton = screen.getByRole('button', { name: /permanently delete/i });
       await userEvent.click(clearButton);
 
       // Dialog element exists with confirmation message text
@@ -242,7 +242,7 @@ describe('Settings Page', () => {
     it('does not clear data when dialog backdrop is clicked (cancellation)', async () => {
       renderWithRouter();
 
-      const clearButton = screen.getByRole('button', { name: /clear all data/i });
+      const clearButton = screen.getByRole('button', { name: /permanently delete/i });
       await userEvent.click(clearButton);
 
       await waitFor(() => {
@@ -266,7 +266,7 @@ describe('Settings Page', () => {
 
       renderWithRouter();
 
-      const clearButton = screen.getByRole('button', { name: /clear all data/i });
+      const clearButton = screen.getByRole('button', { name: /permanently delete/i });
       await userEvent.click(clearButton);
 
       await waitFor(() => {
@@ -292,7 +292,7 @@ describe('Settings Page', () => {
 
       renderWithRouter();
 
-      const clearButton = screen.getByRole('button', { name: /clear all data/i });
+      const clearButton = screen.getByRole('button', { name: /permanently delete/i });
       await userEvent.click(clearButton);
 
       await waitFor(() => {

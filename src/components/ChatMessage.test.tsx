@@ -15,7 +15,7 @@ describe('ChatMessage', () => {
   it('renders assistant message correctly', () => {
     render(<ChatMessage role="assistant" content="Greetings, seeker." />);
 
-    expect(screen.getByRole('article', { name: 'Marcus response' })).toBeInTheDocument();
+    expect(screen.getByRole('article', { name: "Marcus's response" })).toBeInTheDocument();
     expect(screen.getByText('Greetings, seeker.')).toBeInTheDocument();
     expect(screen.getByText('Greetings, seeker.').closest('.chat-message')).toHaveClass(
       'chat-message--assistant',
@@ -49,6 +49,6 @@ describe('ChatMessage', () => {
     expect(screen.getByRole('article', { name: 'Your message' })).toBeInTheDocument();
 
     rerender(<ChatMessage role="assistant" content="Test" />);
-    expect(screen.getByRole('article', { name: 'Marcus response' })).toBeInTheDocument();
+    expect(screen.getByRole('article', { name: "Marcus's response" })).toBeInTheDocument();
   });
 });

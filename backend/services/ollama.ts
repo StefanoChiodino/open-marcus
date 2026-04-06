@@ -42,6 +42,13 @@ export class OllamaService {
   }
 
   /**
+   * Update the model (for dynamic model switching)
+   */
+  setModel(model: string): void {
+    this.model = model;
+  }
+
+  /**
    * Check if Ollama is online and responding
    */
   async isOnline(): Promise<boolean> {
@@ -51,6 +58,20 @@ export class OllamaService {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Get the list of installed models from Ollama
+   */
+  async listModels(): Promise<string[]> {
+    const response = await fetch(`${this.host}/api/tags`);
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to list Ollama models: ${response.status} ${response.statusText} - ${text}`);
+    }
+    const data = await response.json();
+    const models: { name: string }[] = data.models || [];
+    return models.map((m) => m.name);
   }
 
   /**

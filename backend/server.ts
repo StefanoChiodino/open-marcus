@@ -7,6 +7,7 @@ import exportRoutes from './routes/export.js';
 import chatRoutes from './routes/chat.js';
 import sttRoutes from './routes/stt.js';
 import ttsRoutes from './routes/tts.js';
+import settingsRoutes from './routes/settings.js';
 
 const app = express();
 const PORT = process.env.PORT || 3100;
@@ -30,6 +31,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/stt', sttRoutes);
 app.use('/api/tts', ttsRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // 404 handler
 app.use((_req, res) => {

@@ -654,6 +654,33 @@ export class DatabaseService {
     return importTransaction();
   }
 
+  // ==================== Settings Operations ====================
+
+  /**
+   * Get a setting value by key
+   */
+  getSetting(key: string): string | null {
+    const stmt = this.db.prepare('SELECT value FROM settings WHERE key = ?');
+    const row = stmt.get(key) as { value: string } | undefined;
+    return row?.value || null;
+  }
+
+  /**
+   * Set or update a setting value
+   */
+  setSetting(key: string, value: string): void {
+    this.db.prepare(
+      'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?',
+    ).run(key, value, value);
+  }
+
+  /**
+   * Delete a setting by key
+   */
+  deleteSetting(key: string): void {
+    this.db.prepare('DELETE FROM settings WHERE key = ?').run(key);
+  }
+
   // ==================== Database Info ====================
 
   /**

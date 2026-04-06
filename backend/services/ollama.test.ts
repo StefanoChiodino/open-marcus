@@ -85,6 +85,28 @@ describe('OllamaService', () => {
     });
   });
 
+  describe('listModels', () => {
+    it('should reject with error when Ollama is offline', async () => {
+      const offlineService = new OllamaService('http://localhost:59999', 'test');
+      await expect(offlineService.listModels()).rejects.toThrow();
+    });
+  });
+
+  describe('setModel', () => {
+    it('should update the model', () => {
+      service.setModel('qwen2.5:7b');
+      expect(service.getModel()).toBe('qwen2.5:7b');
+    });
+
+    it('should update the model multiple times', () => {
+      service.setModel('llama3.2:3b');
+      expect(service.getModel()).toBe('llama3.2:3b');
+
+      service.setModel('qwen2.5:14b');
+      expect(service.getModel()).toBe('qwen2.5:14b');
+    });
+  });
+
   describe('chat (non-streaming)', () => {
     it('should reject with error when Ollama is offline', async () => {
       const offlineService = new OllamaService('http://localhost:59999', 'test');

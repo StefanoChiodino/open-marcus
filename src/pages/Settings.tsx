@@ -1,10 +1,12 @@
 /**
- * Settings page: Data export, import, and clear functionality
+ * Settings page: Model selection, data export, import, and clear functionality
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dataExportAPI } from '../lib/dataExportApi';
+import { settingsAPI } from '../lib/settingsApi';
+import type { SettingsResponse } from '../lib/settingsApi';
 import { useToastStore } from '../stores/toastStore';
 import { useProfileStore } from '../stores/profileStore';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -18,10 +20,71 @@ function Settings() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Data management state
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // Model selection state
+  const [settingsData, setSettingsData] = useState<SettingsResponse | null>(null);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [isSavingModel, setIsSavingModel] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('');
+
+  /**
+   * Load settings on mount
+   */
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const data = await settingsAPI.getSettings();
+        setSettingsData(data);
+        setSelectedModel(data.selectedModel);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load settings';
+        addToast({
+          type: 'error',
+          title: 'Settings load failed',
+          message,
+        });
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+
+    loadSettings();
+  }, [addToast]);
+
+  /**
+   * Handle model selection change
+   */
+  const handleModelChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newModel = event.target.value;
+    setSelectedModel(newModel);
+
+    setIsSavingModel(true);
+    try {
+      const updated = await settingsAPI.updateSettings({ selectedModel: newModel });
+      setSettingsData(updated);
+      addToast({
+        type: 'success',
+        title: 'Model updated',
+        message: `Now using ${newModel}. Changes take effect on next session.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update model';
+      addToast({
+        type: 'error',
+        title: 'Model update failed',
+        message,
+      });
+      // Revert to previous value
+      setSelectedModel(settingsData?.selectedModel || '');
+    } finally {
+      setIsSavingModel(false);
+    }
+  };
 
   /**
    * Export all data as JSON file download
@@ -138,6 +201,66 @@ function Settings() {
       <p className="settings-page__description">
         Manage your data: export, import, or clear all your OpenMarcus data.
       </p>
+
+      {/* Model Selection Section */}
+      <section className="settings-section" aria-labelledby="model-heading">
+        <h3 className="settings-section__title" id="model-heading">AI Model Selection</h3>
+
+        {isLoadingSettings ? (
+          <div className="loading-spinner" role="status" aria-label="Loading settings">
+            Loading settings...
+          </div>
+        ) : (
+          <>
+            {/* System RAM and Recommendation */}
+            {settingsData?.systemInfo && (
+              <div className="model-selection__system-info">
+                <span className="model-selection__ram">
+                  System RAM: {settingsData.systemInfo.totalRamGB} GB
+                </span>
+                <span className="model-selection__recommendation" aria-label="Recommended model">
+                  Recommended: {settingsData.systemInfo.recommendedModelDescription}
+                </span>
+              </div>
+            )}
+
+            {/* Model Selector */}
+            <div className="model-selection__controls">
+              <label htmlFor="model-select" className="model-selection__label">
+                Active Model
+              </label>
+              <select
+                id="model-select"
+                className="model-selection__dropdown"
+                value={selectedModel}
+                onChange={handleModelChange}
+                disabled={isSavingModel || (!settingsData?.ollamaOnline && settingsData?.installedModels.length === 0)}
+                aria-describedby="model-selection-help"
+              >
+                {isSavingModel ? (
+                  <option value="">Updating model...</option>
+                ) : settingsData?.ollamaOnline ? (
+                  settingsData.installedModels.map((model) => (
+                    <option key={model} value={model}>
+                      {selectedModel === model ? `✓ ${model}` : model}
+                    </option>
+                  ))
+                ) : (
+                  <option value={selectedModel}>{selectedModel} (Ollama offline)</option>
+                )}
+              </select>
+              <p id="model-selection-help" className="model-selection__help">
+                {!settingsData?.ollamaOnline &&
+                  'Ollama is offline. Install more models with `ollama pull <model>` to see them here.'}
+                {settingsData?.ollamaOnline && settingsData.installedModels.length === 0 &&
+                  'No models installed. Install a model with `ollama pull <model>`.'}
+                {settingsData?.ollamaOnline && settingsData.installedModels.length > 0 &&
+                  'Changes take effect on your next meditation session.'}
+              </p>
+            </div>
+          </>
+        )}
+      </section>
 
       {/* Export Section */}
       <section className="settings-section" aria-labelledby="export-heading">

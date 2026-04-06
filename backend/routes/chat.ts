@@ -3,6 +3,7 @@ import { getOllamaService, OllamaOfflineError } from '../services/ollama.js';
 import { getSessionService } from '../services/session.js';
 import { getProfileService } from '../services/profile.js';
 import { buildSystemPrompt, generateGreeting } from '../services/persona.js';
+import { getSettingsService } from '../services/settings.js';
 
 const router = Router();
 
@@ -44,6 +45,13 @@ router.post('/', async (req: Request, res: Response) => {
     const ollamaService = getOllamaService();
     const sessionService = getSessionService();
     const profileService = getProfileService();
+
+    // Load selected model from settings and update OllamaService
+    const settingsService = getSettingsService();
+    const settings = settingsService.getSettings();
+    if (ollamaService.getModel() !== settings.selectedModel) {
+      ollamaService.setModel(settings.selectedModel);
+    }
 
     // Verify session exists
     const session = sessionService.getSessionWithoutMessages(session_id);

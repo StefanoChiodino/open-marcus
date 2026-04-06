@@ -119,8 +119,20 @@ CREATE INDEX IF NOT EXISTS idx_stoic_content_tags ON stoic_content(tags);
 CREATE INDEX IF NOT EXISTS idx_stoic_content_author ON stoic_content(author);
 `;
 
+/**
+ * SQL for the settings table (migration 003)
+ */
+export const CREATE_SETTINGS_TABLE_SQL = `
+-- Settings table: stores application settings
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+`;
+
 export const DROP_TABLES_SQL = `
 DROP TABLE IF EXISTS stoic_content;
+DROP TABLE IF EXISTS settings;
 DROP TABLE IF EXISTS action_items;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS sessions;

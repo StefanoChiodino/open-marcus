@@ -220,6 +220,10 @@
     width: 200px;
   }
 
+  .navigation--collapsed {
+    width: 64px;
+  }
+
   .navigation__toggle {
     display: none;
   }

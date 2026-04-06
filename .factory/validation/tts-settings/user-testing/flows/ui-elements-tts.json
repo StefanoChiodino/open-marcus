@@ -1,0 +1,71 @@
+{
+  "groupId": "ui-elements-tts",
+  "testedAt": "2026-04-07T00:45:00.000Z",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "backendApi": "http://localhost:3100",
+    "session": "db519f6840b7",
+    "services": ["backend:3100", "frontend:3101", "ollama:11434", "tts:8766", "stt:8765"]
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-TTS-001",
+      "title": "Voice dropdown shows curated voices",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to Settings page", "expected": "Settings page loads", "observed": "Settings page loads with TTS section" },
+        { "action": "Find voice dropdown", "expected": "Voice dropdown visible with 6 options", "observed": "Voice dropdown found with combobox role" },
+        { "action": "Verify dropdown options", "expected": "6 voices: en-US-GuyNeural (default), en-US-ChristopherNeural, en-US-BrianNeural, en-GB-ThomasNeural, en-US-JennyNeural, en-US-MichelleNeural", "observed": "All 6 voices present in dropdown - en-US-ChristopherNeural was selected after change test" }
+      ],
+      "evidence": {
+        "screenshots": ["settings-page.png", "settings-annotated.png"],
+        "consoleErrors": "none",
+        "network": "N/A - UI verification only"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TTS-002",
+      "title": "Rate slider controls speech rate",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to Settings page", "expected": "TTS settings section visible", "observed": "TTS section present in Settings page" },
+        { "action": "Identify rate slider", "expected": "Range input with min=-50, max=100", "observed": "Range slider found with range -50% to +100%" },
+        { "action": "Verify default value", "expected": "Default +25%", "observed": "Default value +25%" }
+      ],
+      "evidence": {
+        "screenshots": ["settings-page.png"],
+        "consoleErrors": "none",
+        "network": "N/A - UI verification only"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TTS-003",
+      "title": "Pitch slider controls pitch",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to Settings page", "expected": "TTS settings section visible", "observed": "TTS section present in Settings page" },
+        { "action": "Identify pitch slider", "expected": "Range input with min=-50, max=50", "observed": "Range slider found with range -50Hz to +50Hz" },
+        { "action": "Verify default value", "expected": "Default +0Hz", "observed": "Default value +0Hz" }
+      ],
+      "evidence": {
+        "screenshots": ["settings-page.png"],
+        "consoleErrors": "none",
+        "network": "N/A - UI verification only"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Sliders (rate/pitch) not visible in initial snapshot - requires scrolling to see them below the fold",
+      "resolved": false,
+      "resolution": "Scrolled down to see sliders. The sliders exist but initial viewport only shows the voice dropdown and model selector.",
+      "affectedAssertions": ["VAL-TTS-002", "VAL-TTS-003"]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 3 assertions: 3 passed (VAL-TTS-001, VAL-TTS-002, VAL-TTS-003). Voice dropdown shows 6 curated voices. Rate and pitch sliders present with correct ranges. Sliders require scrolling to see in default viewport."
+}

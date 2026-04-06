@@ -1,0 +1,95 @@
+{
+  "groupId": "persistence-api-voice",
+  "testedAt": "2026-04-07T00:50:00.000Z",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "backendApi": "http://localhost:3100",
+    "session": "db519f6840b7",
+    "services": ["backend:3100", "frontend:3101", "ollama:11434", "tts:8766", "stt:8765"]
+  },
+  "toolsUsed": ["agent-browser", "curl"],
+  "assertions": [
+    {
+      "id": "VAL-TTS-004",
+      "title": "TTS settings persist after page refresh",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to Settings", "expected": "Settings page loads", "observed": "Settings page loads" },
+        { "action": "Change voice to en-US-ChristopherNeural", "expected": "Voice changes and saves", "observed": "Voice dropdown updated, PUT request sent" },
+        { "action": "Refresh page", "expected": "Page reloads with new voice selected", "observed": "Page reloaded, en-US-ChristopherNeural remained selected" },
+        { "action": "Verify selected voice", "expected": "en-US-ChristopherNeural selected", "observed": "en-US-ChristopherNeural [selected] in snapshot" }
+      ],
+      "evidence": {
+        "screenshots": ["settings-after-voice-change.png", "settings-persistence-check.png"],
+        "consoleErrors": "none",
+        "network": "PUT /api/settings triggered on voice change, GET /api/settings on reload"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TTS-005",
+      "title": "TTS settings save successfully via API",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to Settings", "expected": "Settings page loads", "observed": "Settings page loads" },
+        { "action": "Change voice selection", "expected": "PUT /api/settings request sent", "observed": "PUT request to /api/settings confirmed via network monitoring" },
+        { "action": "Verify request", "expected": "Request with ttsVoice, ttsRate, ttsPitch", "observed": "PUT request sent with TTS settings" },
+        { "action": "Verify API response", "expected": "200 success response", "observed": "PUT request completed successfully" }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "none",
+        "network": "PUT http://localhost:3101/api/settings (fetch) - 2 PUT requests observed during voice change flow"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TTS-006",
+      "title": "TTS voice playback uses saved voice",
+      "status": "blocked",
+      "steps": [
+        { "action": "Set voice to en-US-ChristopherNeural in Settings", "expected": "Voice saved", "observed": "Voice saved successfully" },
+        { "action": "Start meditation session", "expected": "Session starts", "observed": "Could not start session - no active meditation button visible after onboarding" },
+        { "action": "Enable voice output", "expected": "Voice plays with saved voice", "observed": "Cannot test - session start flow not accessible" }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "none",
+        "network": "N/A"
+      },
+      "issues": "Could not access meditation session start. The home page shows onboarding form repeatedly. Unable to navigate to actual meditation flow."
+    },
+    {
+      "id": "VAL-CROSS-001",
+      "title": "TTS settings apply in meditation session",
+      "status": "blocked",
+      "steps": [
+        { "action": "Save TTS settings in Settings", "expected": "Settings saved", "observed": "TTS settings saved via API" },
+        { "action": "Start meditation session", "expected": "Session starts", "observed": "Cannot access meditation session - home page shows onboarding form" },
+        { "action": "Enable voice output", "expected": "Marcus speaks with saved voice", "observed": "Cannot test - session not accessible" }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "none",
+        "network": "N/A"
+      },
+      "issues": "Meditation session not accessible from current browser state. Home page continues to show onboarding form despite profile existing."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Onboarding form reappears on home page even though profile was created",
+      "resolved": false,
+      "resolution": "Profile exists (verified via API), but home page still shows onboarding form instead of meditation controls",
+      "affectedAssertions": ["VAL-TTS-006", "VAL-CROSS-001"]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Cannot navigate to meditation session from home page - onboarding form persists",
+      "affectedAssertions": ["VAL-TTS-006", "VAL-CROSS-001"],
+      "quickFixAttempted": "Navigated directly to /settings, refreshed page, created new profile - issue persists"
+    }
+  ],
+  "summary": "Tested 4 assertions: 2 passed (VAL-TTS-004, VAL-TTS-005), 2 blocked (VAL-TTS-006, VAL-CROSS-001). Settings persistence works. API saves correctly. Meditation session not accessible due to onboarding flow issue."
+}

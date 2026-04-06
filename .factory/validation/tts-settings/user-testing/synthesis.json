@@ -1,0 +1,22 @@
+{
+  "milestone": "tts-settings",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 7,
+    "passed": 5,
+    "failed": 0,
+    "blocked": 2
+  },
+  "passedAssertions": ["VAL-TTS-001", "VAL-TTS-002", "VAL-TTS-003", "VAL-TTS-004", "VAL-TTS-005"],
+  "failedAssertions": [],
+  "blockedAssertions": [
+    { "id": "VAL-TTS-006", "blockedBy": "Cannot access meditation session - onboarding form persists on home page even though profile exists" },
+    { "id": "VAL-CROSS-001", "blockedBy": "Cannot access meditation session - same onboarding flow issue" }
+  ],
+  "appliedUpdates": [
+    { "target": "user-testing.md", "description": "Added note about TTS sliders requiring scrolling to see below the fold in default viewport", "source": "flow-report" }
+  ],
+  "previousRound": null,
+  "notes": "5 of 7 TTS assertions passed. VAL-TTS-006 and VAL-CROSS-001 blocked due to inability to access meditation session. The home page shows onboarding form even after profile creation - this appears to be a pre-existing issue unrelated to TTS settings implementation."
+}

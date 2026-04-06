@@ -130,7 +130,15 @@ function MeditationChat() {
       // Auto-resize textarea
       const textarea = e.target;
       textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+      const newHeight = Math.min(textarea.scrollHeight, 150);
+      textarea.style.height = newHeight + 'px';
+
+      // Allow scrolling only when content exceeds max-height
+      if (textarea.scrollHeight > 150) {
+        textarea.style.overflowY = 'auto';
+      } else {
+        textarea.style.overflowY = 'hidden';
+      }
     },
     [],
   );

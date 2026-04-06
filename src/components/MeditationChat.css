@@ -212,12 +212,7 @@
   min-height: 44px;
   max-height: 150px;
   overflow-y: hidden;
-  transition: border-color var(--transition-fast), overflow-y 0.2s;
-}
-
-.meditation-chat__textarea:focus,
-.meditation-chat__textarea:not(:placeholder-shown) {
-  overflow-y: auto;
+  transition: border-color var(--transition-fast);
 }
 
 .meditation-chat__textarea:focus {

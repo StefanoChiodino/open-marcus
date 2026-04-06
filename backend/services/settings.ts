@@ -4,7 +4,9 @@
  */
 
 import os from 'node:os';
-import { getDatabase } from '../db/database.js';
+import type { DatabaseService } from '../db/database.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 /**
  * Application settings interface
@@ -99,13 +101,30 @@ export interface SystemInfo {
  * Settings service: CRUD for application settings
  */
 export class SettingsService {
+  private db: DatabaseService | null = null;
+  private dbGetter: () => DatabaseService;
+
+  constructor(dbGetter?: () => DatabaseService) {
+    this.dbGetter = dbGetter || (() => {
+      const { getDatabase } = require('../db/database.js');
+      return getDatabase();
+    });
+  }
+
+  private getDb(): DatabaseService {
+    if (!this.db) {
+      this.db = this.dbGetter();
+    }
+    return this.db;
+  }
+
   /**
    * Get all settings from the database
    */
   getSettings(): AppSettings {
-    const db = getDatabase();
+    const db = this.getDb();
 
-    // Get selected model if set; otherwise use environment or RAM-based default
+    // Get selected model if set; otherwise use environment or default
     const savedModel = db.getSetting(SETTINGS_KEY_MODEL);
 
     if (savedModel) {
@@ -117,19 +136,16 @@ export class SettingsService {
       return { selectedModel: envModel };
     }
 
-    // Use RAM-based recommendation as default
-    const totalBytes = os.totalmem();
-    const totalRamGB = Math.round(totalBytes / (1024 * 1024 * 1024));
-    const recommendation = getRecommendationForRam(totalRamGB);
-
-    return { selectedModel: recommendation.recommendedModel };
+    // Default to llama3.2:latest - a safe choice that works on most systems
+    // The Settings UI will show RAM-based recommendations for the user to choose
+    return { selectedModel: 'llama3.2:latest' };
   }
 
   /**
    * Update a specific setting
    */
   updateSetting(key: string, value: string): void {
-    const db = getDatabase();
+    const db = this.getDb();
     db.setSetting(key, value);
   }
 
@@ -164,9 +180,9 @@ export class SettingsService {
 // Singleton
 let settingsServiceInstance: SettingsService | null = null;
 
-export function getSettingsService(): SettingsService {
+export function getSettingsService(dbGetter?: () => DatabaseService): SettingsService {
   if (!settingsServiceInstance) {
-    settingsServiceInstance = new SettingsService();
+    settingsServiceInstance = new SettingsService(dbGetter);
   }
   return settingsServiceInstance;
 }

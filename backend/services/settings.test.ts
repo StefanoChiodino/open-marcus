@@ -4,36 +4,47 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import os from 'node:os';
+import * as fs from 'fs';
 import { SettingsService, getSettingsService, resetSettingsService } from './settings.js';
-import { getDatabase } from '../db/database.js';
+import { DatabaseService } from '../db/database.js';
+
+const testDir = './data/test-settings';
+const testDbPath = `${testDir}/test.db`;
+const encryptionPassword = 'test-encryption-password';
 
 describe('SettingsService', () => {
   let service: SettingsService;
+  let db: DatabaseService;
 
   beforeEach(() => {
-    resetSettingsService();
-    service = new SettingsService();
+    // Ensure test-data directory exists
+    if (!fs.existsSync(testDir)) {
+      fs.mkdirSync(testDir, { recursive: true });
+    }
 
-    // Ensure database is initialized (runs migrations)
-    getDatabase();
+    // Create isolated test database
+    db = new DatabaseService(testDbPath, encryptionPassword);
+    resetSettingsService();
+    service = new SettingsService(() => db);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    try {
+      db.close();
+    } catch {}
+    // Clean up test database
+    try {
+      fs.rmSync(testDir, { recursive: true, force: true });
+    } catch {}
   });
 
   describe('getSettings', () => {
     it('should return environment variable model when no setting exists', () => {
-      // Clear any persisted model setting (DB singleton persists between tests)
-      const db = getDatabase();
-      db.deleteSetting('ollama.model');
-
       const originalModel = process.env.OLLAMA_MODEL;
       process.env.OLLAMA_MODEL = 'custom-model:7b';
 
-      // Reset to get fresh instance
-      resetSettingsService();
-      const tempService = new SettingsService();
+      const tempService = new SettingsService(() => db);
       const settings = tempService.getSettings();
       expect(settings.selectedModel).toBe('custom-model:7b');
 
@@ -44,20 +55,14 @@ describe('SettingsService', () => {
       }
     });
 
-    it('should return RAM-based default when no setting or env var exists', () => {
-      // Clear any persisted model setting (DB singleton persists between tests)
-      const db = getDatabase();
-      db.deleteSetting('ollama.model');
-
+    it('should return default when no setting or env var exists', () => {
       const originalModel = process.env.OLLAMA_MODEL;
       delete process.env.OLLAMA_MODEL;
 
-      // Reset to get fresh instance
-      resetSettingsService();
-      const tempService = new SettingsService();
+      const tempService = new SettingsService(() => db);
       const settings = tempService.getSettings();
-      // Should be RAM-based default (gemma4:26b-a4b for 8GB+ typical systems)
-      expect(settings.selectedModel).toMatch(/^gemma4:|^qwen3\.5:|^llama3\.2:/);
+      // Should be llama3.2:latest as the safe default
+      expect(settings.selectedModel).toBe('llama3.2:latest');
 
       if (originalModel) process.env.OLLAMA_MODEL = originalModel;
     });
@@ -101,8 +106,7 @@ describe('SettingsService', () => {
     it('should recommend 2b model for < 4 GB RAM', () => {
       vi.spyOn(os, 'totalmem').mockReturnValue(2 * 1024 * 1024 * 1024);
 
-      resetSettingsService();
-      const freshService = new SettingsService();
+      const freshService = new SettingsService(() => db);
       const info = freshService.getSystemInfo();
       expect(info.recommendedTier).toBe('2b');
       expect(info.recommendedModel).toBe('gemma4:2b');
@@ -111,8 +115,7 @@ describe('SettingsService', () => {
     it('should recommend 4b model for 4-7 GB RAM', () => {
       vi.spyOn(os, 'totalmem').mockReturnValue(6 * 1024 * 1024 * 1024);
 
-      resetSettingsService();
-      const freshService = new SettingsService();
+      const freshService = new SettingsService(() => db);
       const info = freshService.getSystemInfo();
       expect(info.recommendedTier).toBe('4b');
       expect(info.recommendedModel).toBe('gemma4:4b');
@@ -121,8 +124,7 @@ describe('SettingsService', () => {
     it('should recommend 26b-a4b MoE model for 8-15 GB RAM', () => {
       vi.spyOn(os, 'totalmem').mockReturnValue(8 * 1024 * 1024 * 1024);
 
-      resetSettingsService();
-      const freshService = new SettingsService();
+      const freshService = new SettingsService(() => db);
       const info = freshService.getSystemInfo();
       expect(info.recommendedTier).toBe('26b-a4b');
       expect(info.recommendedModel).toBe('gemma4:26b-a4b');
@@ -131,8 +133,7 @@ describe('SettingsService', () => {
     it('should recommend 27b-31b model for 16+ GB RAM', () => {
       vi.spyOn(os, 'totalmem').mockReturnValue(32 * 1024 * 1024 * 1024);
 
-      resetSettingsService();
-      const freshService = new SettingsService();
+      const freshService = new SettingsService(() => db);
       const info = freshService.getSystemInfo();
       expect(info.recommendedTier).toBe('27b-31b');
       expect(info.recommendedModel).toBe('gemma4:31b');

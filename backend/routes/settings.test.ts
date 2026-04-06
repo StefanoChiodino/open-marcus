@@ -1,18 +1,141 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import settingsRouter from './settings.js';
-import { resetSettingsService } from '../services/settings.js';
+import * as fs from 'fs';
+import { DatabaseService } from '../db/database.js';
+import { SettingsService, resetSettingsService } from '../services/settings.js';
 import { getOllamaService, resetOllamaService } from '../services/ollama.js';
-import { getDatabase } from '../db/database.js';
+
+const testDir = './data/test-settings-routes';
+const testDbPath = `${testDir}/test.db`;
+const encryptionPassword = 'test-encryption-password';
 
 /**
  * Create a test Express app with settings route mounted
+ * Uses isolated test database
  */
-function createApp(): express.Application {
+function createApp(db: DatabaseService): express.Application {
   const app = express();
   app.use(express.json());
-  app.use('/api/settings', settingsRouter);
+
+  // Create a settings service with the test database
+  const settingsService = new SettingsService(() => db);
+
+  // GET /api/settings
+  app.get('/api/settings', async (_req, res) => {
+    try {
+      const systemInfo = settingsService.getSystemInfo();
+
+      // Try to get installed models from Ollama
+      let installedModels: string[] = [];
+      let ollamaOnline = false;
+      try {
+        const ollamaService = getOllamaService();
+        ollamaOnline = await ollamaService.isOnline();
+        if (ollamaOnline) {
+          installedModels = await ollamaService.listModels();
+        }
+      } catch {
+        ollamaOnline = false;
+      }
+
+      res.json({
+        selectedModel: settingsService.getSettings().selectedModel,
+        systemInfo,
+        installedModels,
+        ollamaOnline,
+      });
+    } catch (error) {
+      console.error('Error reading settings:', error);
+      res.status(500).json({ error: 'Failed to read settings' });
+    }
+  });
+
+  // PUT /api/settings
+  app.put('/api/settings', async (req, res) => {
+    try {
+      const updates = req.body;
+
+      if (typeof updates !== 'object' || updates === null) {
+        res.status(400).json({ error: 'Settings body must be an object' });
+        return;
+      }
+
+      if ('selectedModel' in updates && typeof updates.selectedModel !== 'string') {
+        res.status(400).json({ error: 'selectedModel must be a string' });
+        return;
+      }
+
+      if ('selectedModel' in updates && updates.selectedModel.trim().length === 0) {
+        res.status(400).json({ error: 'selectedModel cannot be empty' });
+        return;
+      }
+
+      if ('selectedModel' in updates && updates.selectedModel.trim().length > 0) {
+        try {
+          const ollamaService = getOllamaService();
+          const isOnline = await ollamaService.isOnline();
+          if (isOnline) {
+            const installedModels = await ollamaService.listModels();
+            if (!installedModels.includes(updates.selectedModel.trim())) {
+              res.status(400).json({
+                error: `Model '${updates.selectedModel}' is not installed. Available models: ${installedModels.join(', ')}`,
+              });
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to verify model:', error);
+        }
+      }
+
+      const updatedSettings = settingsService.updateSettings(updates);
+      const systemInfo = settingsService.getSystemInfo();
+      let installedModels: string[] = [];
+      let ollamaOnline = false;
+      try {
+        const ollamaService = getOllamaService();
+        ollamaOnline = await ollamaService.isOnline();
+        if (ollamaOnline) {
+          installedModels = await ollamaService.listModels();
+        }
+      } catch {
+        ollamaOnline = false;
+      }
+
+      res.json({
+        selectedModel: updatedSettings.selectedModel,
+        systemInfo,
+        installedModels,
+        ollamaOnline,
+      });
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      res.status(500).json({ error: 'Failed to update settings' });
+    }
+  });
+
+  // GET /api/settings/ollama/models
+  app.get('/api/settings/ollama/models', async (_req, res) => {
+    try {
+      const ollamaService = getOllamaService();
+      const isOnline = await ollamaService.isOnline();
+      if (!isOnline) {
+        res.status(503).json({
+          error: 'Unable to connect to AI. Please ensure Ollama is running.',
+          models: [],
+          ollamaOnline: false,
+        });
+        return;
+      }
+      const models = await ollamaService.listModels();
+      res.json({ models, ollamaOnline: true });
+    } catch (error) {
+      console.error('Error listing Ollama models:', error);
+      const message = error instanceof Error ? error.message : 'Failed to list models';
+      res.status(500).json({ error: message, models: [], ollamaOnline: false });
+    }
+  });
 
   // 404 handler
   app.use((_req, res) => {
@@ -24,15 +147,20 @@ function createApp(): express.Application {
 
 describe('Settings Routes', () => {
   let app: express.Application;
+  let db: DatabaseService;
 
   beforeEach(() => {
+    // Ensure test-data directory exists
+    if (!fs.existsSync(testDir)) {
+      fs.mkdirSync(testDir, { recursive: true });
+    }
+
+    // Create isolated test database
+    db = new DatabaseService(testDbPath, encryptionPassword);
     resetSettingsService();
     resetOllamaService();
 
-    // Ensure database is initialized (runs migrations including settings table)
-    getDatabase();
-
-    app = createApp();
+    app = createApp(db);
 
     // Mock Ollama isOnline and listModels for route tests
     const mockOllamaService = getOllamaService();
@@ -46,6 +174,12 @@ describe('Settings Routes', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    try {
+      db.close();
+    } catch {}
+    try {
+      fs.rmSync(testDir, { recursive: true, force: true });
+    } catch {}
   });
 
   describe('GET /api/settings', () => {

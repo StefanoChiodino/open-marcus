@@ -78,15 +78,17 @@ function AppLayout({ children }: LayoutProps) {
   return (
     <div className={`app-layout${isMobile ? ' app-layout--mobile' : ''}`}>
       <SkipLink target="#main-content" />
-      <Navigation
-        isCollapsed={navCollapsed || isTablet}
-        onToggle={handleToggleNav}
-        hideToggle={isMobile || isTablet}
-      />
-      <main className="app-layout__main" id="main-content" tabIndex={-1}>
-        {children || <Outlet />}
-        <ToastContainer />
-      </main>
+      <div className="app-layout__content">
+        <Navigation
+          isCollapsed={navCollapsed || isTablet}
+          onToggle={handleToggleNav}
+          hideToggle={isMobile || isTablet}
+        />
+        <main className="app-layout__main" id="main-content" tabIndex={-1}>
+          {children || <Outlet />}
+          <ToastContainer />
+        </main>
+      </div>
       <LegalDisclaimer />
     </div>
   );

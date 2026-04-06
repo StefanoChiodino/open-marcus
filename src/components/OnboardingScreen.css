@@ -56,6 +56,17 @@
   border: 1px solid var(--color-bg-tertiary);
 }
 
+/* Mobile-friendly: reduce padding on small screens */
+@media (max-width: 480px) {
+  .onboarding-form-card {
+    padding: var(--space-4);
+  }
+
+  .onboarding-screen {
+    padding: var(--space-4);
+  }
+}
+
 .onboarding-screen .disclaimer {
   margin-top: var(--space-6);
   padding: var(--space-3) var(--space-4);

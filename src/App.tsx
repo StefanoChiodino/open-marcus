@@ -7,6 +7,7 @@ import OnboardingScreen from './components/OnboardingScreen';
 import AppLayout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useProfileStore } from './stores/profileStore';
+import { useTTSStore } from './stores/ttsSettingsStore';
 import MeditationChat from './components/MeditationChat';
 import SessionHistory from './components/SessionHistory';
 import SessionDetail from './components/SessionDetail';
@@ -121,6 +122,13 @@ function ProfilePage() {
 }
 
 function App() {
+  const fetchSettings = useTTSStore((state) => state.fetchSettings);
+
+  // Fetch TTS settings on app load
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>

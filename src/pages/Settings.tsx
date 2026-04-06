@@ -9,6 +9,7 @@ import { settingsAPI, TTS_VOICES, TtsVoice, TTS_MIN_RATE, TTS_MAX_RATE, TTS_MIN_
 import type { SettingsResponse } from '../lib/settingsApi';
 import { useToastStore } from '../stores/toastStore';
 import { useProfileStore } from '../stores/profileStore';
+import { useTTSStore } from '../stores/ttsSettingsStore';
 import ConfirmationModal from '../components/ConfirmationModal';
 import './Settings.css';
 
@@ -81,15 +82,28 @@ function Settings() {
     const newModel = event.target.value;
     setSelectedModel(newModel);
 
+    // Check if this model is installed
+    const isInstalled = settingsData?.installedModels.includes(newModel) ?? false;
+
     setIsSavingModel(true);
     try {
       const updated = await settingsAPI.updateSettings({ selectedModel: newModel });
       setSettingsData(updated);
-      addToast({
-        type: 'success',
-        title: 'Model updated',
-        message: `Now using ${newModel}. Changes take effect on next session.`,
-      });
+      
+      if (isInstalled) {
+        addToast({
+          type: 'success',
+          title: 'Model updated',
+          message: `Now using ${newModel}. Changes take effect on next session.`,
+        });
+      } else {
+        // Model not installed - warn user it needs to be downloaded
+        addToast({
+          type: 'warning',
+          title: 'Model selected - requires download',
+          message: `${newModel} is not installed. Run 'ollama pull ${newModel}' to download it before your next session.`,
+        });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update model';
       addToast({
@@ -115,6 +129,7 @@ function Settings() {
     try {
       const updated = await settingsAPI.updateSettings({ ttsVoice: newVoice });
       setSettingsData(updated);
+      useTTSStore.getState().updateSettings({ voice: updated.ttsVoice });
       addToast({
         type: 'success',
         title: 'Voice updated',
@@ -148,6 +163,7 @@ function Settings() {
     try {
       const updated = await settingsAPI.updateSettings({ ttsRate: rateString });
       setSettingsData(updated);
+      useTTSStore.getState().updateSettings({ rate: updated.ttsRate });
       addToast({
         type: 'success',
         title: 'Rate updated',
@@ -185,6 +201,7 @@ function Settings() {
     try {
       const updated = await settingsAPI.updateSettings({ ttsPitch: pitchString });
       setSettingsData(updated);
+      useTTSStore.getState().updateSettings({ pitch: updated.ttsPitch });
       addToast({
         type: 'success',
         title: 'Pitch updated',

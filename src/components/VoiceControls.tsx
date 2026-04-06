@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useVoiceStore } from '../stores/voiceStore';
+import { useTTSStore } from '../stores/ttsSettingsStore';
 import { VoiceInputManager } from '../lib/voiceInputManager';
 import { voiceAPI } from '../lib/voiceApi';
 import './VoiceControls.css';
@@ -132,9 +133,19 @@ function VoiceControls({ onTranscript, onSpeechEnd, disabled = false }: VoiceCon
     async (text: string) => {
       if (!voiceOutputEnabled || !text.trim()) return;
 
+      // Get cached TTS settings
+      const ttsVoice = useTTSStore.getState().voice;
+      const ttsRate = useTTSStore.getState().rate;
+      const ttsPitch = useTTSStore.getState().pitch;
+
       try {
         setStatus('speaking');
-        const audioBlob = await voiceAPI.synthesize({ text: text.trim() });
+        const audioBlob = await voiceAPI.synthesize({
+          text: text.trim(),
+          voice: ttsVoice,
+          rate: ttsRate,
+          pitch: ttsPitch,
+        });
 
         const url = URL.createObjectURL(audioBlob);
 

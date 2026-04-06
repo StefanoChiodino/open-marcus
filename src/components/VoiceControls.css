@@ -86,6 +86,60 @@
   position: relative;
 }
 
+/* Speaker icon base */
+.voice-controls__speaker-icon {
+  transition: opacity var(--transition-fast);
+}
+
+/* Disabled state: muted speaker - grey/outlined style */
+.voice-controls__speaker-icon--disabled {
+  opacity: 0.5;
+  /* Muted speaker uses a softer grey that clearly indicates "off" */
+  color: var(--color-text-secondary);
+}
+
+/* Enabled idle state: full speaker - colored/highlighted */
+.voice-controls__speaker-icon--enabled {
+  /* Full color to indicate "on" state */
+  color: var(--color-gold-primary);
+}
+
+/* Speaking state: animated sound waves */
+.voice-controls__speaker-icon--speaking {
+  color: var(--color-gold-primary);
+}
+
+.voice-controls__speaker-icon--speaking .voice-controls__sound-wave--1 {
+  animation: sound-wave-1 0.6s ease-in-out infinite;
+}
+
+.voice-controls__speaker-icon--speaking .voice-controls__sound-wave--2 {
+  animation: sound-wave-2 0.6s ease-in-out infinite 0.15s;
+}
+
+@keyframes sound-wave-1 {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes sound-wave-2 {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.15);
+  }
+}
+
+/* Speaking button state */
 .voice-controls__speaker--speaking {
   border-color: var(--color-gold-primary);
   color: var(--color-gold-primary);

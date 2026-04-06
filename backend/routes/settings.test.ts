@@ -3,8 +3,8 @@ import request from 'supertest';
 import express from 'express';
 import * as fs from 'fs';
 import { DatabaseService } from '../db/database.js';
-import { SettingsService, getSettingsService, resetSettingsService, TTS_VOICES } from '../services/settings.js';
-import { getOllamaService, resetOllamaService } from '../services/ollama.js';
+import { getSettingsService, resetSettingsService } from '../services/settings.js';
+import { getOllamaService, resetOllamaService, OllamaModelInfo } from '../services/ollama.js';
 import { settingsRouter } from './settings.js';
 
 const testDir = './data/test-settings-routes';
@@ -15,14 +15,9 @@ const encryptionPassword = 'test-encryption-password';
  * Create a test Express app with settings route mounted
  * Uses isolated test database and actual router
  */
-function createApp(db: DatabaseService): express.Application {
+function createApp(): express.Application {
   const app = express();
   app.use(express.json());
-
-  // Create a settings service with the test database and set as singleton
-  const settingsService = new SettingsService(() => db);
-  // Override the singleton for testing
-  resetSettingsService();
   
   app.use('/api/settings', settingsRouter);
 
@@ -52,16 +47,16 @@ describe('Settings Routes', () => {
     // Create singleton with test database
     getSettingsService(() => db);
 
-    app = createApp(db);
+    app = createApp();
 
     // Mock Ollama isOnline and listModels for route tests
     const mockOllamaService = getOllamaService();
     vi.spyOn(mockOllamaService, 'isOnline').mockResolvedValue(true);
     vi.spyOn(mockOllamaService, 'listModels').mockResolvedValue([
-      'llama3.2:latest',
-      'llama3.2:3b',
-      'qwen2.5:7b',
-    ]);
+      { name: 'llama3.2:latest', sizeBytes: 2 * 1024 * 1024 * 1024, modifiedAt: '2024-01-01T00:00:00Z' },
+      { name: 'llama3.2:3b', sizeBytes: 2 * 1024 * 1024 * 1024, modifiedAt: '2024-01-01T00:00:00Z' },
+      { name: 'qwen2.5:7b', sizeBytes: 4 * 1024 * 1024 * 1024, modifiedAt: '2024-01-01T00:00:00Z' },
+    ] as OllamaModelInfo[]);
   });
 
   afterEach(() => {

@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import os from 'node:os';
 import * as fs from 'fs';
-import { SettingsService, getSettingsService, resetSettingsService, TTS_VOICES } from './settings.js';
+import { SettingsService, getSettingsService, resetSettingsService } from './settings.js';
 import { DatabaseService } from '../db/database.js';
 
 const testDir = './data/test-settings';

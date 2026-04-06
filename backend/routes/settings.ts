@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getSettingsService, TTS_VOICES, TTS_MIN_RATE, TTS_MAX_RATE, TTS_MIN_PITCH, TTS_MAX_PITCH } from '../services/settings.js';
-import { getOllamaService } from '../services/ollama.js';
+import { getOllamaService, OllamaModelInfo } from '../services/ollama.js';
 
 const router = Router();
 
@@ -8,6 +8,15 @@ const router = Router();
  * Extended settings response that includes system info and installed models
  * This single endpoint provides everything the Settings page UI needs
  */
+export interface ModelInfo {
+  name: string;
+  sizeBytes: number;
+  /** Human-readable size string, e.g., "1.2 GB" */
+  sizeLabel: string;
+  /** Estimated RAM usage when loaded (includes overhead), e.g., "~2 GB" */
+  ramUsageLabel: string;
+}
+
 interface SettingsResponse {
   selectedModel: string;
   ttsVoice: string;
@@ -21,7 +30,52 @@ interface SettingsResponse {
     recommendedTierDescription: string;
   } | null;
   installedModels: string[];
+  /** Installed models with size information for RAM display */
+  installedModelsInfo: ModelInfo[];
   ollamaOnline: boolean;
+}
+
+/**
+ * Convert bytes to human-readable size label
+ */
+function formatSizeLabel(bytes: number): string {
+  if (bytes === 0) return 'Unknown size';
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (gb >= 1) {
+    return `${gb.toFixed(1)} GB`;
+  }
+  const mb = bytes / (1024 * 1024);
+  return `${mb.toFixed(0)} MB`;
+}
+
+/**
+ * Estimate RAM usage from model size.
+ * Ollama models are compressed on disk but decompress into RAM during inference.
+ * Rule of thumb: RAM usage is roughly 2x the on-disk size for most models,
+ * accounting for: model weights, KV cache, activations, and runtime overhead.
+ */
+function estimateRamUsage(modelSizeBytes: number): string {
+  if (modelSizeBytes === 0) return 'Unknown RAM';
+  const sizeGB = modelSizeBytes / (1024 * 1024 * 1024);
+  // Estimate RAM as approximately 2x disk size
+  const ramGB = sizeGB * 2;
+  if (ramGB >= 1) {
+    return `~${ramGB.toFixed(1)} GB RAM`;
+  }
+  const ramMB = ramGB * 1024;
+  return `~${ramMB.toFixed(0)} MB RAM`;
+}
+
+/**
+ * Convert Ollama model info to our ModelInfo format
+ */
+function toModelInfo(ollamaModel: OllamaModelInfo): ModelInfo {
+  return {
+    name: ollamaModel.name,
+    sizeBytes: ollamaModel.sizeBytes,
+    sizeLabel: formatSizeLabel(ollamaModel.sizeBytes),
+    ramUsageLabel: estimateRamUsage(ollamaModel.sizeBytes),
+  };
 }
 
 /**
@@ -37,12 +91,15 @@ router.get('/', async (_req: Request, res: Response) => {
 
     // Try to get installed models from Ollama
     let installedModels: string[] = [];
+    let installedModelsInfo: ModelInfo[] = [];
     let ollamaOnline = false;
     try {
       const ollamaService = getOllamaService();
       ollamaOnline = await ollamaService.isOnline();
       if (ollamaOnline) {
-        installedModels = await ollamaService.listModels();
+        const models = await ollamaService.listModels();
+        installedModels = models.map((m) => m.name);
+        installedModelsInfo = models.map(toModelInfo);
       }
     } catch {
       // Ollama is offline - installedModels stays empty
@@ -56,6 +113,7 @@ router.get('/', async (_req: Request, res: Response) => {
       ttsPitch: settings.ttsPitch,
       systemInfo,
       installedModels,
+      installedModelsInfo,
       ollamaOnline,
     };
 
@@ -161,12 +219,15 @@ router.put('/', async (req: Request, res: Response) => {
     // Return full response with updated data
     const systemInfo = settingsService.getSystemInfo();
     let installedModels: string[] = [];
+    let installedModelsInfo: ModelInfo[] = [];
     let ollamaOnline = false;
     try {
       const ollamaService = getOllamaService();
       ollamaOnline = await ollamaService.isOnline();
       if (ollamaOnline) {
-        installedModels = await ollamaService.listModels();
+        const models = await ollamaService.listModels();
+        installedModels = models.map((m) => m.name);
+        installedModelsInfo = models.map(toModelInfo);
       }
     } catch {
       ollamaOnline = false;
@@ -179,6 +240,7 @@ router.put('/', async (req: Request, res: Response) => {
       ttsPitch: updatedSettings.ttsPitch,
       systemInfo,
       installedModels,
+      installedModelsInfo,
       ollamaOnline,
     };
 

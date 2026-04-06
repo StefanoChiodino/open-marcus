@@ -5,6 +5,7 @@ import { MigrationRunner } from './migrate.js';
 import { encryptObject, decryptObject, EncryptedData } from '../crypto/encryption.js';
 import type { Profile, Session, Message, ActionItem, User } from './schema.js';
 import type { ContentItem } from '../lib/content-schema.js';
+import { logQuery, logTransaction, startQueryTimer, parseQueryType, extractTableName } from '../lib/db-logger.js';
 
 const DB_PATH = './data/openmarcus.db';
 
@@ -43,18 +44,31 @@ export class DatabaseService {
   // ==================== Profile Operations ====================
 
   /**
-   * Create a new profile with encrypted data
+   * Create a new profile with encrypted data.
+   * For single-user mode, automatically associates the profile with a default user.
    */
   createProfile(name: string, bio: string | null = null, data: object = {}): Profile {
+    // Get or create the default user for single-user mode
+    const defaultUser = this.getOrCreateDefaultUser();
+    
     const id = randomUUID();
     const encryptedData = encryptObject({ ...data, name, bio }, this.encryptionPassword);
     
-    const stmt = this.db.prepare(`
-      INSERT INTO profiles (id, name, bio, encrypted_data)
-      VALUES (?, ?, ?, ?)
-    `);
+    const sql = `
+      INSERT INTO profiles (id, user_id, name, bio, encrypted_data)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    const getDuration = startQueryTimer();
     
-    stmt.run(id, name, bio, JSON.stringify(encryptedData));
+    const stmt = this.db.prepare(sql);
+    stmt.run(id, defaultUser.id, name, bio, JSON.stringify(encryptedData));
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+    });
     
     return this.getProfile(id)!;
   }
@@ -63,8 +77,21 @@ export class DatabaseService {
    * Get a profile by ID
    */
   getProfile(id: string): Profile | null {
-    const stmt = this.db.prepare('SELECT * FROM profiles WHERE id = ?');
-    return stmt.get(id) as Profile | null;
+    const sql = 'SELECT * FROM profiles WHERE id = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const result = stmt.get(id) as Profile | null;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result ? 1 : 0,
+    });
+    
+    return result;
   }
 
   /**
@@ -73,13 +100,23 @@ export class DatabaseService {
   updateProfile(id: string, name: string, bio: string | null = null, data: object = {}): Profile | null {
     const encryptedData = encryptObject({ ...data, name, bio }, this.encryptionPassword);
     
-    const stmt = this.db.prepare(`
+    const sql = `
       UPDATE profiles
       SET name = ?, bio = ?, encrypted_data = ?, updated_at = datetime('now')
       WHERE id = ?
-    `);
+    `;
+    const getDuration = startQueryTimer();
     
+    const stmt = this.db.prepare(sql);
     const result = stmt.run(name, bio, JSON.stringify(encryptedData), id);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result.changes,
+    });
     
     if (result.changes === 0) {
       return null;
@@ -92,8 +129,20 @@ export class DatabaseService {
    * Delete a profile and all associated data (cascade)
    */
   deleteProfile(id: string): boolean {
-    const stmt = this.db.prepare('DELETE FROM profiles WHERE id = ?');
+    const sql = 'DELETE FROM profiles WHERE id = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
     const result = stmt.run(id);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result.changes,
+    });
+    
     return result.changes > 0;
   }
 
@@ -101,8 +150,21 @@ export class DatabaseService {
    * List all profiles
    */
   listProfiles(): Profile[] {
-    const stmt = this.db.prepare('SELECT * FROM profiles ORDER BY created_at DESC');
-    return stmt.all() as Profile[];
+    const sql = 'SELECT * FROM profiles ORDER BY created_at DESC';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const results = stmt.all() as Profile[];
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: results.length,
+    });
+    
+    return results;
   }
 
   /**
@@ -110,8 +172,20 @@ export class DatabaseService {
    * Returns the encrypted_data exactly as stored, without any decryption or parsing
    */
   getRawProfileData(id: string): string | null {
-    const stmt = this.db.prepare('SELECT encrypted_data FROM profiles WHERE id = ?');
+    const sql = 'SELECT encrypted_data FROM profiles WHERE id = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
     const row = stmt.get(id) as { encrypted_data: string } | undefined;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: row ? 1 : 0,
+    });
+    
     return row?.encrypted_data || null;
   }
 
@@ -134,17 +208,33 @@ export class DatabaseService {
   // ==================== Session Operations ====================
 
   /**
-   * Create a new session
+   * Create a new session.
+   * For single-user mode, automatically associates the session with the default user.
    */
   createSession(profileId: string): Session {
+    // Get the profile to find its user_id
+    const profile = this.getProfile(profileId);
+    if (!profile) {
+      throw new Error('Profile not found');
+    }
+    
     const id = randomUUID();
     
-    const stmt = this.db.prepare(`
-      INSERT INTO sessions (id, profile_id, status, started_at)
-      VALUES (?, ?, 'intro', datetime('now'))
-    `);
+    const sql = `
+      INSERT INTO sessions (id, user_id, profile_id, status, started_at)
+      VALUES (?, ?, ?, 'intro', datetime('now'))
+    `;
+    const getDuration = startQueryTimer();
     
-    stmt.run(id, profileId);
+    const stmt = this.db.prepare(sql);
+    stmt.run(id, profile.user_id, profileId);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+    });
     
     return this.getSession(id)!;
   }
@@ -153,21 +243,44 @@ export class DatabaseService {
    * Get a session by ID
    */
   getSession(id: string): Session | null {
-    const stmt = this.db.prepare('SELECT * FROM sessions WHERE id = ?');
-    return stmt.get(id) as Session | null;
+    const sql = 'SELECT * FROM sessions WHERE id = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const result = stmt.get(id) as Session | null;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result ? 1 : 0,
+    });
+    
+    return result;
   }
 
   /**
    * Update session status
    */
   updateSessionStatus(id: string, status: Session['status']): Session | null {
-    const stmt = this.db.prepare(`
+    const sql = `
       UPDATE sessions
       SET status = ?, updated_at = datetime('now')
       WHERE id = ?
-    `);
+    `;
+    const getDuration = startQueryTimer();
     
+    const stmt = this.db.prepare(sql);
     const result = stmt.run(status, id);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result.changes,
+    });
     
     if (result.changes === 0) {
       return null;
@@ -180,14 +293,24 @@ export class DatabaseService {
    * End a session
    */
   endSession(id: string, summary: string, actionItems: string[]): Session | null {
-    const stmt = this.db.prepare(`
+    const sql = `
       UPDATE sessions
       SET status = 'summary', summary = ?, action_items = ?,
           ended_at = datetime('now'), updated_at = datetime('now')
       WHERE id = ?
-    `);
+    `;
+    const getDuration = startQueryTimer();
     
+    const stmt = this.db.prepare(sql);
     const result = stmt.run(summary, JSON.stringify(actionItems), id);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result.changes,
+    });
     
     if (result.changes === 0) {
       return null;
@@ -200,45 +323,100 @@ export class DatabaseService {
    * List sessions for a profile
    */
   listSessions(profileId: string): Session[] {
-    const stmt = this.db.prepare(`
+    const sql = `
       SELECT * FROM sessions
       WHERE profile_id = ?
       ORDER BY started_at DESC
-    `);
-    return stmt.all(profileId) as Session[];
+    `;
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const results = stmt.all(profileId) as Session[];
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: results.length,
+    });
+    
+    return results;
   }
 
   /**
    * List all sessions
    */
   listAllSessions(): Session[] {
-    const stmt = this.db.prepare('SELECT * FROM sessions ORDER BY started_at DESC');
-    return stmt.all() as Session[];
+    const sql = 'SELECT * FROM sessions ORDER BY started_at DESC';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const results = stmt.all() as Session[];
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: results.length,
+    });
+    
+    return results;
   }
 
   /**
    * Delete a session and all associated messages
    */
   deleteSession(id: string): boolean {
-    const stmt = this.db.prepare('DELETE FROM sessions WHERE id = ?');
+    const sql = 'DELETE FROM sessions WHERE id = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
     const result = stmt.run(id);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result.changes,
+    });
+    
     return result.changes > 0;
   }
 
   // ==================== Message Operations ====================
 
   /**
-   * Add a message to a session
+   * Add a message to a session.
+   * For single-user mode, automatically associates the message with the default user.
    */
   addMessage(sessionId: string, role: 'user' | 'assistant', content: string): Message {
+    // Get the session to find its user_id
+    const session = this.getSession(sessionId);
+    if (!session) {
+      throw new Error('Session not found');
+    }
+    
     const id = randomUUID();
     
-    const stmt = this.db.prepare(`
-      INSERT INTO messages (id, session_id, role, content)
-      VALUES (?, ?, ?, ?)
-    `);
+    const sql = `
+      INSERT INTO messages (id, user_id, session_id, role, content)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    const getDuration = startQueryTimer();
     
-    stmt.run(id, sessionId, role, content);
+    const stmt = this.db.prepare(sql);
+    stmt.run(id, session.user_id, sessionId, role, content);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      // Note: content is NOT logged - it's user data
+    });
     
     return this.getMessage(id)!;
   }
@@ -247,45 +425,91 @@ export class DatabaseService {
    * Get a message by ID
    */
   getMessage(id: string): Message | null {
-    const stmt = this.db.prepare('SELECT * FROM messages WHERE id = ?');
-    return stmt.get(id) as Message | null;
+    const sql = 'SELECT * FROM messages WHERE id = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const result = stmt.get(id) as Message | null;
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result ? 1 : 0,
+    });
+    
+    return result;
   }
 
   /**
    * List messages for a session
    */
   listMessages(sessionId: string): Message[] {
-    const stmt = this.db.prepare(`
+    const sql = `
       SELECT * FROM messages
       WHERE session_id = ?
       ORDER BY created_at ASC
-    `);
-    return stmt.all(sessionId) as Message[];
+    `;
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const results = stmt.all(sessionId) as Message[];
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: results.length,
+      // Note: message content is NOT logged
+    });
+    
+    return results;
   }
 
   /**
    * Delete all messages for a session
    */
   deleteMessages(sessionId: string): number {
-    const stmt = this.db.prepare('DELETE FROM messages WHERE session_id = ?');
+    const sql = 'DELETE FROM messages WHERE session_id = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
     const result = stmt.run(sessionId);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result.changes,
+    });
+    
     return result.changes;
   }
 
   // ==================== Action Item Operations ====================
 
   /**
-   * Create an action item
+   * Create an action item.
+   * For single-user mode, automatically associates the action item with the default user.
    */
   createActionItem(sessionId: string, content: string): ActionItem {
+    // Get the session to find its user_id
+    const session = this.getSession(sessionId);
+    if (!session) {
+      throw new Error('Session not found');
+    }
+    
     const id = randomUUID();
     
     const stmt = this.db.prepare(`
-      INSERT INTO action_items (id, session_id, content, completed)
-      VALUES (?, ?, ?, 0)
+      INSERT INTO action_items (id, user_id, session_id, content, completed)
+      VALUES (?, ?, ?, ?, 0)
     `);
     
-    stmt.run(id, sessionId, content);
+    stmt.run(id, session.user_id, sessionId, content);
     
     return this.getActionItem(id)!;
   }
@@ -333,8 +557,20 @@ export class DatabaseService {
    * Delete an action item
    */
   deleteActionItem(id: string): boolean {
-    const stmt = this.db.prepare('DELETE FROM action_items WHERE id = ?');
+    const sql = 'DELETE FROM action_items WHERE id = ?';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
     const result = stmt.run(id);
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: result.changes,
+    });
+    
     return result.changes > 0;
   }
 
@@ -530,7 +766,8 @@ export class DatabaseService {
   }
 
   /**
-   * Import all user data from exported JSON
+   * Import all user data from exported JSON.
+   * For single-user mode, associates all imported data with the default user.
    */
   importData(data: {
     version: string;
@@ -540,25 +777,28 @@ export class DatabaseService {
     actionItems: ActionItem[];
     content?: ContentItem[];
   }): { profiles: number; sessions: number; messages: number; actionItems: number; content?: number } {
+    // Get or create the default user for single-user mode
+    const defaultUser = this.getOrCreateDefaultUser();
+    
     const importTransaction = this.db.transaction(() => {
       const insertProfile = this.db.prepare(`
-        INSERT OR REPLACE INTO profiles (id, name, bio, encrypted_data, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO profiles (id, user_id, name, bio, encrypted_data, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
       
       const insertSession = this.db.prepare(`
-        INSERT OR REPLACE INTO sessions (id, profile_id, status, summary, action_items, started_at, ended_at, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO sessions (id, user_id, profile_id, status, summary, action_items, started_at, ended_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
       const insertMessage = this.db.prepare(`
-        INSERT OR REPLACE INTO messages (id, session_id, role, content, created_at)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO messages (id, user_id, session_id, role, content, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
       
       const insertActionItem = this.db.prepare(`
-        INSERT OR REPLACE INTO action_items (id, session_id, content, completed, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO action_items (id, user_id, session_id, content, completed, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
       
       const insertContent = this.db.prepare(`
@@ -577,6 +817,7 @@ export class DatabaseService {
         for (const profile of data.profiles) {
           insertProfile.run(
             profile.id,
+            defaultUser.id,
             profile.name,
             profile.bio || null,
             profile.encrypted_data || null,
@@ -592,6 +833,7 @@ export class DatabaseService {
         for (const session of data.sessions) {
           insertSession.run(
             session.id,
+            defaultUser.id,
             session.profile_id,
             session.status,
             session.summary || null,
@@ -610,6 +852,7 @@ export class DatabaseService {
         for (const message of data.messages) {
           insertMessage.run(
             message.id,
+            defaultUser.id,
             message.session_id,
             message.role,
             message.content,
@@ -624,6 +867,7 @@ export class DatabaseService {
         for (const actionItem of data.actionItems) {
           insertActionItem.run(
             actionItem.id,
+            defaultUser.id,
             actionItem.session_id,
             actionItem.content,
             actionItem.completed ? 1 : 0,
@@ -707,6 +951,26 @@ export class DatabaseService {
     stmt.run(id, username, passwordHash);
     
     return this.getUserById(id)!;
+  }
+
+  /**
+   * Get or create the default user for single-user mode.
+   * This is used when creating profiles without explicit user authentication.
+   */
+  getOrCreateDefaultUser(): User {
+    // Check if a default user already exists
+    const defaultUsername = 'default_user';
+    const existingUser = this.getUserByUsername(defaultUsername);
+    
+    if (existingUser) {
+      return existingUser;
+    }
+    
+    // Create a default user with a placeholder password hash
+    // Note: In single-user mode without auth, this is a placeholder
+    // The actual auth system will set a proper password when implemented
+    const placeholderHash = 'placeholder_hash_for_single_user_mode';
+    return this.createUser(defaultUsername, placeholderHash);
   }
 
   /**

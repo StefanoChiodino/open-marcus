@@ -14,6 +14,9 @@ const PORT = process.env.PORT || 3100;
 // Middleware
 app.use(express.json());
 
+// Raw body middleware for STT routes (audio content types)
+app.use('/api/stt', express.raw({ type: 'audio/*', limit: '50mb' }));
+
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

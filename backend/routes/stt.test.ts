@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { getSttService, resetSttService } from '../services/stt.js';
+import sttRoutes from './stt.js';
 
 describe('STT Routes', () => {
   let app: Express;
@@ -15,42 +16,7 @@ describe('STT Routes', () => {
     getSttService('127.0.0.1', 49997);
     app = express();
     app.use(express.raw({ type: 'audio/*', limit: '50mb' }));
-    // Create inline route that uses our configured service
-    app.post('/api/stt/transcribe', async (req, res) => {
-      try {
-        const contentType = req.headers['content-type'];
-        if (!contentType || !contentType.includes('audio/')) {
-          res.status(400).json({ error: 'Content-Type must be audio/wav' });
-          return;
-        }
-
-        const body = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
-        if (body.length === 0) {
-          res.status(400).json({ error: 'Empty request body. WAV audio data required.' });
-          return;
-        }
-
-        const sttService = getSttService();
-        const result = await sttService.transcribe(body);
-        res.json({ text: result.text });
-      } catch (error) {
-        if (error instanceof Error && error.name === 'SttOfflineError') {
-          res.status(503).json({ error: error.message });
-        } else {
-          res.status(500).json({ error: 'Transcription failed' });
-        }
-      }
-    });
-
-    app.get('/api/stt/health', async (_req, res) => {
-      try {
-        const sttService = getSttService();
-        const health = await sttService.healthCheck();
-        res.json(health);
-      } catch {
-        res.status(503).json({ error: 'STT server unreachable' });
-      }
-    });
+    app.use('/api/stt', sttRoutes);
   });
 
   afterEach(() => {
@@ -121,32 +87,7 @@ describe('STT Routes - integration (STT server running)', () => {
     getSttService('127.0.0.1', 8765);
     app = express();
     app.use(express.raw({ type: 'audio/*', limit: '50mb' }));
-
-    app.post('/api/stt/transcribe', async (req, res) => {
-      try {
-        const contentType = req.headers['content-type'];
-        if (!contentType || !contentType.includes('audio/')) {
-          res.status(400).json({ error: 'Content-Type must be audio/wav' });
-          return;
-        }
-
-        const body = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
-        if (body.length === 0) {
-          res.status(400).json({ error: 'Empty request body. WAV audio data required.' });
-          return;
-        }
-
-        const sttService = getSttService();
-        const result = await sttService.transcribe(body);
-        res.json({ text: result.text });
-      } catch (error) {
-        if (error instanceof Error && error.name === 'SttOfflineError') {
-          res.status(503).json({ error: error.message });
-        } else {
-          res.status(500).json({ error: (error as Error).message });
-        }
-      }
-    });
+    app.use('/api/stt', sttRoutes);
   });
 
   afterEach(() => {

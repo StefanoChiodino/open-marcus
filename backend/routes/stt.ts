@@ -27,12 +27,8 @@ router.post('/transcribe', async (req: Request, res: Response) => {
       return;
     }
 
-    // Collect raw body
-    const chunks: Buffer[] = [];
-    for await (const chunk of req) {
-      chunks.push(Buffer.from(chunk));
-    }
-    const body = Buffer.concat(chunks);
+    // Raw body is populated by express.raw() middleware in server.ts
+    const body = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
 
     if (body.length === 0) {
       res.status(400).json({ error: 'Empty request body. WAV audio data required.' });

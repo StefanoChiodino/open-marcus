@@ -241,6 +241,7 @@ export class DatabaseService {
 
   /**
    * Get a session by ID
+   * Decrypts summary and action_items if present.
    */
   getSession(id: string): Session | null {
     const sql = 'SELECT * FROM sessions WHERE id = ?';
@@ -257,7 +258,42 @@ export class DatabaseService {
       rowsReturned: result ? 1 : 0,
     });
     
+    if (result) {
+      this.decryptSessionFields(result);
+    }
+    
     return result;
+  }
+
+  /**
+   * Helper to decrypt session fields (summary and action_items) in place.
+   */
+  private decryptSessionFields(session: Session): void {
+    // Decrypt summary if present and encrypted
+    if (session.summary) {
+      try {
+        const encryptedSummary: EncryptedData = JSON.parse(session.summary);
+        if (encryptedSummary.iv && encryptedSummary.authTag && encryptedSummary.salt && encryptedSummary.ciphertext) {
+          const decrypted = decryptObject<{ summary: string }>(encryptedSummary, this.encryptionPassword);
+          session.summary = decrypted.summary;
+        }
+      } catch {
+        // If decryption fails, leave as-is (might be legacy plaintext)
+      }
+    }
+    
+    // Decrypt action_items if present and encrypted
+    if (session.action_items) {
+      try {
+        const encryptedActionItems: EncryptedData = JSON.parse(session.action_items);
+        if (encryptedActionItems.iv && encryptedActionItems.authTag && encryptedActionItems.salt && encryptedActionItems.ciphertext) {
+          const decrypted = decryptObject<{ actionItems: string[] }>(encryptedActionItems, this.encryptionPassword);
+          session.action_items = JSON.stringify(decrypted.actionItems);
+        }
+      } catch {
+        // If decryption fails, leave as-is (might be legacy plaintext)
+      }
+    }
   }
 
   /**
@@ -291,8 +327,13 @@ export class DatabaseService {
 
   /**
    * End a session
+   * Summary and action items are encrypted before storage.
    */
   endSession(id: string, summary: string, actionItems: string[]): Session | null {
+    // Encrypt the summary and action items
+    const encryptedSummary = encryptObject({ summary }, this.encryptionPassword);
+    const encryptedActionItems = encryptObject({ actionItems }, this.encryptionPassword);
+    
     const sql = `
       UPDATE sessions
       SET status = 'summary', summary = ?, action_items = ?,
@@ -302,7 +343,11 @@ export class DatabaseService {
     const getDuration = startQueryTimer();
     
     const stmt = this.db.prepare(sql);
-    const result = stmt.run(summary, JSON.stringify(actionItems), id);
+    const result = stmt.run(
+      JSON.stringify(encryptedSummary),
+      JSON.stringify(encryptedActionItems),
+      id
+    );
     
     logQuery({
       sql,
@@ -321,6 +366,7 @@ export class DatabaseService {
 
   /**
    * List sessions for a profile
+   * Decrypts summary and action_items for each session.
    */
   listSessions(profileId: string): Session[] {
     const sql = `
@@ -341,11 +387,17 @@ export class DatabaseService {
       rowsReturned: results.length,
     });
     
+    // Decrypt session data
+    for (const session of results) {
+      this.decryptSessionFields(session);
+    }
+    
     return results;
   }
 
   /**
    * List all sessions
+   * Decrypts summary and action_items for each session.
    */
   listAllSessions(): Session[] {
     const sql = 'SELECT * FROM sessions ORDER BY started_at DESC';
@@ -361,6 +413,11 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: results.length,
     });
+    
+    // Decrypt session data
+    for (const session of results) {
+      this.decryptSessionFields(session);
+    }
     
     return results;
   }
@@ -391,15 +448,21 @@ export class DatabaseService {
   /**
    * Add a message to a session.
    * For single-user mode, automatically associates the message with the default user.
+   * Message content is encrypted before storage.
    */
   addMessage(sessionId: string, role: 'user' | 'assistant', content: string): Message {
-    // Get the session to find its user_id
-    const session = this.getSession(sessionId);
+    // Get the session to find its user_id (don't decrypt yet, just get the row)
+    const sessionSql = 'SELECT user_id FROM sessions WHERE id = ?';
+    const sessionStmt = this.db.prepare(sessionSql);
+    const session = sessionStmt.get(sessionId) as { user_id: string } | undefined;
     if (!session) {
       throw new Error('Session not found');
     }
     
     const id = randomUUID();
+    
+    // Encrypt the message content
+    const encryptedContent = encryptObject({ content }, this.encryptionPassword);
     
     const sql = `
       INSERT INTO messages (id, user_id, session_id, role, content)
@@ -408,7 +471,7 @@ export class DatabaseService {
     const getDuration = startQueryTimer();
     
     const stmt = this.db.prepare(sql);
-    stmt.run(id, session.user_id, sessionId, role, content);
+    stmt.run(id, session.user_id, sessionId, role, JSON.stringify(encryptedContent));
     
     logQuery({
       sql,
@@ -423,6 +486,7 @@ export class DatabaseService {
 
   /**
    * Get a message by ID
+   * Decrypts message content if present and encrypted.
    */
   getMessage(id: string): Message | null {
     const sql = 'SELECT * FROM messages WHERE id = ?';
@@ -439,11 +503,24 @@ export class DatabaseService {
       rowsReturned: result ? 1 : 0,
     });
     
+    if (result && result.content) {
+      try {
+        const encryptedContent: EncryptedData = JSON.parse(result.content);
+        if (encryptedContent.iv && encryptedContent.authTag && encryptedContent.salt && encryptedContent.ciphertext) {
+          const decrypted = decryptObject<{ content: string }>(encryptedContent, this.encryptionPassword);
+          result.content = decrypted.content;
+        }
+      } catch {
+        // If decryption fails, leave as-is (might be legacy plaintext)
+      }
+    }
+    
     return result;
   }
 
   /**
    * List messages for a session
+   * Decrypts message content for each message.
    */
   listMessages(sessionId: string): Message[] {
     const sql = `
@@ -464,6 +541,21 @@ export class DatabaseService {
       rowsReturned: results.length,
       // Note: message content is NOT logged
     });
+    
+    // Decrypt content for each message
+    for (const message of results) {
+      if (message.content) {
+        try {
+          const encryptedContent: EncryptedData = JSON.parse(message.content);
+          if (encryptedContent.iv && encryptedContent.authTag && encryptedContent.salt && encryptedContent.ciphertext) {
+            const decrypted = decryptObject<{ content: string }>(encryptedContent, this.encryptionPassword);
+            message.content = decrypted.content;
+          }
+        } catch {
+          // If decryption fails, leave as-is (might be legacy plaintext)
+        }
+      }
+    }
     
     return results;
   }
@@ -494,36 +586,58 @@ export class DatabaseService {
   /**
    * Create an action item.
    * For single-user mode, automatically associates the action item with the default user.
+   * Action item content is encrypted before storage.
    */
   createActionItem(sessionId: string, content: string): ActionItem {
-    // Get the session to find its user_id
-    const session = this.getSession(sessionId);
+    // Get the session to find its user_id (raw query to avoid decryption)
+    const sessionSql = 'SELECT user_id FROM sessions WHERE id = ?';
+    const sessionStmt = this.db.prepare(sessionSql);
+    const session = sessionStmt.get(sessionId) as { user_id: string } | undefined;
     if (!session) {
       throw new Error('Session not found');
     }
     
     const id = randomUUID();
     
+    // Encrypt the action item content
+    const encryptedContent = encryptObject({ content }, this.encryptionPassword);
+    
     const stmt = this.db.prepare(`
       INSERT INTO action_items (id, user_id, session_id, content, completed)
       VALUES (?, ?, ?, ?, 0)
     `);
     
-    stmt.run(id, session.user_id, sessionId, content);
+    stmt.run(id, session.user_id, sessionId, JSON.stringify(encryptedContent));
     
     return this.getActionItem(id)!;
   }
 
   /**
    * Get an action item by ID
+   * Decrypts action item content if present and encrypted.
    */
   getActionItem(id: string): ActionItem | null {
     const stmt = this.db.prepare('SELECT * FROM action_items WHERE id = ?');
-    return stmt.get(id) as ActionItem | null;
+    const result = stmt.get(id) as ActionItem | null;
+    
+    if (result && result.content) {
+      try {
+        const encryptedContent: EncryptedData = JSON.parse(result.content);
+        if (encryptedContent.iv && encryptedContent.authTag && encryptedContent.salt && encryptedContent.ciphertext) {
+          const decrypted = decryptObject<{ content: string }>(encryptedContent, this.encryptionPassword);
+          result.content = decrypted.content;
+        }
+      } catch {
+        // If decryption fails, leave as-is (might be legacy plaintext)
+      }
+    }
+    
+    return result;
   }
 
   /**
    * List action items for a session
+   * Decrypts action item content for each item.
    */
   listActionItems(sessionId: string): ActionItem[] {
     const stmt = this.db.prepare(`
@@ -531,7 +645,24 @@ export class DatabaseService {
       WHERE session_id = ?
       ORDER BY created_at ASC
     `);
-    return stmt.all(sessionId) as ActionItem[];
+    const results = stmt.all(sessionId) as ActionItem[];
+    
+    // Decrypt content for each action item
+    for (const item of results) {
+      if (item.content) {
+        try {
+          const encryptedContent: EncryptedData = JSON.parse(item.content);
+          if (encryptedContent.iv && encryptedContent.authTag && encryptedContent.salt && encryptedContent.ciphertext) {
+            const decrypted = decryptObject<{ content: string }>(encryptedContent, this.encryptionPassword);
+            item.content = decrypted.content;
+          }
+        } catch {
+          // If decryption fails, leave as-is (might be legacy plaintext)
+        }
+      }
+    }
+    
+    return results;
   }
 
   /**

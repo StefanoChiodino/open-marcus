@@ -74,9 +74,12 @@ function MeditationChat() {
     }, 0);
   }, []);
 
-  // Auto-scroll to bottom of messages
+  // Auto-scroll to bottom of messages container
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const messagesEl = messagesEndRef.current?.parentElement;
+    if (messagesEl) {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
   }, [messages, streamingContent]);
 
   // Focus textarea when session becomes active
@@ -126,19 +129,6 @@ function MeditationChat() {
   const handleTextareaChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setInputValue(e.target.value);
-
-      // Auto-resize textarea
-      const textarea = e.target;
-      textarea.style.height = 'auto';
-      const newHeight = Math.min(textarea.scrollHeight, 150);
-      textarea.style.height = newHeight + 'px';
-
-      // Allow scrolling only when content exceeds max-height
-      if (textarea.scrollHeight > 150) {
-        textarea.style.overflowY = 'auto';
-      } else {
-        textarea.style.overflowY = 'hidden';
-      }
     },
     [],
   );
@@ -156,8 +146,8 @@ function MeditationChat() {
           </h2>
           <p className="meditation-chat__description">
             {profile
-              ? `Welcome back, ${profile.name}. Begin your session of stoic reflection and guided meditation. Marcus awaits your thoughts.`
-              : 'Begin your session of stoic reflection and guided meditation. Marcus awaits your thoughts.'}
+              ? `Welcome back, ${profile.name}. Ready for some stoic reflection and guided meditation? Marcus is here to help you explore your thoughts.`
+              : 'Ready for some stoic reflection and guided meditation? Marcus is here to help you explore your thoughts.'}
           </p>
           <button
             onClick={handleBeginSession}
@@ -271,8 +261,8 @@ function MeditationChat() {
           <div className="meditation-chat__empty">
             <p className="text-serif meditation-chat__greeting">
               {profile
-                ? `I am Marcus. Greetings, ${profile.name}. Speak your mind, and let us explore the terrain of your thoughts together.`
-                : 'I am Marcus. Speak your mind, and let us explore the terrain of your thoughts together.'}
+                ? `I'm Marcus. Hey there, ${profile.name}. What's on your mind? Let's take a moment to explore your thoughts together.`
+                : "I'm Marcus. What's on your mind? Let's take a moment to explore your thoughts together."}
             </p>
             <p className="text-muted meditation-chat__prompt-hint">
               Type your thoughts, concerns, or questions below.

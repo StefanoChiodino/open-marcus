@@ -91,7 +91,7 @@ async function createMeditationSession(page: any): Promise<string> {
   await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
   
   // Wait for Marcus greeting
-  await expect(page.getByText(/I am Marcus/)).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/I'm Marcus/)).toBeVisible({ timeout: 15000 });
   
   // Send a message
   const textarea = page.getByLabel('Type your message to Marcus');

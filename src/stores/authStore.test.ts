@@ -3,6 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useAuthStore } from '../stores/authStore';
+import { useProfileStore } from '../stores/profileStore';
 import { authAPI } from '../lib/authApi';
 import { getAuthToken, clearAuthToken } from '../lib/auth';
 
@@ -238,6 +239,150 @@ describe('authStore', () => {
 
       const state = useAuthStore.getState();
       expect(state.error).toBeNull();
+    });
+  });
+
+  describe('logout and profileStore interaction', () => {
+    it('logout does NOT clear profileStore - only clears authStore', async () => {
+      // Set up authStore with authenticated state
+      const mockToken = 'valid-token';
+      useAuthStore.setState({
+        isAuthenticated: true,
+        currentUser: { id: 'user-1', username: 'testuser' },
+        authToken: mockToken,
+      });
+
+      // Set up profileStore with existing profile
+      const mockProfile = {
+        id: 'profile-1',
+        name: 'Test User',
+        bio: 'Test bio',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+      useProfileStore.setState({
+        profile: mockProfile,
+        status: 'loaded',
+        isEditing: false,
+      });
+
+      vi.mocked(authAPI.logout).mockResolvedValue(undefined);
+
+      // Perform logout
+      await useAuthStore.getState().logout();
+
+      // Verify authStore was cleared
+      const authState = useAuthStore.getState();
+      expect(authState.isAuthenticated).toBe(false);
+      expect(authState.currentUser).toBeNull();
+      expect(authState.authToken).toBeNull();
+      expect(clearAuthToken).toHaveBeenCalled();
+
+      // Verify profileStore was NOT cleared - profile should still exist
+      const profileState = useProfileStore.getState();
+      expect(profileState.profile).toEqual(mockProfile);
+      expect(profileState.status).toBe('loaded');
+    });
+
+    it('logout preserves profileStore even when profile is being edited', async () => {
+      // Set up authStore with authenticated state
+      const mockToken = 'valid-token';
+      useAuthStore.setState({
+        isAuthenticated: true,
+        currentUser: { id: 'user-1', username: 'testuser' },
+        authToken: mockToken,
+      });
+
+      // Set up profileStore with existing profile and editing state
+      const mockProfile = {
+        id: 'profile-1',
+        name: 'Test User',
+        bio: 'Test bio',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+      useProfileStore.setState({
+        profile: mockProfile,
+        status: 'loaded',
+        isEditing: true, // User was editing when they logged out
+      });
+
+      vi.mocked(authAPI.logout).mockResolvedValue(undefined);
+
+      // Perform logout
+      await useAuthStore.getState().logout();
+
+      // Verify profileStore profile was NOT cleared
+      const profileState = useProfileStore.getState();
+      expect(profileState.profile).toEqual(mockProfile);
+      expect(profileState.status).toBe('loaded');
+    });
+  });
+
+  describe('isAuthenticated state transitions', () => {
+    it('should transition from false to true on successful login', async () => {
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+
+      const mockUser = { id: 'user-1', username: 'testuser' };
+      const mockToken = 'new-token';
+      vi.mocked(authAPI.login).mockResolvedValue({ user: mockUser, token: mockToken });
+
+      await useAuthStore.getState().login('testuser', 'password123');
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    });
+
+    it('should transition from true to false on logout', async () => {
+      // First login
+      const mockUser = { id: 'user-1', username: 'testuser' };
+      const mockToken = 'valid-token';
+      useAuthStore.setState({
+        isAuthenticated: true,
+        currentUser: mockUser,
+        authToken: mockToken,
+      });
+      vi.mocked(authAPI.logout).mockResolvedValue(undefined);
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(true);
+
+      await useAuthStore.getState().logout();
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    });
+
+    it('should transition from true to false on invalid token during checkAuth', async () => {
+      const mockToken = 'invalid-token';
+      useAuthStore.setState({ authToken: mockToken });
+      vi.mocked(authAPI.verify).mockRejectedValue(new Error('Invalid token'));
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+
+      await useAuthStore.getState().checkAuth();
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    });
+
+    it('should transition from false to true on successful loadToken', async () => {
+      const mockToken = 'valid-token';
+      const mockUser = { id: 'user-1', username: 'testuser' };
+      vi.mocked(getAuthToken).mockReturnValue(mockToken);
+      vi.mocked(authAPI.verify).mockResolvedValue(mockUser);
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+
+      await useAuthStore.getState().loadToken();
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    });
+
+    it('should remain false when no token exists on loadToken', async () => {
+      vi.mocked(getAuthToken).mockReturnValue(null);
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+
+      await useAuthStore.getState().loadToken();
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
     });
   });
 });

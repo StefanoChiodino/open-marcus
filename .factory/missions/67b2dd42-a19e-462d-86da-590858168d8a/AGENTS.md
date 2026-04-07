@@ -14,7 +14,7 @@ This mission adds TTS (Text-to-Speech) and STT (Speech-to-Text) settings to the 
 **Port Range:** 3100-3199. Never start services outside this range.
 
 **External Services:**
-- USE existing postgres on localhost:5432 (do not start a new database)
+- USE existing SQLite database at ./data/openmarcus.db (auto-created)
 - USE existing Ollama on port 11434 (do not modify)
 - USE existing TTS server on port 8766 (edge-tts)
 - USE existing STT server on port 8765 (sherpa-onnx)

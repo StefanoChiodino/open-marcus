@@ -71,7 +71,7 @@ export class DatabaseService {
       durationMs: getDuration(),
     });
     
-    return this.getProfile(id)!;
+    return this.getProfileWithDecryptedBio(id)!;
   }
 
   /**
@@ -99,11 +99,13 @@ export class DatabaseService {
       durationMs: getDuration(),
     });
     
-    return this.getProfile(id)!;
+    return this.getProfileWithDecryptedBio(id)!;
   }
 
   /**
    * Get a profile by ID
+   * Note: bio is always null in the plaintext column - the actual bio is in encrypted_data
+   * This method returns the raw profile without decrypting (for internal use)
    */
   getProfile(id: string): Profile | null {
     const sql = 'SELECT * FROM profiles WHERE id = ?';
@@ -121,6 +123,30 @@ export class DatabaseService {
     });
     
     return result;
+  }
+
+  /**
+   * Get a profile by ID with decrypted bio from encrypted_data
+   * Use this method when returning profile data to the API
+   */
+  getProfileWithDecryptedBio(id: string): (Omit<Profile, 'bio'> & { bio: string | null }) | null {
+    const profile = this.getProfile(id);
+    if (!profile) return null;
+    
+    try {
+      const encrypted: EncryptedData = JSON.parse(profile.encrypted_data);
+      const decrypted = decryptObject<{ name: string; bio: string | null }>(encrypted, this.encryptionPassword);
+      return {
+        ...profile,
+        bio: decrypted.bio,
+      };
+    } catch {
+      // If decryption fails, return profile with null bio (fallback)
+      return {
+        ...profile,
+        bio: null,
+      };
+    }
   }
 
   /**
@@ -152,7 +178,7 @@ export class DatabaseService {
       return null;
     }
     
-    return this.getProfile(id);
+    return this.getProfileWithDecryptedBio(id);
   }
 
   /**
@@ -216,6 +242,41 @@ export class DatabaseService {
     });
     
     return results;
+  }
+
+  /**
+   * Decrypt bio from encrypted_data for a profile
+   */
+  private decryptProfileBio(encryptedData: string): string | null {
+    try {
+      const encrypted: EncryptedData = JSON.parse(encryptedData);
+      const decrypted = decryptObject<{ name: string; bio: string | null }>(encrypted, this.encryptionPassword);
+      return decrypted.bio;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * List all profiles with decrypted bios
+   */
+  listProfilesWithDecryptedBios(): (Omit<Profile, 'bio'> & { bio: string | null })[] {
+    const profiles = this.listProfiles();
+    return profiles.map(profile => ({
+      ...profile,
+      bio: this.decryptProfileBio(profile.encrypted_data),
+    }));
+  }
+
+  /**
+   * List profiles for a specific user with decrypted bios
+   */
+  listProfilesByUserIdWithDecryptedBios(userId: string): (Omit<Profile, 'bio'> & { bio: string | null })[] {
+    const profiles = this.listProfilesByUserId(userId);
+    return profiles.map(profile => ({
+      ...profile,
+      bio: this.decryptProfileBio(profile.encrypted_data),
+    }));
   }
 
   /**

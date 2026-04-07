@@ -143,7 +143,7 @@ describe('MeditationChat', () => {
       render(<MeditationChat />);
 
       expect(
-        screen.getByText(/I am Marcus\. Greetings, TestUser/),
+        screen.getByText(/I'm Marcus\. Hey there, TestUser/),
       ).toBeInTheDocument();
     });
 

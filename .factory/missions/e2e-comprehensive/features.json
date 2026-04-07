@@ -1,0 +1,445 @@
+{
+  "features": [
+    {
+      "id": "e2e-auth-comprehensive",
+      "description": "Comprehensive authentication tests covering: login success, login invalid credentials, registration success, registration duplicate username, password guidance real-time updates, logout flow, logout clears localStorage, session persistence after reload, and invalid token handling.",
+      "skillName": "e2e-worker",
+      "milestone": "auth-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101",
+        "Playwright test runner configured"
+      ],
+      "expectedBehavior": [
+        "All auth flows work correctly: login, register, logout",
+        "Password guidance updates in real-time as user types",
+        "Logout clears all local state and redirects to login",
+        "Session persists after page reload"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- auth-comprehensive.spec.ts",
+        "Manual: Test login with correct/incorrect credentials",
+        "Manual: Test registration flow",
+        "Manual: Test logout clears everything"
+      ],
+      "fulfills": [
+        "VAL-AUTH-001", "VAL-AUTH-002", "VAL-AUTH-003", "VAL-AUTH-004",
+        "VAL-AUTH-005", "VAL-AUTH-006", "VAL-AUTH-007", "VAL-AUTH-008",
+        "VAL-AUTH-009", "VAL-AUTH-010"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-onboarding-comprehensive",
+      "description": "Comprehensive onboarding tests covering: new user sees ProfileForm, empty name validation, long name handling (500+ chars), special characters in name/bio, successful onboarding navigation, and returning user skips onboarding.",
+      "skillName": "e2e-worker",
+      "milestone": "auth-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101"
+      ],
+      "expectedBehavior": [
+        "New users see onboarding form",
+        "Validation prevents empty name submission",
+        "Very long names handled gracefully",
+        "Special characters work in name/bio",
+        "Returning users skip onboarding"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- onboarding-comprehensive.spec.ts",
+        "Manual: Test with edge case inputs"
+      ],
+      "fulfills": [
+        "VAL-ONBOARD-001", "VAL-ONBOARD-002", "VAL-ONBOARD-003",
+        "VAL-ONBOARD-004", "VAL-ONBOARD-005", "VAL-ONBOARD-006"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-profile-comprehensive",
+      "description": "Comprehensive profile tests covering: profile page displays name/bio, edit shows pre-filled form, empty name validation on edit, cancel returns to display, save persists changes, profile changes reflect on home page greeting, profile persists across logout/login.",
+      "skillName": "e2e-worker",
+      "milestone": "profile-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101",
+        "User can register and login"
+      ],
+      "expectedBehavior": [
+        "Profile page shows correct data",
+        "Edit form pre-fills current values",
+        "Cancel discards changes",
+        "Save persists changes",
+        "Name changes reflect on home page"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- profile-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-PROFILE-001", "VAL-PROFILE-002", "VAL-PROFILE-003",
+        "VAL-PROFILE-004", "VAL-PROFILE-005", "VAL-PROFILE-006", "VAL-PROFILE-007"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-session-core-comprehensive",
+      "description": "Comprehensive session core flow tests covering: idle state rendering, Begin Meditation starts session, send message displays in chat, Marcus responds, End Session shows summary, Begin New Meditation resets, session appears in history, loading indicator during response, session state persists after reload, session with no messages still saves.",
+      "skillName": "e2e-worker",
+      "milestone": "session-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101",
+        "Ollama running on localhost:11434 for AI responses"
+      ],
+      "expectedBehavior": [
+        "Session idle state shows Marcus icon and Begin button",
+        "Begin Meditation shows Marcus greeting",
+        "Messages appear in chat",
+        "Marcus responses appear (may take time)",
+        "End Session shows summary",
+        "Sessions save to history"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- session-core-comprehensive.spec.ts",
+        "Note: Requires Ollama for full Marcus responses"
+      ],
+      "fulfills": [
+        "VAL-SESSION-001", "VAL-SESSION-002", "VAL-SESSION-003",
+        "VAL-SESSION-004", "VAL-SESSION-005", "VAL-SESSION-006",
+        "VAL-SESSION-007", "VAL-SESSION-008", "VAL-SESSION-009",
+        "VAL-SESSION-010"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-session-voice-comprehensive",
+      "description": "Comprehensive voice tests covering: voice controls visible in active session, TTS toggle button, TTS uses saved voice settings, STT error when server down with actionable message, voice playback indicator.",
+      "skillName": "e2e-worker",
+      "milestone": "session-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101",
+        "TTS server running on localhost:8766",
+        "STT server optionally running"
+      ],
+      "expectedBehavior": [
+        "Voice controls visible in session",
+        "TTS toggle changes state",
+        "STT error shows actionable message with start command"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- session-voice-comprehensive.spec.ts",
+        "Manual: Test TTS toggle and STT error message"
+      ],
+      "fulfills": [
+        "VAL-SESSION-VOICE-001", "VAL-SESSION-VOICE-002",
+        "VAL-SESSION-VOICE-003", "VAL-SESSION-VOICE-004", "VAL-SESSION-VOICE-005"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-history-comprehensive",
+      "description": "Comprehensive history tests covering: empty state, session list display, click navigates to detail, detail shows conversation, detail shows summary, back navigation, invalid session ID error, direct URL access works, session date/duration shown.",
+      "skillName": "e2e-worker",
+      "milestone": "history-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101",
+        "User has completed at least one session"
+      ],
+      "expectedBehavior": [
+        "Empty history shows empty state message",
+        "Sessions appear in history list",
+        "Clicking session shows detail",
+        "Invalid session shows error"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- history-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-HIST-001", "VAL-HIST-002", "VAL-HIST-003", "VAL-HIST-004",
+        "VAL-HIST-005", "VAL-HIST-006", "VAL-HIST-007", "VAL-HIST-008",
+        "VAL-HIST-009"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-settings-data-comprehensive",
+      "description": "Comprehensive settings data management tests: export downloads valid JSON with date, import valid file succeeds, import invalid file shows error, clear data shows confirmation, cancel does not clear, confirm clears all data, data persists through logout/login.",
+      "skillName": "e2e-worker",
+      "milestone": "settings-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101",
+        "User has profile and sessions"
+      ],
+      "expectedBehavior": [
+        "Export downloads valid JSON",
+        "Import restores data",
+        "Clear requires confirmation",
+        "Clear deletes all data"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- settings-data-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-SETTINGS-001", "VAL-SETTINGS-002", "VAL-SETTINGS-003",
+        "VAL-SETTINGS-004", "VAL-SETTINGS-005", "VAL-SETTINGS-006",
+        "VAL-SETTINGS-007", "VAL-SETTINGS-008", "VAL-SETTINGS-009"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-settings-tts-comprehensive",
+      "description": "Comprehensive TTS settings tests: voice dropdown shows 6 options, rate slider visible and adjustable, pitch slider visible and adjustable, changing settings saves immediately via API, settings persist after page reload, TTS voice applies in session.",
+      "skillName": "e2e-worker",
+      "milestone": "settings-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101",
+        "TTS server running on localhost:8766"
+      ],
+      "expectedBehavior": [
+        "TTS settings UI shows all controls",
+        "Changing settings triggers API save",
+        "Settings persist after reload"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- settings-tts-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-SETTINGS-TTS-001", "VAL-SETTINGS-TTS-002", "VAL-SETTINGS-TTS-003",
+        "VAL-SETTINGS-TTS-004", "VAL-SETTINGS-TTS-005", "VAL-SETTINGS-TTS-006"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-settings-stt-comprehensive",
+      "description": "Comprehensive STT settings tests: model dropdown lists available models, model size shown, reload button triggers API, loading indicator during reload, error message on failed reload.",
+      "skillName": "e2e-worker",
+      "milestone": "settings-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101",
+        "STT server running on localhost:8765"
+      ],
+      "expectedBehavior": [
+        "STT models listed with sizes",
+        "Reload shows loading state",
+        "Errors handled gracefully"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- settings-stt-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-SETTINGS-STT-001", "VAL-SETTINGS-STT-002", "VAL-SETTINGS-STT-003",
+        "VAL-SETTINGS-STT-004", "VAL-SETTINGS-STT-005"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-settings-model-comprehensive",
+      "description": "Comprehensive model selection tests: dropdown shows available models, current model selected, changing model saves, selection persists after reload, system RAM info displayed.",
+      "skillName": "e2e-worker",
+      "milestone": "settings-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101",
+        "Ollama running on localhost:11434"
+      ],
+      "expectedBehavior": [
+        "Available models shown in dropdown",
+        "Current model is pre-selected",
+        "Changes persist"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- settings-model-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-SETTINGS-MODEL-001", "VAL-SETTINGS-MODEL-002", "VAL-SETTINGS-MODEL-003",
+        "VAL-SETTINGS-MODEL-004", "VAL-SETTINGS-MODEL-005"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-toast-notifications-comprehensive",
+      "description": "Comprehensive toast notification tests: success toast on successful actions, error toast on failures, toast auto-dismisses after delay, toast can be manually dismissed.",
+      "skillName": "e2e-worker",
+      "milestone": "ui-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101"
+      ],
+      "expectedBehavior": [
+        "Success toasts appear after successful actions",
+        "Error toasts appear on failures",
+        "Toasts auto-dismiss",
+        "Toasts can be manually dismissed"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- toast-notifications-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-TOAST-001", "VAL-TOAST-002", "VAL-TOAST-003", "VAL-TOAST-004"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-error-handling-comprehensive",
+      "description": "Comprehensive error handling tests: network error shows friendly message, API 500 handled gracefully, timeout error handled, offline state detected and shown.",
+      "skillName": "e2e-worker",
+      "milestone": "ui-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101"
+      ],
+      "expectedBehavior": [
+        "User-friendly error messages",
+        "No crashes on server errors",
+        "Offline detection works"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- error-handling-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-ERROR-001", "VAL-ERROR-002", "VAL-ERROR-003", "VAL-ERROR-004"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-protected-routes-comprehensive",
+      "description": "Comprehensive protected routes tests: /session, /history, /profile, /settings redirect unauthenticated to /login; authenticated user visiting /login or /register redirects to home.",
+      "skillName": "e2e-worker",
+      "milestone": "auth-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101"
+      ],
+      "expectedBehavior": [
+        "Unauthenticated access to protected routes redirects to login",
+        "Authenticated user on auth pages redirects to home"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- protected-routes-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-PROTECT-001", "VAL-PROTECT-002", "VAL-PROTECT-003",
+        "VAL-PROTECT-004", "VAL-PROTECT-005", "VAL-PROTECT-006"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-responsive-design-comprehensive",
+      "description": "Comprehensive responsive design tests: all pages work at desktop (1280px), tablet (768px), and mobile (375px); bottom nav covers no content on mobile.",
+      "skillName": "e2e-worker",
+      "milestone": "ui-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101"
+      ],
+      "expectedBehavior": [
+        "All pages render correctly at all breakpoints",
+        "Mobile nav doesn't cover content"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- responsive-comprehensive.spec.ts",
+        "Screenshots at each breakpoint"
+      ],
+      "fulfills": [
+        "VAL-RESP-001", "VAL-RESP-002", "VAL-RESP-003",
+        "VAL-RESP-004", "VAL-RESP-005", "VAL-RESP-006", "VAL-RESP-007"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-cross-flows-comprehensive",
+      "description": "Comprehensive cross-area flow tests: complete registration→onboarding→session→history, edit profile propagates to home/session/history, settings changes apply in session, multiple sessions accumulate, clear data creates fresh state, import restores data.",
+      "skillName": "e2e-worker",
+      "milestone": "cross-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101",
+        "All services running"
+      ],
+      "expectedBehavior": [
+        "End-to-end flows work seamlessly",
+        "Data propagates correctly across areas",
+        "Multiple sessions accumulate properly"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- cross-flows-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-CROSS-001", "VAL-CROSS-002", "VAL-CROSS-003",
+        "VAL-CROSS-004", "VAL-CROSS-005", "VAL-CROSS-006"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-concurrent-sessions-comprehensive",
+      "description": "Comprehensive concurrent session tests: two tabs show isolated session states, logout in one tab logs out both.",
+      "skillName": "e2e-worker",
+      "milestone": "cross-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101"
+      ],
+      "expectedBehavior": [
+        "Sessions are isolated between tabs",
+        "Logout affects all tabs"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- concurrent-sessions-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-CONCURRENT-001", "VAL-CONCURRENT-002"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-performance-comprehensive",
+      "description": "Comprehensive performance tests: page loads within 5 seconds, no console errors during normal usage, session start is responsive within 2 seconds.",
+      "skillName": "e2e-worker",
+      "milestone": "cross-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101"
+      ],
+      "expectedBehavior": [
+        "Pages load quickly",
+        "No console errors",
+        "Session starts promptly"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- performance-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-PERF-001", "VAL-PERF-002", "VAL-PERF-003"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-accessibility-comprehensive",
+      "description": "Comprehensive accessibility tests: all interactive elements keyboard accessible, focus states visible, form inputs have labels, color contrast meets WCAG AA.",
+      "skillName": "e2e-worker",
+      "milestone": "cross-flows",
+      "preconditions": [
+        "Backend running on localhost:3100",
+        "Frontend running on localhost:3101"
+      ],
+      "expectedBehavior": [
+        "Keyboard navigation works",
+        "Focus indicators visible",
+        "Forms properly labeled",
+        "Contrast meets standards"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- accessibility-comprehensive.spec.ts"
+      ],
+      "fulfills": [
+        "VAL-A11Y-001", "VAL-A11Y-002", "VAL-A11Y-003", "VAL-A11Y-004"
+      ],
+      "status": "pending"
+    }
+  ]
+}

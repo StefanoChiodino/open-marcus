@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { registerTestUser } from './test-db-helpers';
 
 /**
  * Login Screen Smoke Tests
@@ -14,25 +15,14 @@ import { test, expect } from '@playwright/test';
 /**
  * Helper: Register a test user via API
  */
-async function registerTestUser(username: string, password: string): Promise<{ token: string; userId: string }> {
-  const registerResponse = await fetch('http://localhost:3100/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
-
-  if (!registerResponse.ok) {
-    throw new Error(`Failed to register: ${registerResponse.status}`);
-  }
-
-  const data = await registerResponse.json();
-  return { token: data.token, userId: data.user.id };
+async function registerAndGetToken(username: string, password: string): Promise<{ token: string; userId: string }> {
+  return registerTestUser(username, password);
 }
 
 /**
  * Helper: Clear auth token from localStorage
  */
-async function clearAuthToken(page: any) {
+async function clearAuthTokenHelper(page: any) {
   await page.evaluate(() => {
     localStorage.removeItem('openmarcus-auth-token');
   });
@@ -44,7 +34,7 @@ test.describe('Login Screen Smoke Tests', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     // Clear auth token before each test to start fresh
-    await clearAuthToken(page);
+    await clearAuthTokenHelper(page);
   });
 
   test('VAL-FRONTEND-001: Login page renders with username and password fields', async ({ page }) => {
@@ -74,7 +64,7 @@ test.describe('Login Screen Smoke Tests', () => {
 
   test('VAL-FRONTEND-005: Auth error messages displayed on failed login', async ({ page }) => {
     // Register a user first
-    const { token: _token, userId: _userId } = await registerTestUser(`testuser_${Date.now()}`, 'correctpassword');
+    const { token: _token, userId: _userId } = await registerAndGetToken(`testuser_${Date.now()}`, 'correctpassword');
     
     // Navigate to login page
     await page.goto('/login');
@@ -97,7 +87,7 @@ test.describe('Login Screen Smoke Tests', () => {
 
   test('Login with wrong password shows error message', async ({ page }) => {
     // Register a user first
-    const { token: _token, userId: _userId } = await registerTestUser(`testuser_${Date.now()}`, 'correctpassword');
+    const { token: _token, userId: _userId } = await registerAndGetToken(`testuser_${Date.now()}`, 'correctpassword');
     
     // Navigate to login page
     await page.goto('/login');
@@ -119,7 +109,7 @@ test.describe('Login Screen Smoke Tests', () => {
 
   test('Login with correct credentials redirects to home', async ({ page }) => {
     // Register a user first
-    const { token: _token, userId: _userId } = await registerTestUser(`testuser_${Date.now()}`, 'correctpassword');
+    const { token: _token, userId: _userId } = await registerAndGetToken(`testuser_${Date.now()}`, 'correctpassword');
     
     // Navigate to login page
     await page.goto('/login');

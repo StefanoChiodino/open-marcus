@@ -91,16 +91,14 @@
   /* No transitions to prevent flickering during state changes */
 }
 
-/* Disabled state: muted speaker - grey/outlined style */
+/* Disabled state: muted speaker with clear X */
 .voice-controls__speaker-icon--disabled {
-  opacity: 0.5;
-  /* Muted speaker uses a softer grey that clearly indicates "off" */
   color: var(--color-text-secondary);
+  opacity: 1;
 }
 
-/* Enabled idle state: full speaker - colored/highlighted */
+/* Enabled idle state: simple speaker - gold colored */
 .voice-controls__speaker-icon--enabled {
-  /* Full color to indicate "on" state */
   color: var(--color-gold-primary);
 }
 

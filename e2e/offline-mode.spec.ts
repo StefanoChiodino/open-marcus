@@ -102,9 +102,8 @@ test.describe('Offline Mode: Read-Only Features', () => {
     await expect(page.getByRole('heading', { name: 'Profile Settings' })).toBeVisible();
     await expect(page.getByText('Stefano')).toBeVisible();
     
-    // Edit and Reset buttons should be available
+    // Edit button should be available
     await expect(page.getByRole('button', { name: 'Edit your profile' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Reset your profile to default' })).toBeVisible();
   });
 
   test('created session appears in history after navigation', async ({ page }) => {
@@ -123,7 +122,7 @@ test.describe('Offline Mode: Read-Only Features', () => {
     
     // Wait for session to initialize
     await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible();
-    await expect(page.getByText('I am Marcus')).toBeVisible();
+    await expect(page.getByText("I'm Marcus")).toBeVisible();
     await page.waitForTimeout(1000);
 
     // Navigate to history (from the active chat)

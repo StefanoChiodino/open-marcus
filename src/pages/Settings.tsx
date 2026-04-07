@@ -1,18 +1,24 @@
 /**
  * Settings page: Model selection, data export, import, and clear functionality
+ * Refactored to use sub-components for better maintainability
  */
 
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dataExportAPI } from '../lib/dataExportApi';
-import { settingsAPI, TTS_VOICES, TtsVoice, TTS_MIN_RATE, TTS_MAX_RATE, TTS_MIN_PITCH, TTS_MAX_PITCH, SttModelInfo } from '../lib/settingsApi';
-import type { SettingsResponse } from '../lib/settingsApi';
+import { settingsAPI } from '../lib/settingsApi';
+import type { TtsVoice, SettingsResponse } from '../lib/settingsApi';
 import { useToastStore } from '../stores/toastStore';
 import { useProfileStore } from '../stores/profileStore';
 import { useTTSStore } from '../stores/ttsSettingsStore';
-import ConfirmationModal from '../components/ConfirmationModal';
+import { ModelSelection, TTSSettings, STTSettings, DataManagement } from '../components/settings';
+import type { ModelSelectionProps, TTSSettingsProps, STTSettingsProps, DataManagementProps } from '../components/settings';
 import './Settings.css';
 
+/**
+ * Main Settings component
+ * Coordinates state and handlers for all settings sub-components
+ */
 function Settings() {
   const navigate = useNavigate();
   const addToast = useToastStore((state) => state.addToast);
@@ -43,7 +49,7 @@ function Settings() {
   const [isSavingTts, setIsSavingTts] = useState(false);
 
   // STT settings state
-  const [sttModels, setSttModels] = useState<SttModelInfo[]>([]);
+  const [sttModels, setSttModels] = useState<import('../lib/settingsApi').SttModelInfo[]>([]);
   const [selectedSttModel, setSelectedSttModel] = useState('');
   const [isLoadingSttModels, setIsLoadingSttModels] = useState(true);
   const [isReloadingStt, setIsReloadingStt] = useState(false);
@@ -101,9 +107,8 @@ function Settings() {
     loadSttModels();
   }, [addToast]);
 
-  /**
-   * Handle model selection change
-   */
+  // ============ Model Selection Handlers ============
+
   const handleModelChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newModel = event.target.value;
     
@@ -168,13 +173,14 @@ function Settings() {
       // Model is already installed - just save selection
       setSelectedModel(newModel);
       setIsSavingModel(true);
+      
       try {
         const updated = await settingsAPI.updateSettings({ selectedModel: newModel });
         setSettingsData(updated);
         addToast({
           type: 'success',
           title: 'Model updated',
-          message: `Now using ${newModel}. Changes take effect on next session.`,
+          message: `${newModel} is now active. Changes take effect on next session.`,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to update model';
@@ -191,9 +197,8 @@ function Settings() {
     }
   };
 
-  /**
-   * Handle TTS voice selection change
-   */
+  // ============ TTS Handlers ============
+
   const handleVoiceChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newVoice = event.target.value as TtsVoice;
     setSelectedVoice(newVoice);
@@ -222,9 +227,6 @@ function Settings() {
     }
   };
 
-  /**
-   * Handle TTS rate slider change
-   */
   const handleRateChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const newRate = parseInt(event.target.value, 10);
     setRateValue(newRate);
@@ -249,20 +251,14 @@ function Settings() {
         title: 'Rate update failed',
         message,
       });
-      // Revert to previous value from settingsData
-      const prevRate = settingsData?.ttsRate || '+25%';
-      const prevRateMatch = prevRate.match(/^([+-]?\d+)%$/);
-      if (prevRateMatch) {
-        setRateValue(parseInt(prevRateMatch[1], 10));
-      }
+      // Revert to previous value (parse current rate from settings)
+      const currentRate = settingsData?.ttsRate.match(/^([+-]?\d+)%$/)?.[1] || '25';
+      setRateValue(parseInt(currentRate, 10));
     } finally {
       setIsSavingTts(false);
     }
   };
 
-  /**
-   * Handle TTS pitch slider change
-   */
   const handlePitchChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const newPitch = parseInt(event.target.value, 10);
     setPitchValue(newPitch);
@@ -287,67 +283,53 @@ function Settings() {
         title: 'Pitch update failed',
         message,
       });
-      // Revert to previous value from settingsData
-      const prevPitch = settingsData?.ttsPitch || '+0Hz';
-      const prevPitchMatch = prevPitch.match(/^([+-]?\d+)Hz$/);
-      if (prevPitchMatch) {
-        setPitchValue(parseInt(prevPitchMatch[1], 10));
-      }
+      // Revert to previous value
+      const currentPitch = settingsData?.ttsPitch.match(/^([+-]?\d+)Hz$/)?.[1] || '0';
+      setPitchValue(parseInt(currentPitch, 10));
     } finally {
       setIsSavingTts(false);
     }
   };
 
-  /**
-   * Handle STT model selection change
-   */
+  // ============ STT Handlers ============
+
   const handleSttModelChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newModel = event.target.value;
-    const prevModel = selectedSttModel;
-
-    // Show warning if switching to a larger model
-    if (newModel && prevModel) {
-      const newModelInfo = sttModels.find((m) => m.name === newModel);
-      const prevModelInfo = sttModels.find((m) => m.name === prevModel);
-      if (newModelInfo && prevModelInfo && newModelInfo.memoryMB > prevModelInfo.memoryMB) {
-        setShowSttWarning(true);
-      } else {
-        setShowSttWarning(false);
-      }
+    setSelectedSttModel(newModel);
+    
+    // Show warning for larger models (> 500MB)
+    const selectedModelInfo = sttModels.find(m => m.name === newModel);
+    if (selectedModelInfo && selectedModelInfo.memoryMB > 500) {
+      setShowSttWarning(true);
     } else {
       setShowSttWarning(false);
     }
 
-    setSelectedSttModel(newModel);
-
-    // If model is selected, save the selection
-    if (newModel) {
-      try {
-        const updated = await settingsAPI.updateSettings({ sttModel: newModel });
-        setSettingsData(updated);
-        addToast({
-          type: 'success',
-          title: 'STT model saved',
-          message: `Selected ${newModel}. Click "Reload Model" to activate.`,
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to save STT model';
-        addToast({
-          type: 'error',
-          title: 'Save failed',
-          message,
-        });
-        setSelectedSttModel(prevModel);
-      }
+    setIsSavingModel(true);
+    try {
+      const updated = await settingsAPI.updateSettings({ sttModel: newModel });
+      setSettingsData(updated);
+      addToast({
+        type: 'success',
+        title: 'STT model updated',
+        message: `${newModel} is now active.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update STT model';
+      addToast({
+        type: 'error',
+        title: 'STT model update failed',
+        message,
+      });
+      // Revert to previous value
+      setSelectedSttModel(settingsData?.sttModel || '');
+    } finally {
+      setIsSavingModel(false);
     }
   };
 
-  /**
-   * Handle STT model reload
-   */
   const handleSttReload = async () => {
     if (!selectedSttModel) return;
-
     setIsReloadingStt(true);
     setShowSttWarning(false);
 
@@ -370,9 +352,12 @@ function Settings() {
     }
   };
 
-  /**
-   * Export all data as JSON file download
-   */
+  const handleSttWarningDismiss = () => {
+    setShowSttWarning(false);
+  };
+
+  // ============ Data Management Handlers ============
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
@@ -405,9 +390,6 @@ function Settings() {
     }
   };
 
-  /**
-   * Import data from a JSON file
-   */
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -443,14 +425,11 @@ function Settings() {
     }
   };
 
-  const triggerImportFile = () => {
-    fileInputRef.current?.click();
+  const handleClearRequest = () => {
+    setShowClearConfirm(true);
   };
 
-  /**
-   * Clear all data with confirmation
-   */
-  const handleClearData = async () => {
+  const handleClearConfirm = async () => {
     setIsClearing(true);
     setShowClearConfirm(false);
     try {
@@ -479,6 +458,61 @@ function Settings() {
     }
   };
 
+  const handleClearCancel = () => {
+    setShowClearConfirm(false);
+  };
+
+  // ============ Props for Sub-components ============
+
+  const modelSelectionProps: ModelSelectionProps = {
+    settingsData,
+    isLoadingSettings,
+    isSavingModel,
+    selectedModel,
+    downloadingModel,
+    downloadProgress,
+    downloadStatus,
+    onModelChange: handleModelChange,
+  };
+
+  const ttsSettingsProps: TTSSettingsProps = {
+    settingsData,
+    isLoadingSettings,
+    isSavingTts,
+    selectedVoice,
+    rateValue,
+    pitchValue,
+    onVoiceChange: handleVoiceChange,
+    onRateChange: handleRateChange,
+    onPitchChange: handlePitchChange,
+  };
+
+  const sttSettingsProps: STTSettingsProps = {
+    sttModels,
+    isLoadingSttModels,
+    isReloadingStt,
+    selectedSttModel,
+    showSttWarning,
+    onSttModelChange: handleSttModelChange,
+    onSttReload: handleSttReload,
+    onSttWarningDismiss: handleSttWarningDismiss,
+  };
+
+  const dataManagementProps: DataManagementProps = {
+    isExporting,
+    isImporting,
+    isClearing,
+    showClearConfirm,
+    fileInputRef,
+    onExport: handleExport,
+    onImportFile: handleImportFile,
+    onClearRequest: handleClearRequest,
+    onClearConfirm: handleClearConfirm,
+    onClearCancel: handleClearCancel,
+  };
+
+  // ============ Render ============
+
   return (
     <div className="settings-page page-container" role="main" aria-label="Settings">
       <h2 className="settings-page__title" id="settings-title">Settings</h2>
@@ -489,342 +523,23 @@ function Settings() {
       {/* Model Selection Section */}
       <section className="settings-section" aria-labelledby="model-heading">
         <h3 className="settings-section__title" id="model-heading">AI Model Selection</h3>
-
-        {isLoadingSettings ? (
-          <div className="loading-spinner" role="status" aria-label="Loading settings">
-            Loading settings...
-          </div>
-        ) : (
-          <>
-            {/* System RAM and Recommendation */}
-            {settingsData?.systemInfo && (
-              <div className="model-selection__system-info">
-                <span className="model-selection__ram">
-                  System RAM: {settingsData.systemInfo.totalRamGB} GB
-                </span>
-                <span className="model-selection__recommendation" aria-label="Recommended model">
-                  Recommended: {settingsData.systemInfo.recommendedTierDescription}
-                </span>
-              </div>
-            )}
-
-            {/* Model Selector */}
-            <div className="model-selection__controls">
-              <label htmlFor="model-select" className="model-selection__label">
-                Active Model
-              </label>
-              <select
-                id="model-select"
-                className="model-selection__dropdown"
-                value={selectedModel}
-                onChange={handleModelChange}
-                disabled={isSavingModel || (!settingsData?.ollamaOnline && settingsData?.installedModels.length === 0)}
-                aria-describedby="model-selection-help model-ram-explanation"
-              >
-                {isSavingModel && !downloadingModel ? (
-                  <option value="">Updating model...</option>
-                ) : (
-                  <>
-                    {/* Show installed models with RAM usage */}
-                    {settingsData?.installedModelsInfo.map((modelInfo) => (
-                      <option key={modelInfo.name} value={modelInfo.name}>
-                        {selectedModel === modelInfo.name
-                          ? `✓ ${modelInfo.name}`
-                          : modelInfo.name} ({modelInfo.ramUsageLabel})
-                      </option>
-                    ))}
-                    {/* Show recommended models that aren't installed yet - marked with download icon */}
-                    {settingsData && settingsData.recommendedModelsInfo && settingsData.recommendedModelsInfo.length > 0 && (
-                      <optgroup label="Available to download">
-                        {settingsData.recommendedModelsInfo.map((modelInfo) => (
-                          <option key={modelInfo.name} value={modelInfo.name}>
-                            {downloadingModel === modelInfo.name
-                              ? `↓ ${modelInfo.name} (${downloadProgress}%)`
-                              : `↓ ${modelInfo.name} (${modelInfo.ramUsageLabel}) - Click to download`}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </>
-                )}
-              </select>
-
-              {/* Download Progress Bar */}
-              {downloadingModel && (
-                <div className="model-selection__download-progress" role="status" aria-live="polite">
-                  <div className="model-selection__download-info">
-                    <span className="model-selection__download-model">{downloadingModel}</span>
-                    <span className="model-selection__download-status">{downloadStatus}</span>
-                  </div>
-                  <div className="model-selection__progress-bar">
-                    <div
-                      className="model-selection__progress-fill"
-                      style={{ width: `${downloadProgress}%` }}
-                    />
-                  </div>
-                  <span className="model-selection__download-percent">{downloadProgress}%</span>
-                </div>
-              )}
-
-              <p id="model-selection-help" className="model-selection__help">
-                {!settingsData?.ollamaOnline && settingsData?.installedModels.length === 0 &&
-                  'Ollama is offline. Please start Ollama to manage models.'}
-                {settingsData?.ollamaOnline && settingsData.installedModels.length === 0 &&
-                  'No models installed. Select a model below to download it automatically.'}
-                {settingsData?.ollamaOnline && settingsData.installedModels.length > 0 &&
-                  'Select an installed model or choose a recommended one below. Changes take effect on your next meditation session.'}
-              </p>
-              <p id="model-ram-explanation" className="model-selection__ram-explanation">
-                <strong>About model size and RAM:</strong> The size shown next to each model (e.g., "~2 GB RAM") is an estimate of how much memory the model needs when running. This includes the model weights, plus working memory for processing. You are responsible for ensuring you have enough RAM available on your computer before selecting a model. Larger models generally provide better responses but require more memory. If you're unsure, choose a smaller model or one recommended for your system's RAM.</p>
-            </div>
-          </>
-        )}
+        <ModelSelection {...modelSelectionProps} />
       </section>
 
       {/* Voice Output Section */}
       <section className="settings-section" aria-labelledby="tts-heading">
         <h3 className="settings-section__title" id="tts-heading">Voice Output</h3>
-
-        {isLoadingSettings ? (
-          <div className="loading-spinner" role="status" aria-label="Loading TTS settings">
-            Loading TTS settings...
-          </div>
-        ) : (
-          <div className="tts-settings">
-            {/* Voice Selection */}
-            <div className="tts-settings__control">
-              <label htmlFor="tts-voice-select" className="tts-settings__label">
-                Voice
-              </label>
-              <select
-                id="tts-voice-select"
-                className="tts-settings__dropdown"
-                value={selectedVoice}
-                onChange={handleVoiceChange}
-                disabled={isSavingTts}
-              >
-                {TTS_VOICES.map((voice) => (
-                  <option key={voice} value={voice}>
-                    {voice}
-                  </option>
-                ))}
-              </select>
-              <p className="tts-settings__help">
-                Select the voice used for text-to-speech output during meditation sessions.
-              </p>
-            </div>
-
-            {/* Rate Slider */}
-            <div className="tts-settings__control">
-              <label htmlFor="tts-rate-slider" className="tts-settings__label">
-                Speed: <span className="tts-settings__value">{rateValue >= 0 ? `+${rateValue}%` : `${rateValue}%`}</span>
-              </label>
-              <div className="tts-settings__slider-container">
-                <span className="tts-settings__slider-range">{TTS_MIN_RATE}%</span>
-                <input
-                  id="tts-rate-slider"
-                  type="range"
-                  className="tts-settings__slider"
-                  min={TTS_MIN_RATE}
-                  max={TTS_MAX_RATE}
-                  value={rateValue}
-                  onChange={handleRateChange}
-                  disabled={isSavingTts}
-                  aria-describedby="tts-rate-help"
-                />
-                <span className="tts-settings__slider-range">{TTS_MAX_RATE}%</span>
-              </div>
-              <p id="tts-rate-help" className="tts-settings__help">
-                Adjust speech speed. Default is +25% (faster than normal).
-              </p>
-            </div>
-
-            {/* Pitch Slider */}
-            <div className="tts-settings__control">
-              <label htmlFor="tts-pitch-slider" className="tts-settings__label">
-                Pitch: <span className="tts-settings__value">{pitchValue >= 0 ? `+${pitchValue}Hz` : `${pitchValue}Hz`}</span>
-              </label>
-              <div className="tts-settings__slider-container">
-                <span className="tts-settings__slider-range">{TTS_MIN_PITCH}Hz</span>
-                <input
-                  id="tts-pitch-slider"
-                  type="range"
-                  className="tts-settings__slider"
-                  min={TTS_MIN_PITCH}
-                  max={TTS_MAX_PITCH}
-                  value={pitchValue}
-                  onChange={handlePitchChange}
-                  disabled={isSavingTts}
-                  aria-describedby="tts-pitch-help"
-                />
-                <span className="tts-settings__slider-range">+{TTS_MAX_PITCH}Hz</span>
-              </div>
-              <p id="tts-pitch-help" className="tts-settings__help">
-                Adjust speech pitch. Default is +0Hz (natural pitch).
-              </p>
-            </div>
-          </div>
-        )}
+        <TTSSettings {...ttsSettingsProps} />
       </section>
 
       {/* Speech Recognition (STT) Section */}
       <section className="settings-section" aria-labelledby="stt-heading">
         <h3 className="settings-section__title" id="stt-heading">Speech Recognition (STT)</h3>
-
-        {isLoadingSttModels ? (
-          <div className="loading-spinner" role="status" aria-label="Loading STT models">
-            Loading STT models...
-          </div>
-        ) : (
-          <div className="stt-settings">
-            {/* Model Selection */}
-            <div className="stt-settings__control">
-              <label htmlFor="stt-model-select" className="stt-settings__label">
-                Model
-              </label>
-              <select
-                id="stt-model-select"
-                className="stt-settings__dropdown"
-                value={selectedSttModel}
-                onChange={handleSttModelChange}
-                disabled={isReloadingStt}
-              >
-                <option value="">Select a model...</option>
-                {sttModels.map((model) => (
-                  <option key={model.name} value={model.name}>
-                    {model.name} (~{model.memoryMB}MB RAM)
-                  </option>
-                ))}
-              </select>
-              <p className="stt-settings__help">
-                Select the Whisper model for speech recognition. Larger models are more accurate but require more memory.
-              </p>
-            </div>
-
-            {/* Warning for larger models */}
-            {showSttWarning && (
-              <div className="stt-settings__warning" role="alert">
-                <span className="stt-settings__warning-icon">⚠️</span>
-                <span className="stt-settings__warning-text">
-                  Switching to a larger model may increase memory usage and slow down transcription.
-                </span>
-              </div>
-            )}
-
-            {/* Reload Button */}
-            <div className="stt-settings__control">
-              <button
-                type="button"
-                className="button button--secondary"
-                onClick={handleSttReload}
-                disabled={isReloadingStt || !selectedSttModel}
-                aria-busy={isReloadingStt}
-              >
-                {isReloadingStt ? (
-                  <>
-                    <span className="loading-spinner" aria-hidden="true" />
-                    Reloading Model...
-                  </>
-                ) : (
-                  'Reload Model'
-                )}
-              </button>
-            </div>
-          </div>
-        )}
+        <STTSettings {...sttSettingsProps} />
       </section>
 
-      {/* Export Section */}
-      <section className="settings-section" aria-labelledby="export-heading">
-        <h3 className="settings-section__title" id="export-heading">Export Data</h3>
-        <p className="settings-section__description">
-          Download all your profiles, sessions, messages, and settings as a JSON file.
-        </p>
-        <div className="settings-section__actions">
-          <button
-            type="button"
-            className="button button--primary"
-            onClick={handleExport}
-            disabled={isExporting}
-            aria-busy={isExporting}
-          >
-            {isExporting ? (
-              <>
-                <span className="loading-spinner" aria-hidden="true" />
-                Exporting...
-              </>
-            ) : (
-              'Download JSON Export'
-            )}
-          </button>
-        </div>
-      </section>
-
-      {/* Import Section */}
-      <section className="settings-section" aria-labelledby="import-heading">
-        <h3 className="settings-section__title" id="import-heading">Import Data</h3>
-        <p className="settings-section__description">
-          Restore your data from a previously exported JSON file. This will replace all current data.
-        </p>
-        <div className="settings-section__actions">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,application/json"
-            onChange={handleImportFile}
-            style={{ display: 'none' }}
-            aria-hidden="true"
-            tabIndex={-1}
-          />
-          <button
-            type="button"
-            className="button button--secondary"
-            onClick={triggerImportFile}
-            disabled={isImporting}
-            aria-busy={isImporting}
-          >
-            {isImporting ? (
-              <>
-                <span className="loading-spinner" aria-hidden="true" />
-                Importing...
-              </>
-            ) : (
-              'Import from JSON File'
-            )}
-          </button>
-        </div>
-      </section>
-
-      {/* Clear Data Section */}
-      <section className="settings-section settings-section--danger" aria-labelledby="clear-heading">
-        <h3 className="settings-section__title" id="clear-heading">Clear All Data</h3>
-        <p className="settings-section__description">
-          Permanently delete all your profiles, sessions, messages, and settings. This action cannot be undone.
-        </p>
-        <div className="settings-section__actions">
-          <button
-            type="button"
-            className="button button--danger"
-            onClick={() => setShowClearConfirm(true)}
-            disabled={isClearing}
-            aria-label="Permanently delete all your profiles, sessions, messages, and settings"
-          >
-            Clear All Data
-          </button>
-        </div>
-      </section>
-
-      {/* Clear Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showClearConfirm}
-        title="Clear All Data?"
-        message="This will permanently delete all your profiles, meditation sessions, messages, and settings. This action cannot be undone. Are you sure you want to continue?"
-        confirmText="Yes, Clear Everything"
-        cancelText="Cancel"
-        onConfirm={handleClearData}
-        onCancel={() => setShowClearConfirm(false)}
-        danger
-      />
+      {/* Data Management Section */}
+      <DataManagement {...dataManagementProps} />
     </div>
   );
 }

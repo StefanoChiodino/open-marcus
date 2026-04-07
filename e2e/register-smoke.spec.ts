@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { clearTestData, clearAuthToken } from './test-db-helpers';
 
 /**
  * Registration Screen Smoke Tests
@@ -11,17 +12,11 @@ import { test, expect } from '@playwright/test';
  * Fulfills: VAL-FRONTEND-002, VAL-PWD-GUIDE-001, VAL-PWD-GUIDE-002, VAL-PWD-GUIDE-003
  */
 
-/**
- * Helper: Clear auth token from localStorage
- */
-async function clearAuthToken(page: any) {
-  await page.evaluate(() => {
-    localStorage.removeItem('openmarcus-auth-token');
-  });
-}
+
 
 test.describe('Registration Screen Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
+    await clearTestData();
     // Navigate to app first, then clear auth token
     await page.goto('/');
     await page.waitForLoadState('networkidle');

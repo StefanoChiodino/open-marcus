@@ -84,7 +84,6 @@ test.describe('Cross-Flow Smoke Tests', () => {
     
     // Action buttons should be visible
     await expect(page.getByRole('button', { name: 'Edit your profile' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Reset your profile to default' })).toBeVisible();
     
     // Step 3: Edit profile - save should work and show updated profile
     await page.getByRole('button', { name: 'Edit your profile' }).click();
@@ -117,7 +116,6 @@ test.describe('Cross-Flow Smoke Tests', () => {
     
     // Action buttons should be visible again
     await expect(page.getByRole('button', { name: 'Edit your profile' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Reset your profile to default' })).toBeVisible();
   });
 
   test('VAL-CROSS-002: All pages accessible via navigation sequence', async ({ page }) => {
@@ -209,6 +207,5 @@ test.describe('Cross-Flow Smoke Tests', () => {
     
     // Action buttons should still be visible
     await expect(page.getByRole('button', { name: 'Edit your profile' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Reset your profile to default' })).toBeVisible();
   });
 });

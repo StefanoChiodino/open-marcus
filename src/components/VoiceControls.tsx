@@ -338,11 +338,11 @@ function VoiceControls({ onTranscript, onSpeechEnd, disabled = false }: VoiceCon
         aria-pressed={voiceOutputEnabled}
       >
         {status === 'speaking' ? (
-          // Speaking: animated speaker with sound waves
+          // Speaking: animated speaker with )) double arc
           <svg
             width="20"
             height="20"
-            viewBox="0 0 20 20"
+            viewBox="0 0 24 24"
             fill="currentColor"
             aria-hidden="true"
             className="voice-controls__speaker-icon voice-controls__speaker-icon--speaking"
@@ -353,58 +353,65 @@ function VoiceControls({ onTranscript, onSpeechEnd, disabled = false }: VoiceCon
             style={{ cursor: 'pointer' }}
           >
             {/* Speaker body */}
+            <path d="M11 5L6 9H2v6h4l5 4V5z" />
+            {/* Double )) arc - animated sound waves */}
             <path
-              fillRule="evenodd"
-              d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z"
-              clipRule="evenodd"
-            />
-            {/* Sound wave 1 */}
-            <path
-              fillRule="evenodd"
-              d="M12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
-              clipRule="evenodd"
+              d="M16 8a4 4 0 010 8"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
               className="voice-controls__sound-wave voice-controls__sound-wave--1"
             />
-            {/* Sound wave 2 */}
             <path
-              fillRule="evenodd"
-              d="M14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414z"
-              clipRule="evenodd"
+              d="M18.5 6a7 7 0 010 12"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
               className="voice-controls__sound-wave voice-controls__sound-wave--2"
             />
           </svg>
         ) : voiceOutputEnabled ? (
-          // Enabled (idle): full speaker icon, colored/highlighted
+          // Enabled (idle): speaker with ) arc showing sound
           <svg
             width="20"
             height="20"
-            viewBox="0 0 20 20"
+            viewBox="0 0 24 24"
             fill="currentColor"
             aria-hidden="true"
             className="voice-controls__speaker-icon voice-controls__speaker-icon--enabled"
           >
+            {/* Speaker body */}
+            <path d="M11 5L6 9H2v6h4l5 4V5z" />
+            {/* Single ) arc - sound wave */}
             <path
-              fillRule="evenodd"
-              d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
-              clipRule="evenodd"
+              d="M17 8.5a4 4 0 010 7"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
             />
           </svg>
         ) : (
-          // Disabled: muted speaker icon (speaker with X), grey/outlined
+          // Disabled: muted speaker with X slash
           <svg
             width="20"
             height="20"
-            viewBox="0 0 20 20"
-            fill="currentColor"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             aria-hidden="true"
             className="voice-controls__speaker-icon voice-controls__speaker-icon--disabled"
           >
             {/* Speaker body */}
-            <path
-              fillRule="evenodd"
-              d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.707 10.707a1 1 0 01-1.414 1.414L12 10.828l-1.293 1.293a1 1 0 01-1.414-1.414L10.586 9.414 9.293 8.121a1 1 0 011.414-1.414L12 8.414l1.293-1.293a1 1 0 011.414 1.414L13.414 9.707l1.293 1.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none" />
+            {/* X mark - clearly separate from speaker */}
+            <line x1="23" y1="9" x2="17" y2="15" />
+            <line x1="17" y1="9" x2="23" y2="15" />
           </svg>
         )}
       </button>

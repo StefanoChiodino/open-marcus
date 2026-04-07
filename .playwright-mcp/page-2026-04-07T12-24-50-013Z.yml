@@ -1,0 +1,64 @@
+- generic [ref=e101]:
+  - link "Skip to main content" [ref=e102] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e103]:
+    - navigation "Main navigation" [ref=e104]:
+      - link "OpenMarcus" [ref=e106] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e108]: OpenMarcus
+      - list [ref=e109]:
+        - listitem [ref=e110]:
+          - link "Home" [ref=e111] [cursor=pointer]:
+            - /url: /
+            - img [ref=e113]
+            - generic [ref=e115]: Home
+        - listitem [ref=e116]:
+          - link "Meditation" [ref=e117] [cursor=pointer]:
+            - /url: /session
+            - img [ref=e119]
+            - generic [ref=e121]: Meditation
+        - listitem [ref=e122]:
+          - link "History" [ref=e123] [cursor=pointer]:
+            - /url: /history
+            - img [ref=e125]
+            - generic [ref=e127]: History
+        - listitem [ref=e128]:
+          - link "Profile" [ref=e129] [cursor=pointer]:
+            - /url: /profile
+            - img [ref=e131]
+            - generic [ref=e133]: Profile
+        - listitem [ref=e134]:
+          - link "Settings" [ref=e135] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e137]
+            - generic [ref=e139]: Settings
+      - button "Log out of your account" [ref=e141] [cursor=pointer]:
+        - img [ref=e143]
+        - generic [ref=e145]: Log Out
+    - main [ref=e146]:
+      - main "Active Meditation Session" [ref=e157]:
+        - generic [ref=e158]:
+          - heading "Meditation with Marcus" [level=2] [ref=e159]:
+            - img [ref=e160]
+            - text: Meditation with Marcus
+          - button "End meditation session" [ref=e162] [cursor=pointer]: End Session
+        - note [ref=e163]: OpenMarcus is not therapy or medical advice. It is a reflection tool based on stoic philosophy.
+        - log "Chat messages" [ref=e164]:
+          - article "Your message" [ref=e182]:
+            - img [ref=e184]
+            - generic [ref=e188]: I have been feeling anxious about work lately.
+          - article "Marcus's response" [ref=e189]:
+            - img [ref=e191]
+            - generic [ref=e194]: "My friend testuser, I too have known the weight of anxiety in my own time as emperor. The burden of responsibility can be crushing at times. But tell me, what is it that you fear at work? Is it a specific task or situation, or perhaps a sense of inadequacy? As I wrote in Meditations: \"The impediment to action advances action. What stands in the way becomes the way.\" Perhaps your anxiety is not about avoiding challenges, but rather finding a new path forward. Consider this: what are your values and goals? Are they aligned with your current work situation? Sometimes, it is our own expectations that create the most discomfort."
+        - generic [ref=e168]:
+          - generic [ref=e169]:
+            - toolbar "Voice controls" [ref=e170]:
+              - button "Enable voice input. Click to request microphone permission." [ref=e171] [cursor=pointer]:
+                - img [ref=e172]
+              - button "Enable voice output" [ref=e174] [cursor=pointer]:
+                - img [ref=e175]
+            - textbox "Type your message to Marcus" [active] [ref=e177]:
+              - /placeholder: Share your thoughts or questions...
+            - button "Send message" [disabled] [ref=e178]:
+              - img [ref=e179]
+          - paragraph [ref=e181]: Press Enter to send · Shift+Enter for new line

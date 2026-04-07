@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { clearTestData, registerTestUser } from './test-db-helpers';
 
 /**
  * History Page Smoke Tests
@@ -10,22 +11,15 @@ import { test, expect } from '@playwright/test';
  * Fulfills: VAL-HISTORY-001, VAL-HISTORY-002
  */
 
+test.beforeEach(async () => {
+  await clearTestData();
+});
+
 /**
  * Helper: Register a test user and get auth token
  */
 async function registerAndGetToken(): Promise<string> {
-  const registerResponse = await fetch('http://localhost:3100/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: `testuser_${Date.now()}`, password: 'testpassword123' }),
-  });
-
-  if (!registerResponse.ok) {
-    throw new Error(`Failed to register: ${registerResponse.status}`);
-  }
-
-  const { token } = await registerResponse.json();
-  return token;
+  return (await registerTestUser()).token;
 }
 
 /**
@@ -114,7 +108,7 @@ async function createMeditationSession(page: any): Promise<string> {
   await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
   
   // Wait for Marcus greeting
-  await expect(page.getByText(/I am Marcus/)).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/I'm Marcus/)).toBeVisible({ timeout: 15000 });
   
   // Send a message
   const textarea = page.getByLabel('Type your message to Marcus');
@@ -301,7 +295,7 @@ test.describe('History Page Smoke Tests', () => {
     // Start second session
     await page.getByRole('button', { name: 'Begin Meditation' }).click();
     await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/I am Marcus/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/I'm Marcus/)).toBeVisible({ timeout: 15000 });
     
     const textarea = page.getByLabel('Type your message to Marcus');
     await textarea.fill('What is the nature of virtue?');

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { clearTestData, registerTestUser } from './test-db-helpers';
 
 /**
  * Home Page Smoke Tests
@@ -10,22 +11,15 @@ import { test, expect } from '@playwright/test';
  * Fulfills: VAL-HOME-001, VAL-HOME-002
  */
 
+test.beforeEach(async () => {
+  await clearTestData();
+});
+
 /**
  * Helper: Register a test user and get auth token
  */
 async function registerAndGetToken(): Promise<string> {
-  const registerResponse = await fetch('http://localhost:3100/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: `testuser_${Date.now()}`, password: 'testpassword123' }),
-  });
-
-  if (!registerResponse.ok) {
-    throw new Error(`Failed to register: ${registerResponse.status}`);
-  }
-
-  const { token } = await registerResponse.json();
-  return token;
+  return (await registerTestUser()).token;
 }
 
 /**

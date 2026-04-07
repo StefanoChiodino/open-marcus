@@ -8,7 +8,7 @@
  * Profile creation is part of registration - shows onboarding form if no profile exists.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileStore } from '../stores/profileStore';
 import LoginScreen from './LoginScreen';
@@ -19,6 +19,9 @@ export function AuthGateway() {
   const { isAuthenticated, isLoading: authLoading, loadToken } = useAuthStore();
   const { profile, status: profileStatus, loadProfile, saveProfile } = useProfileStore();
   const [authChecked, setAuthChecked] = useState(false);
+  
+  // Use a ref to track if we've already initiated profile loading for this auth session
+  const profileLoadInitiated = useRef(false);
 
   useEffect(() => {
     // Load auth token on mount to check if user is already authenticated
@@ -28,8 +31,11 @@ export function AuthGateway() {
   }, [loadToken]);
 
   useEffect(() => {
-    // If authenticated, load the profile for this user
-    if (isAuthenticated) {
+    // If authenticated and we haven't already initiated a profile load, load the profile.
+    // This handles the case where the component re-renders after auth is confirmed
+    // but the profile hasn't been loaded yet (e.g., after navigating between protected routes).
+    if (isAuthenticated && !profileLoadInitiated.current) {
+      profileLoadInitiated.current = true;
       loadProfile();
     }
   }, [isAuthenticated, loadProfile]);

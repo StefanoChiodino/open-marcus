@@ -58,7 +58,7 @@ export class ProfileService {
    * Returns the first profile in the system (for single-user app)
    */
   getCurrentProfile(): Profile | null {
-    const profiles = this.getDb().listProfiles();
+    const profiles = this.getDb().listProfilesWithDecryptedBios();
     return profiles.length > 0 ? profiles[0] : null;
   }
 
@@ -67,15 +67,15 @@ export class ProfileService {
    * Returns the first profile for the user
    */
   getCurrentProfileByUserId(userId: string): Profile | null {
-    const profiles = this.getDb().listProfilesByUserId(userId);
+    const profiles = this.getDb().listProfilesByUserIdWithDecryptedBios(userId);
     return profiles.length > 0 ? profiles[0] : null;
   }
 
   /**
-   * Get profile by ID
+   * Get profile by ID with decrypted bio
    */
   getProfile(id: string): Profile | null {
-    return this.getDb().getProfile(id) ?? null;
+    return this.getDb().getProfileWithDecryptedBio(id) ?? null;
   }
 
   /**

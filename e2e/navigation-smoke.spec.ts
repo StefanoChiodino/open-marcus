@@ -268,4 +268,125 @@ test.describe('Navigation Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: 'Welcome to OpenMarcus' })).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: 'Begin meditation session' })).toBeVisible();
   });
+
+  test('VAL-NAV-006: Sidebar stays fixed when scrolling on tall pages', async ({ page }) => {
+    // Go to Settings page (tallest page)
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible({ timeout: 10000 });
+
+    // Get initial nav position
+    const navBefore = await page.locator('.navigation').boundingBox();
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+
+    // Initial nav should be at y=0
+    expect(navBefore).toBeTruthy();
+    expect(navBefore!.y).toBe(0);
+    expect(navBefore!.height).toBe(viewportHeight);
+
+    // Scroll down using mouse wheel
+    const mainContent = page.locator('.app-layout__main');
+    await mainContent.hover();
+    await page.mouse.wheel(0, 500);
+    await page.waitForTimeout(300);
+
+    // Nav should STILL be at y=0 (sticky behavior)
+    const navAfter = await page.locator('.navigation').boundingBox();
+    expect(navAfter).toBeTruthy();
+    expect(navAfter!.y).toBe(0); // Sticky - should not scroll away
+    expect(navAfter!.height).toBe(viewportHeight);
+
+    // Logout button should ALWAYS be visible (not pushed out of viewport)
+    const logoutBox = await page.locator('.navigation__logout-button').boundingBox();
+    expect(logoutBox).toBeTruthy();
+    expect(logoutBox!.y + logoutBox!.height).toBeLessThanOrEqual(viewportHeight);
+
+    // Test Session page too (also tall)
+    await page.getByRole('link', { name: 'Meditation' }).click();
+    await page.waitForLoadState('networkidle');
+
+    // Start a session to make it taller
+    await page.getByRole('button', { name: 'Begin Meditation' }).click();
+    await page.waitForLoadState('networkidle');
+
+    // Scroll
+    await mainContent.hover();
+    await page.mouse.wheel(0, 500);
+    await page.waitForTimeout(300);
+
+    // Nav should still be sticky
+    const sessionNav = await page.locator('.navigation').boundingBox();
+    expect(sessionNav!.y).toBe(0);
+  });
+
+  test('VAL-NAV-007: Logout button is visible on all pages', async ({ page }) => {
+    const pages = [
+      { name: 'Home', getTo: async () => { await page.getByRole('link', { name: 'Home' }).click(); } },
+      { name: 'Meditation', getTo: async () => { await page.getByRole('link', { name: 'Meditation' }).click(); } },
+      { name: 'History', getTo: async () => { await page.getByRole('link', { name: 'History' }).click(); } },
+      { name: 'Profile', getTo: async () => { await page.getByRole('link', { name: 'Profile' }).click(); } },
+      { name: 'Settings', getTo: async () => { await page.getByRole('link', { name: 'Settings' }).click(); } },
+    ];
+
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+
+    for (const p of pages) {
+      await p.getTo();
+      await page.waitForLoadState('networkidle');
+
+      // Logout button should be visible
+      const logoutButton = page.getByRole('button', { name: 'Log out of your account' });
+      await expect(logoutButton).toBeVisible();
+
+      // Logout button should be within viewport bounds
+      const logoutBox = await logoutButton.boundingBox();
+      expect(logoutBox).toBeTruthy();
+      expect(logoutBox!.y + logoutBox!.height).toBeLessThanOrEqual(viewportHeight + 1); // +1 for rounding tolerance
+    }
+  });
+
+  test('VAL-NAV-008: Layout adapts correctly when viewport is resized', async ({ page }) => {
+    // Start at desktop size
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.waitForLoadState('networkidle');
+
+    // Go to Settings page
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.waitForLoadState('networkidle');
+
+    // At desktop: sidebar should be at full width (200px+)
+    const navBox = await page.locator('.navigation').boundingBox();
+    expect(navBox!.width).toBeGreaterThanOrEqual(200);
+    expect(navBox!.y).toBe(0); // Left sidebar at top
+
+    // Now resize to mobile - wait for React to re-render with new breakpoint
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.waitForTimeout(500); // Wait for responsive CSS to apply
+
+    // At mobile: navigation should be at bottom (y position near viewport height)
+    const mobileNavBox = await page.locator('.navigation').boundingBox();
+    expect(mobileNavBox).toBeTruthy();
+
+    // Mobile nav should be at bottom of screen (y position close to viewport height - nav height)
+    expect(mobileNavBox!.y).toBeGreaterThan(500); // Should be at bottom, not top
+
+    // Bottom navigation links should be visible
+    await expect(page.getByRole('link', { name: 'Home' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Meditation' })).toBeVisible();
+
+    // Logout should NOT be visible in mobile bottom nav
+    await expect(page.getByRole('button', { name: 'Log out of your account' })).not.toBeVisible();
+
+    // Resize back to desktop
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.waitForTimeout(500);
+
+    // Sidebar should be back at left (y=0, wider)
+    const navBoxAfter = await page.locator('.navigation').boundingBox();
+    expect(navBoxAfter!.y).toBe(0); // Back to top
+    expect(navBoxAfter!.width).toBeGreaterThanOrEqual(200);
+
+    // Logout should be visible again
+    await expect(page.getByRole('button', { name: 'Log out of your account' })).toBeVisible();
+  });
 });

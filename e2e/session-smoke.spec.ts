@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { clearTestData, registerTestUser } from './test-db-helpers';
 
 /**
  * Session Page Smoke Tests
@@ -11,22 +12,15 @@ import { test, expect } from '@playwright/test';
  * Fulfills: VAL-SESSION-001, VAL-SESSION-002, VAL-SESSION-003
  */
 
+test.beforeEach(async () => {
+  await clearTestData();
+});
+
 /**
  * Helper: Register a test user and get auth token
  */
 async function registerAndGetToken(): Promise<string> {
-  const registerResponse = await fetch('http://localhost:3100/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: `testuser_${Date.now()}`, password: 'testpassword123' }),
-  });
-
-  if (!registerResponse.ok) {
-    throw new Error(`Failed to register: ${registerResponse.status}`);
-  }
-
-  const { token } = await registerResponse.json();
-  return token;
+  return (await registerTestUser()).token;
 }
 
 /**
@@ -125,7 +119,7 @@ test.describe('Session Page Smoke Tests', () => {
     
     // Should see Marcus greeting message - user should see "I am Marcus" greeting
     // The greeting is in a paragraph with class text-serif and meditation-chat__greeting
-    const greetingText = page.getByText(/I am Marcus/);
+    const greetingText = page.getByText(/I'm Marcus/);
     await expect(greetingText).toBeVisible({ timeout: 15000 });
     
     // Should see prompt hint text
@@ -153,7 +147,7 @@ test.describe('Session Page Smoke Tests', () => {
     await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
     
     // Wait for Marcus greeting to appear
-    await expect(page.getByText(/I am Marcus/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/I'm Marcus/)).toBeVisible({ timeout: 15000 });
     
     // Type a message in the textarea
     const textarea = page.getByLabel('Type your message to Marcus');
@@ -185,7 +179,7 @@ test.describe('Session Page Smoke Tests', () => {
     await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
     
     // Wait for Marcus greeting to appear
-    await expect(page.getByText(/I am Marcus/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/I'm Marcus/)).toBeVisible({ timeout: 15000 });
     
     // Send a message to have some content in the session
     const textarea = page.getByLabel('Type your message to Marcus');
@@ -247,7 +241,7 @@ test.describe('Session Page Smoke Tests', () => {
     
     // Wait for active session and greeting
     await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/I am Marcus/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/I'm Marcus/)).toBeVisible({ timeout: 15000 });
     
     // Send a message
     const textarea = page.getByLabel('Type your message to Marcus');
@@ -295,5 +289,68 @@ test.describe('Session Page Smoke Tests', () => {
     // Should be back to idle state
     await expect(page.getByRole('heading', { name: 'Meditation with Marcus Aurelius' })).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: 'Begin Meditation' })).toBeVisible();
+  });
+
+  test('VAL-SESSION-004: Meditation starts without "Profile ID is required" error', async ({ page }) => {
+    // This test verifies the fix for the regression where meditation would fail
+    // with "Profile ID is required" error when beginning a session from the session page
+    // via sidebar navigation (which doesn't preserve profile context like home page does).
+
+    // Verify we're on the session page in idle state
+    await expect(page.getByRole('heading', { name: 'Meditation with Marcus Aurelius' })).toBeVisible();
+
+    // Click Begin Meditation - this should NOT trigger "Profile ID is required" error
+    const beginBtn = page.getByRole('button', { name: 'Begin Meditation' });
+    await beginBtn.click();
+
+    // Session should start successfully - Marcus should greet
+    await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/I'm Marcus/)).toBeVisible({ timeout: 15000 });
+
+    // No error toast should be visible
+    await expect(page.getByText('Profile ID is required')).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test('VAL-SESSION-005: Input bar stays fixed when messages grow during streaming', async ({ page }) => {
+    // Start session
+    await page.getByRole('button', { name: 'Begin Meditation' }).click();
+    await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
+
+    // Get initial input area position
+    const inputAreaBefore = await page.locator('.meditation-chat__input-area').boundingBox();
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+
+    expect(inputAreaBefore).toBeTruthy();
+    expect(inputAreaBefore!.y + inputAreaBefore!.height).toBeLessThanOrEqual(viewportHeight);
+
+    // Send a message to trigger streaming
+    await page.locator('.meditation-chat__textarea').fill('Tell me about stoicism and how to apply it in daily life');
+    await page.getByRole('button', { name: 'Send message' }).click();
+
+    // Wait for streaming to start
+    await page.waitForTimeout(500);
+
+    // Input area should stay in same position during streaming
+    const inputAreaDuring = await page.locator('.meditation-chat__input-area').boundingBox();
+    expect(inputAreaDuring!.y).toBe(inputAreaBefore!.y);
+
+    // Wait for streaming to complete
+    await expect(page.getByText('Marcus is reflecting...')).not.toBeVisible({ timeout: 30000 });
+
+    // Input area should STILL be at original position after streaming
+    const inputAreaAfter = await page.locator('.meditation-chat__input-area').boundingBox();
+    expect(inputAreaAfter!.y).toBe(inputAreaBefore!.y);
+
+    // Send multiple messages to grow the chat
+    for (let i = 0; i < 3; i++) {
+      await page.locator('.meditation-chat__textarea').fill(`Message ${i + 1}: What is the nature of virtue?`);
+      await page.getByRole('button', { name: 'Send message' }).click();
+      await page.waitForTimeout(2000);
+    }
+
+    // Input area should STILL be fixed at original position
+    const inputAreaFinal = await page.locator('.meditation-chat__input-area').boundingBox();
+    expect(inputAreaFinal!.y).toBe(inputAreaBefore!.y);
+    expect(inputAreaFinal!.y + inputAreaFinal!.height).toBeLessThanOrEqual(viewportHeight);
   });
 });

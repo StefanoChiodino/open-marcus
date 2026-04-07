@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { clearTestData, registerTestUser } from './test-db-helpers';
 
 /**
  * Profile Page Smoke Tests
@@ -12,22 +13,15 @@ import { test, expect } from '@playwright/test';
  * Fulfills: VAL-PROFILE-001, VAL-PROFILE-002, VAL-PROFILE-003, VAL-PROFILE-004
  */
 
+test.beforeEach(async () => {
+  await clearTestData();
+});
+
 /**
  * Helper: Register a test user and get auth token
  */
 async function registerAndGetToken(): Promise<string> {
-  const registerResponse = await fetch('http://localhost:3100/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: `testuser_${Date.now()}`, password: 'testpassword123' }),
-  });
-
-  if (!registerResponse.ok) {
-    throw new Error(`Failed to register: ${registerResponse.status}`);
-  }
-
-  const { token } = await registerResponse.json();
-  return token;
+  return (await registerTestUser()).token;
 }
 
 /**
@@ -173,9 +167,8 @@ test.describe('Profile Page Smoke Tests', () => {
     await expect(page.getByText('Changed Name')).not.toBeVisible();
     await expect(page.getByText('Changed bio')).not.toBeVisible();
     
-    // Should see Edit Profile and Reset Profile buttons again
+    // Should see Edit Profile button again
     await expect(page.getByRole('button', { name: 'Edit your profile' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Reset your profile to default' })).toBeVisible();
   });
 
   test('VAL-PROFILE-003: Edit form save persists changes and shows updated profile', async ({ page }) => {
@@ -218,33 +211,8 @@ test.describe('Profile Page Smoke Tests', () => {
     await expect(page.locator('p', { hasText: 'Stefano' })).not.toBeVisible();
     await expect(page.locator('p', { hasText: 'Original bio' })).not.toBeVisible();
     
-    // Should see Edit Profile and Reset Profile buttons
+    // Should see Edit Profile button
     await expect(page.getByRole('button', { name: 'Edit your profile' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Reset your profile to default' })).toBeVisible();
-  });
-
-  test('VAL-PROFILE-004: Reset Profile clears profile and shows empty profile page', async ({ page }) => {
-    // Create a profile first
-    await createProfile(page, 'Stefano', 'A stoic practitioner');
-    
-    // Navigate to profile page
-    await goToProfilePage(page);
-    
-    // Verify profile is visible
-    await expect(page.getByText('Stefano')).toBeVisible();
-    
-    // Click Reset Profile button
-    const resetBtn = page.getByRole('button', { name: 'Reset your profile to default' });
-    await resetBtn.click();
-    
-    // Wait for the action to complete
-    await page.waitForTimeout(1000);
-    
-    // Profile should be cleared - name should not be visible
-    await expect(page.locator('p', { hasText: 'Stefano' })).not.toBeVisible();
-    
-    // Profile settings heading should still be visible (empty state)
-    await expect(page.getByRole('heading', { name: 'Profile Settings' })).toBeVisible();
   });
 
   test('VAL-PROFILE-005: Profile page displays all profile fields', async ({ page }) => {
@@ -263,9 +231,8 @@ test.describe('Profile Page Smoke Tests', () => {
     // Should see bio
     await expect(page.getByText('This is my bio')).toBeVisible();
     
-    // Should see action buttons
+    // Should see action button
     await expect(page.getByRole('button', { name: 'Edit your profile' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Reset your profile to default' })).toBeVisible();
   });
 
   test('profile changes persist after navigation', async ({ page }) => {

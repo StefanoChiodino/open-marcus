@@ -292,6 +292,57 @@ describe('VoiceControls', () => {
         'Voice output enabled. Click to disable.',
       );
     });
+
+    it('shows disabled speaker icon when voice output is disabled', () => {
+      useVoiceStore.setState({ voiceOutputEnabled: false, status: 'idle' });
+
+      render(
+        <VoiceControls
+          onTranscript={mockOnTranscript}
+          onSpeechEnd={mockOnSpeechEnd}
+        />,
+      );
+
+      const speakerIcon = screen.getByRole('button', { name: /voice output/i })
+        .querySelector('.voice-controls__speaker-icon');
+      expect(speakerIcon).toHaveClass('voice-controls__speaker-icon--disabled');
+      expect(speakerIcon).not.toHaveClass('voice-controls__speaker-icon--enabled');
+      expect(speakerIcon).not.toHaveClass('voice-controls__speaker-icon--speaking');
+    });
+
+    it('shows enabled speaker icon when voice output is enabled (idle state)', () => {
+      useVoiceStore.setState({ voiceOutputEnabled: true, status: 'idle' });
+
+      render(
+        <VoiceControls
+          onTranscript={mockOnTranscript}
+          onSpeechEnd={mockOnSpeechEnd}
+        />,
+      );
+
+      const speakerIcon = screen.getByRole('button', { name: /voice output/i })
+        .querySelector('.voice-controls__speaker-icon');
+      expect(speakerIcon).toHaveClass('voice-controls__speaker-icon--enabled');
+      expect(speakerIcon).not.toHaveClass('voice-controls__speaker-icon--disabled');
+      expect(speakerIcon).not.toHaveClass('voice-controls__speaker-icon--speaking');
+    });
+
+    it('shows speaking speaker icon when status is speaking', () => {
+      useVoiceStore.setState({ voiceOutputEnabled: true, status: 'speaking' });
+
+      render(
+        <VoiceControls
+          onTranscript={mockOnTranscript}
+          onSpeechEnd={mockOnSpeechEnd}
+        />,
+      );
+
+      const speakerIcon = screen.getByRole('button', { name: /voice output/i })
+        .querySelector('.voice-controls__speaker-icon');
+      expect(speakerIcon).toHaveClass('voice-controls__speaker-icon--speaking');
+      expect(speakerIcon).not.toHaveClass('voice-controls__speaker-icon--disabled');
+      expect(speakerIcon).not.toHaveClass('voice-controls__speaker-icon--enabled');
+    });
   });
 
   describe('independent toggling (VAL-VOICE-006)', () => {

@@ -63,7 +63,7 @@ test.describe('Full User Journey: Profile → Meditation → Summary → History
     
     // Should see the active chat interface
     await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible();
-    await expect(page.getByText('I am Marcus')).toBeVisible();
+    await expect(page.getByText("I'm Marcus")).toBeVisible();
     await expect(page.getByText('Stefano')).toBeVisible();
 
     // === STEP 3: Send a Message ===
@@ -142,7 +142,7 @@ test.describe('Full User Journey: Profile → Meditation → Summary → History
     
     // Wait for session to be active
     await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible();
-    await expect(page.getByText('I am Marcus')).toBeVisible();
+    await expect(page.getByText("I'm Marcus")).toBeVisible();
 
     // Send a message
     const textarea = page.getByRole('textbox', { name: 'Type your message to Marcus' });

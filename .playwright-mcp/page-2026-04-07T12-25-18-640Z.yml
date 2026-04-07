@@ -1,0 +1,74 @@
+- generic [ref=e101]:
+  - link "Skip to main content" [ref=e102] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e103]:
+    - navigation "Main navigation" [ref=e104]:
+      - link "OpenMarcus" [ref=e106] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e108]: OpenMarcus
+      - list [ref=e109]:
+        - listitem [ref=e110]:
+          - link "Home" [ref=e111] [cursor=pointer]:
+            - /url: /
+            - img [ref=e113]
+            - generic [ref=e115]: Home
+        - listitem [ref=e116]:
+          - link "Meditation" [ref=e117] [cursor=pointer]:
+            - /url: /session
+            - img [ref=e119]
+            - generic [ref=e121]: Meditation
+        - listitem [ref=e122]:
+          - link "History" [ref=e123] [cursor=pointer]:
+            - /url: /history
+            - img [ref=e125]
+            - generic [ref=e127]: History
+        - listitem [ref=e128]:
+          - link "Profile" [ref=e129] [cursor=pointer]:
+            - /url: /profile
+            - img [ref=e131]
+            - generic [ref=e133]: Profile
+        - listitem [ref=e134]:
+          - link "Settings" [ref=e135] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e137]
+            - generic [ref=e139]: Settings
+      - button "Log out of your account" [ref=e141] [cursor=pointer]:
+        - img [ref=e143]
+        - generic [ref=e145]: Log Out
+    - main [ref=e146]:
+      - main "Session Detail" [ref=e242]:
+        - generic [ref=e243]:
+          - link "Back to History" [ref=e244] [cursor=pointer]:
+            - /url: /history
+            - img [ref=e245]
+            - text: Back to History
+          - generic [ref=e247]:
+            - heading "Session Review" [active] [level=2] [ref=e248]
+            - generic [ref=e249]:
+              - time [ref=e250]: April 7, 2026 at 12:24 PM
+              - generic [ref=e251]: 0 min
+              - generic [ref=e252]: · summary
+        - region "Marcus's Reflection" [ref=e253]:
+          - heading "Marcus's Reflection" [level=3] [ref=e254]
+          - paragraph [ref=e255]: "As I reflected on the conversation, I realized that anxiety about work can often stem from our own expectations and values. It is essential to acknowledge that we cannot control external factors, but rather focus on what lies within our power to change. By examining our values and goals, we may discover a sense of disalignment that warrants adjustments. It was also clear that my friend testuser's anxiety might be an opportunity for growth, as the impediment itself can become a catalyst for forward motion. I offer these words of wisdom as a guide: the path to inner peace often requires confronting our own doubts and fears."
+        - region "Session Conversation" [ref=e256]:
+          - article "Your message" [ref=e257]:
+            - img [ref=e259]
+            - generic [ref=e263]: I have been feeling anxious about work lately.
+          - article "Marcus's response" [ref=e264]:
+            - img [ref=e266]
+            - generic [ref=e269]: "My friend testuser, I too have known the weight of anxiety in my own time as emperor. The burden of responsibility can be crushing at times. But tell me, what is it that you fear at work? Is it a specific task or situation, or perhaps a sense of inadequacy? As I wrote in Meditations: \"The impediment to action advances action. What stands in the way becomes the way.\" Perhaps your anxiety is not about avoiding challenges, but rather finding a new path forward. Consider this: what are your values and goals? Are they aligned with your current work situation? Sometimes, it is our own expectations that create the most discomfort."
+        - region "Your Commitments" [ref=e270]:
+          - heading "Your Commitments" [level=3] [ref=e271]
+          - list [ref=e272]:
+            - listitem [ref=e273]:
+              - img [ref=e275]
+              - text: Re-examine current work values and goals to ensure alignment with personal aspirations
+            - listitem [ref=e277]:
+              - img [ref=e279]
+              - text: Reflect on potential areas where expectations create discomfort and explore adjustments
+            - listitem [ref=e281]:
+              - img [ref=e283]
+              - text: Cultivate self-awareness of internal doubts and fears, acknowledging their role in shaping anxiety
+        - link "Back to History" [ref=e286] [cursor=pointer]:
+          - /url: /history

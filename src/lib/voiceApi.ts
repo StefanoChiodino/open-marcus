@@ -3,6 +3,8 @@
  * Proxies requests to backend STT/TTS services
  */
 
+import { getAuthHeader } from './auth';
+
 const STT_BASE_URL = '/api/stt';
 const TTS_BASE_URL = '/api/tts';
 
@@ -23,11 +25,17 @@ export class VoiceAPIClient {
    * Expects 16kHz mono 16-bit PCM WAV audio
    */
   async transcribe(audioBlob: Blob): Promise<TranscribeResult> {
+    const authHeader = getAuthHeader();
+    const headers: Record<string, string> = {
+      'Content-Type': 'audio/wav',
+    };
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
     const response = await fetch(`${STT_BASE_URL}/transcribe`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'audio/wav',
-      },
+      headers,
       body: audioBlob,
     });
 
@@ -44,11 +52,17 @@ export class VoiceAPIClient {
    * Returns the audio as a Blob that can be played
    */
   async synthesize(request: SynthesizeRequest): Promise<Blob> {
+    const authHeader = getAuthHeader();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
     const response = await fetch(`${TTS_BASE_URL}/synthesize`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(request),
     });
 
@@ -64,7 +78,13 @@ export class VoiceAPIClient {
    * Get available voices from the TTS service
    */
   async getVoices(): Promise<Array<{ name: string; locale: string; gender: string }>> {
-    const response = await fetch(`${TTS_BASE_URL}/voices`);
+    const authHeader = getAuthHeader();
+    const headers: Record<string, string> = {};
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+
+    const response = await fetch(`${TTS_BASE_URL}/voices`, { headers });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch voices: ${response.status}`);

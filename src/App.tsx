@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomePage from './pages/HomePage';
 import Settings from './pages/Settings';
 import LoginScreen from './components/LoginScreen';
+import RegisterScreen from './components/RegisterScreen';
 import AppLayout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useProfileStore } from './stores/profileStore';
@@ -208,6 +209,7 @@ function App() {
           <Routes>
             {/* Auth routes - no layout needed */}
             <Route path="/login" element={<LoginScreen />} />
+            <Route path="/register" element={<RegisterScreen />} />
 
             {/* Routes with app layout (sidebar navigation, toasts) */}
             <Route element={<AppLayout />}>

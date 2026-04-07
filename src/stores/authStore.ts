@@ -19,6 +19,7 @@ interface AuthState {
   // Actions
   loadToken: () => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   
@@ -87,6 +88,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
+      set({
+        isAuthenticated: false,
+        currentUser: null,
+        authToken: null,
+        isLoading: false,
+        error: message,
+      });
+      throw err;
+    }
+  },
+
+  /**
+   * Register a new account with username and password.
+   * Sets authenticated state and user info on success.
+   */
+  register: async (username: string, password: string) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const response = await authAPI.register({ username, password });
+      set({
+        isAuthenticated: true,
+        currentUser: response.user,
+        authToken: response.token,
+        isLoading: false,
+        error: null,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
       set({
         isAuthenticated: false,
         currentUser: null,

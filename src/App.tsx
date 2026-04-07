@@ -1,12 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomePage from './pages/HomePage';
 import Settings from './pages/Settings';
-import OnboardingScreen from './components/OnboardingScreen';
+import LoginScreen from './components/LoginScreen';
 import AppLayout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useProfileStore } from './stores/profileStore';
+import { useAuthStore } from './stores/authStore';
 import { useTTSStore } from './stores/ttsSettingsStore';
 import MeditationChat from './components/MeditationChat';
 import SessionHistory from './components/SessionHistory';
@@ -25,25 +26,39 @@ const queryClient = new QueryClient({
   },
 });
 
-function ProfileGateway() {
-  const { profile, status, error, loadProfile, saveProfile } = useProfileStore();
+/**
+ * Auth Gateway - determines which screen to show based on authentication state
+ * 
+ * - If not authenticated: shows LoginScreen
+ * - If authenticated: shows HomePage (which loads profile data)
+ */
+function AuthGateway() {
+  const { isAuthenticated, isLoading: authLoading, loadToken } = useAuthStore();
+  const { profile, status: profileStatus, loadProfile } = useProfileStore();
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    // Load auth token on mount to check if user is already authenticated
+    loadToken().finally(() => {
+      setAuthChecked(true);
+    });
+  }, [loadToken]);
 
-  const handleSubmit = (data: ProfileFormData) => {
-    saveProfile(data);
-  };
+  useEffect(() => {
+    // If authenticated, load the profile for this user
+    if (isAuthenticated) {
+      loadProfile();
+    }
+  }, [isAuthenticated, loadProfile]);
 
-  // Loading state
-  if (status === 'loading') {
+  // Loading state - haven't checked auth yet
+  if (!authChecked || authLoading) {
     return (
-      <div className="onboarding-screen">
-        <div className="onboarding-content">
-          <div className="onboarding-branding">
-            <h1 className="onboarding-title">OpenMarcus</h1>
-            <p className="onboarding-tagline">Your Stoic Mental Health Companion</p>
+      <div className="login-screen">
+        <div className="login-content">
+          <div className="login-branding">
+            <h1 className="login-title">OpenMarcus</h1>
+            <p className="login-tagline">Your Stoic Mental Health Companion</p>
           </div>
           <div className="loading-indicator">
             <span className="loading-spinner" aria-hidden="true" />
@@ -54,23 +69,80 @@ function ProfileGateway() {
     );
   }
 
-  // Show onboarding screen if no profile exists
-  if (status === 'not_found' || status === 'error') {
-    return (
-      <OnboardingScreen
-        onSubmit={handleSubmit}
-        isSubmitting={false}
-        serverError={error}
-      />
-    );
+  // Not authenticated - show login screen
+  if (!isAuthenticated) {
+    return <LoginScreen />;
   }
 
-  // Profile loaded, show homepage
-  if (status === 'loaded' && profile) {
+  // Authenticated but no profile exists yet - show profile creation
+  if (profileStatus === 'not_found' || profileStatus === 'error') {
+    return <OnboardingScreenWithAuth />;
+  }
+
+  // Authenticated with profile - show home page
+  if (profileStatus === 'loaded' && profile) {
     return <HomePage />;
   }
 
   return null;
+}
+
+/**
+ * OnboardingScreen variant that works with auth - creates profile for authenticated user
+ */
+function OnboardingScreenWithAuth() {
+  const { saveProfile, error } = useProfileStore();
+
+  const handleSubmit = (data: ProfileFormData) => {
+    saveProfile(data);
+  };
+
+  return (
+    <OnboardingScreenWrapper
+      onSubmit={handleSubmit}
+      isSubmitting={false}
+      serverError={error}
+    />
+  );
+}
+
+// Wrapper to match the original OnboardingScreen interface
+interface OnboardingScreenWrapperProps {
+  onSubmit: (data: ProfileFormData) => void;
+  isSubmitting: boolean;
+  serverError: string | null;
+}
+
+function OnboardingScreenWrapper({ onSubmit, isSubmitting, serverError }: OnboardingScreenWrapperProps) {
+  return (
+    <div className="onboarding-screen">
+      <div className="onboarding-content">
+        <div className="onboarding-branding">
+          <h1 className="onboarding-title">OpenMarcus</h1>
+          <p className="onboarding-tagline">Your Stoic Mental Health Companion</p>
+          <div className="onboarding-divider" />
+        </div>
+
+        <p className="onboarding-intro">
+          Begin your journey of self-reflection and philosophical exploration,
+          guided by the wisdom of Marcus Aurelius.
+        </p>
+
+        <div className="onboarding-form-card">
+          <ProfileForm
+            onSubmit={onSubmit}
+            isSubmitting={isSubmitting}
+            serverError={serverError}
+          />
+        </div>
+
+        <div className="disclaimer" role="note">
+          <strong>Note:</strong> OpenMarcus is not therapy or medical advice.
+          It is a reflection tool based on Stoic philosophy.
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -134,12 +206,13 @@ function App() {
       <BrowserRouter>
         <ErrorBoundary>
           <Routes>
-            {/* Route without layout for onboarding */}
-            <Route path="/onboarding" element={<ProfileGateway />} />
+            {/* Auth routes - no layout needed */}
+            <Route path="/login" element={<LoginScreen />} />
 
             {/* Routes with app layout (sidebar navigation, toasts) */}
             <Route element={<AppLayout />}>
-              <Route path="/" element={<ProfileGateway />} />
+              {/* Root path uses AuthGateway to check auth state */}
+              <Route path="/" element={<AuthGateway />} />
               <Route path="/session" element={<MeditationChat />} />
               <Route path="/history" element={<SessionHistory />} />
               <Route path="/history/:sessionId" element={<SessionDetail />} />

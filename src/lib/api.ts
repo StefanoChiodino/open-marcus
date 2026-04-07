@@ -3,12 +3,20 @@
  */
 
 import type { ProfileDTO } from '../shared/types';
+import { getAuthHeader } from './auth';
 
 const BASE_URL = '/api/profile';
 
+function authHeaders(): HeadersInit {
+  const header = getAuthHeader();
+  return header ? { Authorization: header } : {};
+}
+
 export class ProfileAPIClient {
   async fetchProfile(): Promise<ProfileDTO | null> {
-    const response = await fetch(BASE_URL);
+    const response = await fetch(BASE_URL, {
+      headers: authHeaders(),
+    });
 
     if (response.status === 404) {
       return null;
@@ -24,7 +32,7 @@ export class ProfileAPIClient {
   async createProfile(name: string, bio?: string): Promise<ProfileDTO> {
     const response = await fetch(BASE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ name, bio }),
     });
 
@@ -39,7 +47,7 @@ export class ProfileAPIClient {
   async updateProfile(id: string, name: string, bio?: string): Promise<ProfileDTO> {
     const response = await fetch(BASE_URL, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ id, name, bio }),
     });
 
@@ -54,7 +62,7 @@ export class ProfileAPIClient {
   async deleteProfile(id: string): Promise<void> {
     const response = await fetch(BASE_URL, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ id }),
     });
 

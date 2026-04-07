@@ -2,7 +2,14 @@
  * API client for settings endpoints
  */
 
+import { getAuthHeader } from './auth';
+
 const BASE_URL = '/api/settings';
+
+function authHeaders(): HeadersInit {
+  const header = getAuthHeader();
+  return header ? { Authorization: header } : {};
+}
 
 /**
  * Model information including size for RAM display
@@ -60,6 +67,7 @@ export interface SettingsResponse {
   } | null;
   installedModels: string[];
   installedModelsInfo: ModelInfo[];
+  recommendedModelsInfo: ModelInfo[];
   ollamaOnline: boolean;
 }
 
@@ -68,7 +76,9 @@ export class SettingsAPIClient {
    * Fetch all settings, system info, and installed models
    */
   async getSettings(): Promise<SettingsResponse> {
-    const response = await fetch(BASE_URL);
+    const response = await fetch(BASE_URL, {
+      headers: authHeaders(),
+    });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Server error' }));
@@ -89,7 +99,7 @@ export class SettingsAPIClient {
   }): Promise<SettingsResponse> {
     const response = await fetch(BASE_URL, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(updates),
     });
 
@@ -100,6 +110,75 @@ export class SettingsAPIClient {
 
     return response.json();
   }
+
+  /**
+   * Pull (download) a model from Ollama with progress streaming.
+   * Returns a ReadableStream that yields progress events.
+   */
+  pullModel(modelName: string): ReadableStream<PullProgress> {
+    return new ReadableStream({
+      async start(controller) {
+        const response = await fetch(`${BASE_URL}/pull-model`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ model: modelName }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ error: 'Failed to start download' }));
+          controller.error(new Error(error.error || `HTTP ${response.status}`));
+          return;
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+          controller.error(new Error('No response body'));
+          return;
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (!line.trim() || !line.startsWith('data: ')) continue;
+              try {
+                const data = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
+                controller.enqueue(data as PullProgress);
+                if (data.status === 'success' || data.status === 'error' || data.status === 'already_installed') {
+                  reader.cancel();
+                  return;
+                }
+              } catch {
+                // Skip invalid JSON
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+      },
+    });
+  }
+}
+
+/**
+ * Progress update during model pull
+ */
+export interface PullProgress {
+  status: string;
+  percent?: number;
+  completed?: number;
+  total?: number;
+  message?: string;
 }
 
 export const settingsAPI = new SettingsAPIClient();

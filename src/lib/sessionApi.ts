@@ -8,8 +8,14 @@ import type {
   SessionSummaryResponse,
   StreamToken,
 } from '../shared/types';
+import { getAuthHeader } from './auth';
 
 const BASE_URL = '/api';
+
+function authHeaders(): HeadersInit {
+  const header = getAuthHeader();
+  return header ? { Authorization: header } : {};
+}
 
 export class SessionAPIClient {
   /**
@@ -18,7 +24,7 @@ export class SessionAPIClient {
   async createSession(profileId?: string): Promise<SessionDTO> {
     const response = await fetch(`${BASE_URL}/sessions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(profileId ? { profile_id: profileId } : {}),
     });
 
@@ -34,7 +40,9 @@ export class SessionAPIClient {
    * Get session details with messages
    */
   async getSession(sessionId: string): Promise<SessionDetail> {
-    const response = await fetch(`${BASE_URL}/sessions/${sessionId}`);
+    const response = await fetch(`${BASE_URL}/sessions/${sessionId}`, {
+      headers: authHeaders(),
+    });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Server error' }));
@@ -48,7 +56,9 @@ export class SessionAPIClient {
    * List all sessions
    */
   async listSessions(): Promise<SessionDTO[]> {
-    const response = await fetch(`${BASE_URL}/sessions`);
+    const response = await fetch(`${BASE_URL}/sessions`, {
+      headers: authHeaders(),
+    });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Server error' }));
@@ -64,7 +74,7 @@ export class SessionAPIClient {
   async endSession(sessionId: string, summary: string, actionItems?: string[]): Promise<SessionDTO> {
     const response = await fetch(`${BASE_URL}/sessions/${sessionId}/end`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ summary, action_items: actionItems || [] }),
     });
 
@@ -82,7 +92,7 @@ export class SessionAPIClient {
   async endAndSummarize(sessionId: string): Promise<SessionSummaryResponse> {
     const response = await fetch(`${BASE_URL}/sessions/${sessionId}/end-and-summarize`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
     });
 
     if (!response.ok) {
@@ -99,7 +109,7 @@ export class SessionAPIClient {
   async updateSessionStatus(sessionId: string, status: SessionDTO['status']): Promise<SessionDTO> {
     const response = await fetch(`${BASE_URL}/sessions/${sessionId}/status`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ status }),
     });
 
@@ -124,6 +134,7 @@ export class SessionAPIClient {
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/x-ndjson',
+        ...authHeaders(),
       },
       body: JSON.stringify({ session_id: sessionId, message: message.trim() }),
     });

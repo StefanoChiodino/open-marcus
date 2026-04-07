@@ -2,7 +2,14 @@
  * API client for data export/import endpoints
  */
 
+import { getAuthHeader } from './auth';
+
 const BASE_URL = '/api/export';
+
+function authHeaders(): HeadersInit {
+  const header = getAuthHeader();
+  return header ? { Authorization: header } : {};
+}
 
 export interface ExportData {
   version: string;
@@ -39,7 +46,9 @@ export class DataExportImportAPIClient {
    * Fetch all data for export
    */
   async exportData(): Promise<ExportData> {
-    const response = await fetch(BASE_URL);
+    const response = await fetch(BASE_URL, {
+      headers: authHeaders(),
+    });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Server error' }));
@@ -55,7 +64,7 @@ export class DataExportImportAPIClient {
   async importData(data: Record<string, unknown>): Promise<ImportResult> {
     const response = await fetch(`${BASE_URL}/import`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(data),
     });
 
@@ -73,7 +82,7 @@ export class DataExportImportAPIClient {
   async clearData(): Promise<ClearDataResult> {
     const response = await fetch(`${BASE_URL}/clear`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
     });
 
     if (!response.ok) {

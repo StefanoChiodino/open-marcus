@@ -1,0 +1,48 @@
+{
+  "milestone": "history-flows",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "npm run test:e2e -- history-comprehensive.spec.ts",
+      "exitCode": 0,
+      "note": "All 10 history tests passed on third run. First two runs had flaky failures due to AI response timing."
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "note": "Fixed missing useRef import in src/App.tsx"
+    },
+    "lint": {
+      "passed": true,
+      "command": "npm run lint",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "failedFeatures": ["e2e-history-comprehensive"]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "e2e-history-comprehensive",
+      "severity": "blocking",
+      "description": "VAL-HIST-008 'Direct URL access to session works' does NOT actually test direct URL access. It clicks on session link from history list instead of using page.goto() to navigate directly to /history/{sessionId}. The validation contract explicitly states 'Navigating directly to /history/{sessionId} for valid session shows detail' with evidence being a screenshot.",
+      "location": "e2e/history-comprehensive.spec.ts:230"
+    },
+    {
+      "featureId": "e2e-history-comprehensive",
+      "severity": "blocking",
+      "description": "Test file appears truncated to 285 lines based on git diff output. The transcript skeleton showed a 424-line implementation. The actual committed file may be missing proper test implementations.",
+      "location": "e2e/history-comprehensive.spec.ts"
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [],
+  "rejectedObservations": [],
+  "previousRound": null
+}

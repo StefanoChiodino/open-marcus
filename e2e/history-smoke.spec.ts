@@ -54,6 +54,12 @@ async function createProfile(page: any, name: string, bio?: string) {
   // Navigate to app
   await page.goto('/');
   
+  // Clear any persisted session ID before setting new auth token
+  // This prevents restoring a stale session from a previous test run
+  await page.evaluate(() => {
+    localStorage.removeItem('openmarcus-active-session-id');
+  });
+  
   // Store token in localStorage for API calls
   await page.evaluate((t: string) => {
     localStorage.setItem('openmarcus-auth-token', t);

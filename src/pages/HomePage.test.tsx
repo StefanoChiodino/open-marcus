@@ -6,6 +6,18 @@ import HomePage from '../pages/HomePage';
 
 describe('HomePage', () => {
   it('renders the welcome message', () => {
+    // Set up profile in store (HomePage requires a profile)
+    const mockProfile = {
+      id: '1',
+      name: 'Test User',
+      bio: 'A stoic learner',
+      encrypted_data: '',
+      created_at: '2026-04-05T00:00:00Z',
+      updated_at: '2026-04-05T00:00:00Z',
+    };
+
+    useProfileStore.setState({ profile: mockProfile, status: 'loaded' });
+
     render(
       <BrowserRouter>
         <HomePage />

@@ -34,11 +34,11 @@ const queryClient = new QueryClient({
  * - If not authenticated: shows LoginScreen
  * - If authenticated: shows HomePage
  * 
- * Profile creation is now part of registration - no separate onboarding step.
+ * Profile creation is part of registration - shows onboarding form if no profile exists.
  */
 function AuthGateway() {
   const { isAuthenticated, isLoading: authLoading, loadToken } = useAuthStore();
-  const { loadProfile } = useProfileStore();
+  const { profile, status: profileStatus, loadProfile, saveProfile } = useProfileStore();
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
@@ -78,7 +78,39 @@ function AuthGateway() {
     return <LoginScreen />;
   }
 
-  // Authenticated - show home page (profile loading is handled in background)
+  // Authenticated but profile still loading - show loading state
+  if (profileStatus === 'loading') {
+    return (
+      <div className="login-screen">
+        <div className="login-content">
+          <div className="login-branding">
+            <h1 className="login-title">OpenMarcus</h1>
+            <p className="login-tagline">Your Stoic Mental Health Companion</p>
+          </div>
+          <div className="loading-indicator">
+            <span className="loading-spinner" aria-hidden="true" />
+            <p>Loading profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated but no profile - show onboarding form
+  if (profileStatus === 'not_found' || !profile) {
+    return (
+      <div className="page-container">
+        <ProfileForm
+          initialName=""
+          initialBio=""
+          onSubmit={saveProfile}
+          isEditMode={false}
+        />
+      </div>
+    );
+  }
+
+  // Authenticated and profile loaded - show home page
   return <HomePage />;
 }
 

@@ -30,6 +30,9 @@ const PUBLIC_PATHS = [
   '/auth/verify',      // /api/auth/verify appears as /auth/verify
   '/auth/logout',      // /api/auth/logout appears as /auth/logout
   '/profile',          // /api/profile - profile creation is public during onboarding
+  // STT settings endpoints - accessible without auth for frontend Settings page
+  '/settings/stt-models',   // GET - list available STT models (read-only info)
+  '/settings/stt-reload',   // POST - trigger STT model hot-reload (server config, not user data)
 ];
 
 /**

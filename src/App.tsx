@@ -16,7 +16,6 @@ import SessionDetail from './components/SessionDetail';
 import ProfileForm from './components/ProfileForm';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { GuestRoute } from './components/GuestRoute';
-import type { ProfileFormData } from './shared/types';
 import './styles/App.css';
 import './App.css';
 
@@ -33,11 +32,13 @@ const queryClient = new QueryClient({
  * Auth Gateway - determines which screen to show based on authentication state
  * 
  * - If not authenticated: shows LoginScreen
- * - If authenticated: shows HomePage (which loads profile data)
+ * - If authenticated: shows HomePage
+ * 
+ * Profile creation is now part of registration - no separate onboarding step.
  */
 function AuthGateway() {
   const { isAuthenticated, isLoading: authLoading, loadToken } = useAuthStore();
-  const { profile, status: profileStatus, loadProfile } = useProfileStore();
+  const { loadProfile } = useProfileStore();
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
@@ -77,75 +78,8 @@ function AuthGateway() {
     return <LoginScreen />;
   }
 
-  // Authenticated but no profile exists yet - show profile creation
-  if (profileStatus === 'not_found' || profileStatus === 'error') {
-    return <OnboardingScreenWithAuth />;
-  }
-
-  // Authenticated with profile - show home page
-  if (profileStatus === 'loaded' && profile) {
-    return <HomePage />;
-  }
-
-  return null;
-}
-
-/**
- * OnboardingScreen variant that works with auth - creates profile for authenticated user
- */
-function OnboardingScreenWithAuth() {
-  const { saveProfile, error } = useProfileStore();
-
-  const handleSubmit = (data: ProfileFormData) => {
-    saveProfile(data);
-  };
-
-  return (
-    <OnboardingScreenWrapper
-      onSubmit={handleSubmit}
-      isSubmitting={false}
-      serverError={error}
-    />
-  );
-}
-
-// Wrapper to match the original OnboardingScreen interface
-interface OnboardingScreenWrapperProps {
-  onSubmit: (data: ProfileFormData) => void;
-  isSubmitting: boolean;
-  serverError: string | null;
-}
-
-function OnboardingScreenWrapper({ onSubmit, isSubmitting, serverError }: OnboardingScreenWrapperProps) {
-  return (
-    <div className="onboarding-screen">
-      <div className="onboarding-content">
-        <div className="onboarding-branding">
-          <h1 className="onboarding-title">OpenMarcus</h1>
-          <p className="onboarding-tagline">Your Stoic Mental Health Companion</p>
-          <div className="onboarding-divider" />
-        </div>
-
-        <p className="onboarding-intro">
-          Begin your journey of self-reflection and philosophical exploration,
-          guided by the wisdom of Marcus Aurelius.
-        </p>
-
-        <div className="onboarding-form-card">
-          <ProfileForm
-            onSubmit={onSubmit}
-            isSubmitting={isSubmitting}
-            serverError={serverError}
-          />
-        </div>
-
-        <div className="disclaimer" role="note">
-          <strong>Note:</strong> OpenMarcus is not therapy or medical advice.
-          It is a reflection tool based on Stoic philosophy.
-        </div>
-      </div>
-    </div>
-  );
+  // Authenticated - show home page (profile loading is handled in background)
+  return <HomePage />;
 }
 
 /**

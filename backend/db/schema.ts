@@ -13,7 +13,7 @@ export interface Profile {
   id: string;
   user_id: string; // FK to users (1:1)
   name: string;
-  bio: null; // Bio is NOT stored in plaintext - only in encrypted_data for privacy
+  bio: string | null; // Bio is stored in encrypted_data (plaintext column is legacy, always NULL)
   encrypted_data: string; // JSON string of EncryptedData (contains encrypted name + bio)
   created_at: string;
   updated_at: string;

@@ -1,0 +1,85 @@
+{
+  "milestone": "stt-settings",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 18,
+    "passed": 8,
+    "failed": 1,
+    "blocked": 9
+  },
+  "passedAssertions": [
+    "VAL-TTS-001",
+    "VAL-TTS-002",
+    "VAL-TTS-003",
+    "VAL-TTS-004",
+    "VAL-TTS-005",
+    "VAL-TTS-006",
+    "VAL-CROSS-001"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-STT-001",
+      "reason": "STT models endpoint returns empty array. The symlink 'sherpa-onnx-whisper-tiny.en' is not detected as a directory by entry.isDirectory() on macOS (readdirSync returns symlink as symlink, not directory). Fix: Use fs.statSync instead of fs.lstatSync to check isDirectory(), or explicitly check isSymbolicLink() and handle symlinks."
+    }
+  ],
+  "blockedAssertions": [
+    {
+      "id": "VAL-STT-002",
+      "blockedBy": "VAL-STT-001 (models endpoint returns empty)"
+    },
+    {
+      "id": "VAL-STT-003",
+      "blockedBy": "VAL-STT-001 (no models available)"
+    },
+    {
+      "id": "VAL-STT-004",
+      "blockedBy": "VAL-STT-001 (no models to select)"
+    },
+    {
+      "id": "VAL-STT-005",
+      "blockedBy": "VAL-STT-001 (no models to reload)"
+    },
+    {
+      "id": "VAL-STT-006",
+      "blockedBy": "VAL-STT-001 (no models to reload)"
+    },
+    {
+      "id": "VAL-STT-007",
+      "blockedBy": "VAL-STT-001 (no models for voice input)"
+    },
+    {
+      "id": "VAL-STT-008",
+      "blockedBy": "VAL-STT-001 (no models to test)"
+    },
+    {
+      "id": "VAL-CROSS-002",
+      "blockedBy": "Auth middleware blocks profile creation - POST /api/profile requires auth token"
+    },
+    {
+      "id": "VAL-CROSS-003",
+      "blockedBy": "Auth middleware blocks profile creation"
+    }
+  ],
+  "appliedUpdates": [],
+  "previousRound": null,
+  "blockers": [
+    {
+      "severity": "blocking",
+      "description": "STT models endpoint returns empty array. The symlink 'sherpa-onnx-whisper-tiny.en' in servers/stt/ is not detected as a directory by entry.isDirectory() on macOS. readdirSync returns symlinks as symlinks, not directories. The code only checks isDirectory() without handling symlinks. Fix: Check isSymbolicLink() first using lstatSync, or use statSync (which follows symlinks) instead of readdirSync's isDirectory().",
+      "file": "backend/routes/settings.ts",
+      "line": "entry.isDirectory()"
+    },
+    {
+      "severity": "blocking",
+      "description": "Auth middleware does not include '/profile' as public path. The fix from commit 59adb57 (adding '/profile' to PUBLIC_PATHS) was reverted in later commits. POST /api/profile requires auth token, blocking browser-based profile creation during onboarding.",
+      "file": "backend/middleware/auth.ts",
+      "line": "PUBLIC_PATHS"
+    }
+  ],
+  "frictions": [
+    "Browser registration flow creates account but does not navigate to profile form - button click times out",
+    "Onboarding flow requires profile creation before accessing Settings page, but profile creation via browser is blocked"
+  ],
+  "notes": "Testing was performed against localhost:3101 (frontend) and localhost:3100 (backend). Profile creation via API works (with token), but browser flow is blocked by auth middleware. Two root causes need fixing: (1) STT models symlink detection bug, (2) Auth middleware PUBLIC_PATHS reverted."
+}

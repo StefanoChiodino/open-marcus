@@ -1,0 +1,84 @@
+{
+  "milestone": "stt-settings",
+  "group": "stt-assertions",
+  "tool": "agent-browser",
+  "isolationContext": {
+    "appUrl": "http://localhost:3101",
+    "backendApi": "http://localhost:3100",
+    "services": ["backend:3100", "frontend:3101", "stt:8765", "tts:8766"],
+    "profileRequired": true
+  },
+  "assertions": [
+    {
+      "id": "VAL-STT-001",
+      "status": "failed",
+      "reason": "The STT models endpoint returns empty array because the symlink 'sherpa-onnx-whisper-tiny.en' is not detected as a directory by entry.isDirectory() on macOS. The readdirSync returns it as a symlink, not a directory."
+    },
+    {
+      "id": "VAL-STT-002",
+      "status": "blocked",
+      "reason": "Cannot test - model dropdown is empty due to VAL-STT-001 failure"
+    },
+    {
+      "id": "VAL-STT-003",
+      "status": "blocked",
+      "reason": "Cannot test - no models available in dropdown"
+    },
+    {
+      "id": "VAL-STT-004",
+      "status": "blocked",
+      "reason": "Cannot test - no models to select for reload"
+    },
+    {
+      "id": "VAL-STT-005",
+      "status": "blocked",
+      "reason": "Cannot test - no models to reload"
+    },
+    {
+      "id": "VAL-STT-006",
+      "status": "blocked",
+      "reason": "Cannot test - no models to reload"
+    },
+    {
+      "id": "VAL-STT-007",
+      "status": "blocked",
+      "reason": "Cannot test - no models to test voice input with"
+    },
+    {
+      "id": "VAL-STT-008",
+      "status": "blocked",
+      "reason": "Cannot test - no models to trigger reload failure"
+    },
+    {
+      "id": "VAL-CROSS-002",
+      "status": "blocked",
+      "reason": "Cannot test - profile creation via browser is blocked by auth middleware. The /api/profile endpoint requires authentication, and onboarding flow requires profile creation to access Settings."
+    },
+    {
+      "id": "VAL-CROSS-003",
+      "status": "blocked",
+      "reason": "Cannot test - profile creation via browser is blocked"
+    }
+  ],
+  "blockers": [
+    {
+      "severity": "blocking",
+      "description": "Auth middleware does not include '/profile' as public path. POST /api/profile requires auth token. The fix from commit 59adb57 (Fix auth middleware to allow public profile creation) was reverted in later commits.",
+      "source": "flow-testing",
+      "evidence": "curl -X POST http://localhost:3100/api/profile returns 401 Unauthorized without token"
+    },
+    {
+      "severity": "blocking",
+      "description": "STT models endpoint returns empty array. The symlink 'sherpa-onnx-whisper-tiny.en' is not detected as a directory by entry.isDirectory() on macOS (readdirSync returns it as a symlink). The isSymlink() check is missing in the code.",
+      "source": "flow-testing",
+      "evidence": "GET /api/settings/stt-models returns {\"models\":[]}"
+    }
+  ],
+  "frictions": [
+    "Browser registration flow creates account but does not navigate to profile form - button click times out",
+    "Onboarding flow requires profile creation before accessing Settings page, but profile creation is blocked by auth"
+  ],
+  "toolsUsed": ["agent-browser", "curl"],
+  "appliedUpdates": [],
+  "notes": "Testing was performed against localhost:3101 (frontend) and localhost:3100 (backend). Profile creation via API works (with token), but browser flow is blocked. STT models endpoint has a symlink detection bug."
+}

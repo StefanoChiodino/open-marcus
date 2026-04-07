@@ -1,83 +1,164 @@
-# E2E Worker Skill
+---
+name: e2e-worker
+description: E2E test implementation for OpenMarcus comprehensive testing
+---
 
-## Purpose
-Run Playwright e2e tests to validate user-facing functionality.
+# E2E Worker
 
-## Procedures
+NOTE: Startup and cleanup are handled by `worker-base`. This skill defines the WORK PROCEDURE.
 
-### Running E2E Tests
+## When to Use This Skill
 
-**Prerequisites:**
-1. Backend must be running on port 3100
-2. Frontend must be running on port 3101
-3. Database must be accessible (postgres on 5432)
+This worker handles e2e test implementation for the comprehensive e2e testing mission. Use this worker for features related to:
+- Creating new e2e test files
+- Adding tests to existing test files
+- Verifying test coverage against validation contract
 
-**Run all e2e tests:**
-```bash
-npm run test:e2e
-```
+## Required Skills
 
-**Run specific test file:**
-```bash
-npx playwright test e2e/history-smoke.spec.ts
-```
+- `agent-browser` - For manual verification of UI behavior during test development
+- `tuistory` - Not needed for e2e tests
 
-**Run tests matching a pattern:**
-```bash
-npx playwright test --grep "session loading|history.*session"
-```
+## Work Procedure
 
-**Run with headed browser (visible):**
-```bash
-npx playwright test --headed
-```
+### Step 1: Read Mission Context
 
-**Run with debug mode:**
-```bash
-npx playwright test --debug
-```
+1. Read the mission's `validation-contract.md` to understand what assertions need coverage
+2. Read the mission's `features.json` to understand which feature you're implementing
+3. Read existing e2e tests in `/Users/stefano/repos/open-marcus/e2e/` to understand patterns
 
-### Important Testing Notes
+### Step 2: Understand Test Patterns
 
-1. **Do NOT use `clearAllData()` in beforeEach hooks** - This hides user isolation bugs. Tests should run with existing data to catch cross-user data leaks.
+Review existing tests to understand:
+- How authentication is handled
+- How test data is created and cleaned up
+- What helper functions exist
+- How assertions are structured
 
-2. **Test both UI navigation AND direct URL access** - Many bugs only appear when accessing URLs directly (deep linking).
+### Step 3: Implement Tests
 
-3. **Always verify error states** - Test invalid inputs, non-existent IDs, and edge cases.
+For each test file you're creating:
 
-4. **Screenshot on failure** - Playwright automatically screenshots failed tests, but you can also manually capture:
+1. **Create the test file** at `/Users/stefano/repos/open-marcus/e2e/{area}-comprehensive.spec.ts`
+
+2. **Include proper imports:**
+   ```typescript
+   import { test, expect } from '@playwright/test';
+   ```
+
+3. **Add shared helpers** at the top of the file:
+   - `registerAndGetToken()` - Register via API, return token
+   - `clearAllData()` - Clear all user data via API
+   - `createProfile()` - Navigate UI to create profile
+
+4. **Structure tests** using `test.describe()` for grouping:
+   ```typescript
+   test.describe('Auth Flows', () => {
+     test.beforeEach(async ({ page }) => {
+       // Setup for each test
+     });
+     
+     test('VAL-AUTH-001: Login with valid credentials redirects to home', async ({ page }) => {
+       // Test implementation
+     });
+   });
+   ```
+
+5. **Follow selector priority:**
+   - Role-based: `getByRole('button', { name: '...' })`
+   - Label-based: `getByLabel(...)`
+   - Text-based: `getByText(...)`
+   - CSS class: last resort
+
+6. **Include assertions** matching VAL-XXX names:
+   ```typescript
+   test('VAL-AUTH-001: Login with valid credentials redirects to home', async ({ page }) => {
+     // Arrange - register user first
+     const token = await registerAndGetToken();
+     
+     // Act - navigate to login and submit
+     await page.goto('/login');
+     await page.getByLabel('Username').fill(username);
+     await page.getByLabel('Password').fill(password);
+     await page.getByRole('button', { name: 'Sign In' }).click();
+     
+     // Assert - redirected to home
+     await expect(page).toHaveURL('/');
+     await expect(page.getByRole('heading', { name: 'Welcome to OpenMarcus' })).toBeVisible();
+   });
+   ```
+
+### Step 4: Use Appropriate Timeouts
+
+- Navigation: `waitForLoadState('networkidle')`
+- Element visibility: Use `toBeVisible({ timeout: 10000 })`
+- API responses: Set appropriate timeouts
+- Session/Marcus responses: May need 30-60 seconds
+
+### Step 5: Handle Async and Waiting
+
 ```typescript
-await page.screenshot({ path: 'failure.png' });
+// Wait for loading to complete
+await expect(page.getByText('Loading...')).not.toBeVisible();
+
+// Wait for network to settle
+await page.waitForLoadState('networkidle');
+
+// Wait for specific element
+await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible({ timeout: 10000 });
 ```
 
-### Test Structure
+### Step 6: Verify Test Works
 
-E2e tests are located in `/Users/stefano/repos/open-marcus/e2e/` and use:
-- `@playwright/test` framework
-- `test` and `expect` from `@playwright/test`
-- `page` fixture for browser interactions
-- Helper functions in `e2e/helpers.ts` (if they exist)
+1. Run the test: `npm run test:e2e -- {filename}.spec.ts`
+2. If it fails, debug and fix
+3. Run 3 times to ensure stability
+4. Check for console errors
 
-### Common Test Patterns
+### Step 7: Run Full Suite
 
-**Waiting for navigation:**
-```typescript
-await page.waitForURL(/\/history\/[^/]+$/);
+After implementing all tests for a feature:
+1. Run full e2e suite: `npm run test:e2e`
+2. Fix any failing tests
+3. Ensure no console errors
+
+## Example Handoff
+
+```json
+{
+  "salientSummary": "Implemented comprehensive auth flow tests covering 10 assertions (VAL-AUTH-001 through VAL-AUTH-010). Tests cover login success/failure, registration, password guidance, logout, session persistence.",
+  "whatWasImplemented": "Created e2e/auth-comprehensive.spec.ts with 10 test cases covering all auth flows including edge cases like invalid credentials, duplicate username, and session persistence after reload.",
+  "whatWasLeftUndone": "",
+  "verification": {
+    "commandsRun": [
+      { "command": "npm run test:e2e -- auth-comprehensive.spec.ts", "exitCode": 0, "observation": "All 10 auth tests passed" },
+      { "command": "npm run test:e2e -- --grep 'logout'", "exitCode": 0, "observation": "Logout flow tests pass" }
+    ],
+    "interactiveChecks": [
+      { "action": "Login with valid credentials", "observed": "Redirected to home with personalized greeting" },
+      { "action": "Login with invalid password", "observed": "Error alert displayed" },
+      { "action": "Logout clears localStorage", "observed": "Token removed, redirected to /login" }
+    ]
+  },
+  "tests": {
+    "added": [
+      {
+        "file": "e2e/auth-comprehensive.spec.ts",
+        "cases": [
+          { "name": "VAL-AUTH-001: Login with valid credentials", "verifies": "Successful login redirects to home" },
+          { "name": "VAL-AUTH-002: Login with invalid password", "verifies": "Error message displayed" },
+          { "name": "VAL-AUTH-007: Logout clears auth", "verifies": "Token cleared, redirect to login" }
+        ]
+      }
+    ]
+  },
+  "discoveredIssues": []
+}
 ```
 
-**Waiting for element:**
-```typescript
-await expect(page.getByRole('heading', { name: 'Session Review' })).toBeVisible({ timeout: 10000 });
-```
+## When to Return to Orchestrator
 
-**Handling async operations:**
-```typescript
-await expect(page.getByText('Marcus is reflecting...')).not.toBeVisible({ timeout: 30000 });
-```
-
-### Handoff Fields
-
-When completing the feature, report:
-- `testResults`: Summary of test results (passed/failed/skipped)
-- `coverageGaps`: What scenarios are still not covered
-- `anyDbStateIssues`: If tests failed due to data issues vs actual bugs
+- Feature depends on an API endpoint or behavior that doesn't exist
+- Requirements are ambiguous or contradictory
+- Existing bugs affect test implementation
+- All tests pass consistently and feature is complete

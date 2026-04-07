@@ -1,143 +1,87 @@
 # User Testing
 
+This document describes how to perform user testing validation for the OpenMarcus application.
+
 ## Validation Surface
 
-### Primary Surface: Browser UI (agent-browser)
+**Browser Testing:** The primary validation surface is the web UI accessed via browser.
 
-All user-facing features should be validated through the browser using `agent-browser`.
+**Tools:**
+- `agent-browser` - For automated browser testing with Playwright
+- Manual browser - For exploratory testing and screenshots
 
-**Setup Required**:
-1. Start backend: `PORT=3100 npx tsx backend/server.ts` (must use tsx, NOT npm run dev:backend)
-2. Start frontend: `PORT=3101 npm run dev:frontend`
-3. Ensure Ollama is running with a model loaded (for core features)
+**Breakpoints:**
+- Desktop: 1280px width
+- Tablet: 768px width
+- Mobile: 375px width
 
-**IMPORTANT**: The backend MUST be started with `npx tsx`, not `node` or `npm run dev:backend`, because the server imports TypeScript modules with `.js` extensions (ESM convention). Plain Node.js cannot resolve `.js` to `.ts` files.
+## Required Testing Skills/Tools
 
-**Test URLs**:
-- Frontend: http://localhost:3101
-- Backend API: http://localhost:3100
+- Playwright for automated e2e tests
+- `agent-browser` skill for browser automation
+- Network inspection for API verification
 
-### Secondary Surface: API (curl)
+## Resource Cost Classification
 
-Backend API endpoints can be tested directly with curl.
+**E2E Tests (Playwright):**
+- Memory per instance: ~300MB (browser) + ~200MB (app)
+- CPU: Moderate during test execution
+- Max concurrent validators: 3 (given typical machine resources)
 
-**Health Check**:
+## Testing Approach
+
+### Automated E2E Tests
+
+**Running Tests:**
 ```bash
-curl http://localhost:3100/health
+# All e2e tests
+npm run test:e2e
+
+# Specific file
+npm run test:e2e -- auth-comprehensive.spec.ts
+
+# With UI
+npm run test:e2e -- --headed
+
+# Specific test
+npm run test:e2e -- --grep "VAL-AUTH-001"
 ```
 
-## Validation Concurrency
+**Test Files Location:** `/Users/stefano/repos/open-marcus/e2e/`
 
-**Recommended Max Concurrent Validators**: 2
+### Manual Verification
 
-**Rationale**:
-- React frontend is lightweight (~300MB per instance)
-- Backend API adds minimal overhead (~100MB)
-- Ollama is shared across validators (can be resource-constrained)
-- Voice features may have audio conflicts if tested simultaneously
+When automated tests need manual verification:
 
-**Resource Consumption**:
-- Dev server: ~200MB RAM
-- Agent-browser instance: ~300MB RAM
-- Total for 2 validators: ~1GB RAM
-- On 64GB machine: well within capacity
+1. Start services:
+   ```bash
+   # Backend
+   PORT=3100 npx tsx backend/server.ts &
+   
+   # Frontend
+   PORT=3101 npm run dev:frontend &
+   ```
 
-## Testing Workflow
+2. Open browser to `http://localhost:3101`
 
-### 1. Pre-flight Check
-```bash
-# Start backend: MUST use tsx (not plain node) for TypeScript+ESM support
-PORT=3100 npx tsx backend/server.ts
+3. Navigate and verify each VAL-XXX assertion
 
-# Start frontend
-PORT=3101 npm run dev:frontend
+## Validation Contract Mapping
 
-# Or use: npm run dev (starts frontend only, backend needs separate tsx)
+Each VAL-XXX assertion in `validation-contract.md` maps to:
+- An automated Playwright test in the e2e suite
+- Manual verification steps if automated testing not possible
 
-# Verify services
-curl http://localhost:3100/health
-curl http://localhost:3101
-```
+## Test Isolation
 
-### 2. Functional Testing
-Use agent-browser to:
-- Complete onboarding flow
-- Start and complete meditation session
-- Verify session persistence
-- Test voice features (manual)
+- Each test file runs independently
+- Use `test.beforeEach()` to setup fresh state
+- Clear localStorage and data between tests
+- Use unique usernames (timestamp-based) to avoid conflicts
 
-### 3. API Testing
-Use curl to:
-- Verify endpoint contracts
-- Test error conditions
-- Check data persistence
+## Common Issues
 
-### 4. Accessibility Testing
-- Tab navigation
-- Screen reader announcements
-- Color contrast
-
-## Known Constraints
-
-### Voice Features
-- Require microphone permission (manual testing recommended)
-- TTS quality is subjective (manual verification)
-- STT accuracy varies by accent/voice
-
-### Ollama Dependency
-- Some tests require Ollama to be running
-- If Ollama is offline, verify appropriate error messages
-- Mock responses not used - real integration required
-
-### First-run Experience
-- Database created on first backend start at `data/openmarcus.db`
-- No existing data for fresh tests
-- Clear data feature available in Settings page for test reset
-
-## Flow Validator Guidance: Browser UI
-
-**Testing surface**: agent-browser against http://localhost:3101
-
-**Isolation rules**:
-- All validators share the same browser instance and SQLite database
-- DO NOT run validators that depend on different data states concurrently
-- Profile tests and session tests share global app state — if one validator clears data, it breaks others
-- Sequential test groups within a single subagent is the safest approach for shared-state assertions
-
-**App structure**:
-- Home page: `/` - meditation session page
-- Profile page: `/profile` - profile settings
-- History page: `/history` - past sessions list
-- Settings page: `/settings` - data export/import/clear
-- Onboarding: Shows automatically when no profile exists
-
-**Profile creation flow**:
-1. Navigate to http://localhost:3101
-2. If no profile exists, onboarding screen appears
-3. Enter name, save
-4. After save, you're redirected to home
-
-**API endpoints**:
-- GET/POST/PUT/DELETE `/api/profile` - profile CRUD (PUT requires `id` in body)
-- GET `/api/sessions` - session list (returns with message_count, first_message)
-- POST `/api/sessions` - create session (body: `{profile_id: "uuid"}`)
-- POST `/api/sessions/:id/messages` - add message (body: `{role: "user"|"assistant", content: "..."}`)
-- PUT `/api/sessions/:id/end` - end session (body: `{summary: "...", action_items: [...]}`)
-- GET `/api/sessions/:id` - single session with messages
-- GET `/api/content/quotes` - stoic quotes
-- GET `/api/export` - export all data as JSON (GET, not POST)
-- POST `/api/export/import` - import data (body: export JSON)
-- POST `/api/export/clear` - clear all data (no confirmation needed server-side)
-
-**Known issues during testing**:
-- Ollama may not be running - core meditation features requiring AI will fail, but UI features, profile, history, and data management should still be testable
-- The app proxies `/api` requests to backend on port 3100 via Vite dev server
-- Backend session.ts has ESM compatibility issue with `require` - fix: add `import { createRequire } from 'module'; const require = createRequire(import.meta.url);` at top of file
-- Clear all data does not require confirmation server-side; frontend shows confirmation dialog before calling API
-
-## Polish Milestone Testing Notes
-- **VAL-PROFILE-005**: Encryption verified at database level (AES-256-GCM with scrypt key derivation). Note: profiles table stores name/bio in BOTH plaintext columns AND encrypted_data column - the encrypted_data IS properly encrypted.
-- **Model mismatch**: Backend recommends `gemma4:26b-a4b` based on RAM, but only `llama3.2:latest` is installed. Causes 404 on chat requests but UI handles gracefully.
-- **Responsive breakpoints verified**: 1280px (desktop), 900px (tablet), 375px (mobile) - all pass.
-- **Accessibility**: 7 ARIA-labeled elements, semantic landmarks (nav, main, footer), 3px solid focus rings.
-- **Voice controls**: Activate with proper UI state changes and error handling in headless browser.
+1. **Tests failing due to timing** - Add appropriate waits, use `waitForLoadState('networkidle')`
+2. **Auth state leaking** - Always clear localStorage in beforeEach
+3. **Data pollution** - Use `clearAllData()` helper to reset state
+4. **Ollama not responding** - Tests should handle this gracefully with timeouts

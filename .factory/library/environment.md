@@ -1,91 +1,102 @@
 # Environment
 
-Environment variables, external dependencies, and setup notes.
+Environment variables, external dependencies, and setup notes for OpenMarcus.
 
-## Required Environment Variables
+## Environment Variables
+
+**Backend:**
+- `PORT` - Backend server port (default: 3100)
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` - Secret for JWT token signing
+
+**Frontend:**
+- `PORT` - Frontend dev server port (default: 3101)
+- `VITE_API_URL` - Backend API URL
+
+**External Services:**
+- `OLLAMA_HOST` - Ollama server URL (default: localhost:11434)
+- `STT_SERVER_URL` - STT server URL (default: localhost:8765)
+- `TTS_SERVER_URL` - TTS server URL (default: localhost:8766)
+
+## External Dependencies
+
+### Required
+- **PostgreSQL** - On localhost:5432
+- **Node.js** - For backend and frontend dev
+
+### Optional (app works without but features limited)
+- **Ollama** - On localhost:11434 (AI responses)
+- **STT Server** - On localhost:8765 (voice input)
+- **TTS Server** - On localhost:8766 (voice output)
+
+## Setup Notes
+
+### First Time Setup
 
 ```bash
-# Backend server port
-PORT=3100
+# Install dependencies
+pnpm install
 
-# Frontend dev server port  
-FRONTEND_PORT=3101
+# Install Playwright browsers
+npx playwright install chromium
 
-# Ollama configuration
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=llama3.2:latest
+# Start database (if using docker)
+docker compose up -d postgres
 
-# Database
-DATABASE_PATH=./data/openmarcus.db
+# Start backend
+PORT=3100 npx tsx backend/server.ts &
 
-# Encryption key (user-provided or derived)
-ENCRYPTION_KEY=your-32-byte-key-here
+# Start frontend
+PORT=3101 npm run dev:frontend &
 ```
 
-## External Services
+### Database Setup
 
-### Ollama
-- **Default Port**: 11434
-- **Setup**: Install from https://ollama.com
-- **Recommended Models**: 
-  - `llama3.2:latest` (general purpose)
-  - `qwen3.5:14b` (better instruction following)
-  - For Apple Silicon: MLX optimized versions
+The backend uses PostgreSQL. Ensure:
+- Database exists: `openmarcus`
+- User has appropriate permissions
+- Migrations have run
 
-### Sherpa-onnx (STT)
-- **Port**: 8765
-- **Setup**: `node stt/server.mjs`
-- **Requires**: Whisper model in `stt/` directory
+### External Services
 
-### Edge-tts (TTS)
-- **Port**: 8766
-- **Setup**: `python3 tts/main.py`
-- **No API key required** - uses Microsoft's edge TTS
+**Ollama:**
+```bash
+# Pull the model
+ollama pull llama3.2
+
+# Or use gemma4 if that's what's configured
+ollama pull gemma4
+```
+
+**STT Server:**
+```bash
+cd servers/stt
+node server.mjs --port 8765
+```
+
+**TTS Server:**
+```bash
+cd servers/tts
+python3 server.py --port 8766
+```
+
+## Port Configuration
+
+| Service | Default Port |
+|---------|-------------|
+| Backend API | 3100 |
+| Frontend | 3101 |
+| Ollama | 11434 |
+| STT | 8765 |
+| TTS | 8766 |
+| PostgreSQL | 5432 |
 
 ## Platform Notes
 
-### macOS
-- Ollama with Metal GPU acceleration recommended
-- Microphone permissions required for voice input
-- Full Apple Silicon support with MLX
+**macOS:**
+- Uses `lsof -ti :PORT | xargs kill` for stopping services
+- Docker Desktop for PostgreSQL
 
-### Linux
-- Standard Ollama build
-- PulseAudio or PipeWire for audio
-
-### Windows
-- WSL2 recommended for Ollama
-- Standard audio stack support
-
-## Database
-
-- **Location**: `./data/openmarcus.db`
-- **Type**: SQLite 3
-- **Encryption**: AES-256-GCM
-- **Auto-migration**: Runs on server startup
-
-## Development Logging
-
-### Environment Modes
-```bash
-NODE_ENV=development   # Verbose file logging enabled
-NODE_ENV=production    # All logging disabled (zero overhead)
-```
-
-### Log Files (development only)
-- `./data/logs/auth.log` - Authentication events
-- `./data/logs/api.log` - HTTP request/response logs
-- `./data/logs/db.log` - Database query logs
-- `./data/logs/error.log` - Error and exception logs
-- `./data/logs/app.log` - General application logs
-
-### What Gets Logged (Development)
-- Auth events (login, logout, session creation/destruction)
-- All API requests (method, path, query params, status, timing)
-- All database queries (sanitized - no message content)
-- Errors with full stack traces and correlation IDs
-
-### What NEVER Gets Logged
-- Message content (user messages, AI responses)
-- Auth tokens, passwords, credentials
-- Personal identifiable information
+**Linux:**
+- May need `fuser -k PORT/tcp` instead of `lsof`
+- PostgreSQL typically via native install or Docker

@@ -1,96 +1,91 @@
 # Architecture
 
-OpenMarcus is a local-first web application that provides stoic mental health guidance through an AI-powered Marcus Aurelius persona.
+This document describes how the OpenMarcus application works at a high level.
 
-## System Overview
+## Components
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                  Browser (React SPA)                    │
-│     ┌─────────────────────────────────────────────┐     │
-│     │  Profile UI  │  Meditation UI  │  History  │     │
-│     └─────────────────────────────────────────────┘     │
-│                         │                                 │
-│              HTTP/WebSocket                              │
-└─────────────────────────┼───────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────┐
-│                   Backend API (Node.js)                  │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐   │
-│  │ Profile  │ │ Session  │ │   Chat   │ │   Content │   │
-│  │ Service  │ │ Service  │ │ Service  │ │  Service  │   │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └─────┬─────┘   │
-│       │            │            │              │          │
-│  ┌────▼────────────▼────────────▼──────────────▼────┐   │
-│  │              SQLite Database (Encrypted)           │   │
-│  └───────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
-         │                    │                    │
-         │ STT Proxy         │ LLM Proxy          │ TTS Proxy
-         ▼                    ▼                    ▼
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│  STT Server │      │    Ollama   │      │  TTS Server │
-│  (sherpa)   │      │   (LLM)    │      │ (edge-tts) │
-│  Port 8765  │      │  Port 11434│      │  Port 8766 │
-└─────────────┘      └─────────────┘      └─────────────┘
-```
+### Frontend (React + TypeScript)
+- **Location:** `/Users/stefano/repos/open-marcus/src`
+- **Framework:** React 18 with TypeScript
+- **Routing:** React Router v6
+- **State:** Zustand for client state, React Query for server state
+- **Styling:** CSS modules
 
-## Key Components
-
-### Frontend (React)
-- **Single Page Application** using React Router
-- **State Management**: Zustand stores for UI state
-- **Styling**: CSS Modules with ancient Rome aesthetic
-- **Voice IO**: Web Audio API for recording, HTML5 Audio for playback
+**Key Pages:**
+- `/` - Home page with welcome greeting
+- `/login` - Login screen
+- `/register` - Registration screen
+- `/session` - Meditation chat with Marcus
+- `/history` - Session history list
+- `/history/:id` - Session detail
+- `/profile` - Profile settings
+- `/settings` - App settings
 
 ### Backend (Node.js + Express)
-- **RESTful API** for all operations
-- **Streaming responses** for LLM chat (ndjson)
-- **SQLite** for persistent storage
-- **Encryption** using Node.js crypto module (AES-256-GCM)
+- **Location:** `/Users/stefano/repos/open-marcus/backend`
+- **Framework:** Express.js with TypeScript
+- **Database:** PostgreSQL with better-sqlite3
+- **Auth:** JWT tokens with argon2 password hashing
 
-### Data Storage
-- **Profiles**: User information (name, bio)
-- **Sessions**: Meditation session metadata
-- **Messages**: Individual messages within sessions
-- **Action Items**: Commitments from sessions
-- **All data encrypted at rest**
+**Key API Endpoints:**
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET/POST /api/profile` - Profile management
+- `GET/POST /api/sessions` - Session management
+- `GET /api/sessions/:id` - Session detail
+- `GET/PUT /api/settings` - Settings management
+- `POST /api/export/clear` - Clear all user data
 
 ### External Services
-- **Ollama**: Local LLM inference
-- **Sherpa-onnx**: Speech-to-text (Whisper)
-- **Edge-tts**: Text-to-speech synthesis
 
-## Data Flow: Meditation Session
+**Ollama (LLM)**
+- Runs on `localhost:11434`
+- Provides AI responses from Marcus Aurelius model
 
-1. User clicks "Begin Meditation"
-2. Frontend calls `POST /api/sessions` → creates session
-3. Frontend displays Marcus greeting (from AI)
-4. User types/speaks message
-5. Frontend sends to `POST /api/chat` (streaming)
-6. Backend proxies to Ollama, streams response back
-7. Messages stored in database after each exchange
-8. User clicks "End Session"
-9. Backend generates summary, extracts action items
-10. Summary displayed, session marked complete
+**STT Server (Speech-to-Text)**
+- Runs on `localhost:8765`
+- sherpa-onnx Whisper for transcription
 
-## Security Model
+**TTS Server (Text-to-Speech)**
+- Runs on `localhost:8766`
+- edge-tts for voice synthesis
 
-- **Local-only**: No external network calls
-- **Encrypted storage**: AES-256-GCM encryption
-- **No cloud sync** in initial version
-- **Future**: Encrypted sync with user-controlled keys
+## Data Flow
 
-## Session State Machine
+1. User registers/logs in → JWT token stored in localStorage
+2. Profile created → stored in PostgreSQL
+3. Meditation session → messages sent to Ollama → responses streamed back
+4. Session saved → stored with messages in PostgreSQL
+5. History → loaded from PostgreSQL
 
-```
-[CREATED] → [ACTIVE] → [CLOSING] → [COMPLETED]
-                ↓
-            [PAUSED]
-```
+## State Management
 
-- **CREATED**: Session initialized, waiting for first message
-- **ACTIVE**: Conversation in progress
-- **PAUSED**: User paused mid-conversation
-- **CLOSING**: Marcus initiating session wrap-up
-- **COMPLETED**: Summary generated, session archived
+**Zustand Stores:**
+- `authStore` - Authentication state (token, user)
+- `profileStore` - User profile
+- `voiceStore` - Voice settings
+- `ttsSettingsStore` - TTS configuration
+
+**React Query:**
+- Used for server state (sessions, settings)
+- Provides caching and background refetching
+
+## Key User Flows
+
+### Registration → Onboarding → Session
+1. User registers at `/register`
+2. JWT stored, redirected to `/`
+3. If no profile, onboarding form shown
+4. Profile created, redirected to home
+5. Click "Begin Meditation" → `/session`
+6. Click "Begin Meditation" → active session with Marcus
+
+### Session → History
+1. User sends messages to Marcus
+2. Marcus responds via Ollama streaming
+3. User clicks "End Session"
+4. Summary generated
+5. Session saved to database
+6. User navigates to `/history`
+7. Session appears in list

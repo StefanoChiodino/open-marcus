@@ -14,6 +14,8 @@ import MeditationChat from './components/MeditationChat';
 import SessionHistory from './components/SessionHistory';
 import SessionDetail from './components/SessionDetail';
 import ProfileForm from './components/ProfileForm';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { GuestRoute } from './components/GuestRoute';
 import type { ProfileFormData } from './shared/types';
 import './styles/App.css';
 import './App.css';
@@ -207,19 +209,20 @@ function App() {
       <BrowserRouter>
         <ErrorBoundary>
           <Routes>
-            {/* Auth routes - no layout needed */}
-            <Route path="/login" element={<LoginScreen />} />
-            <Route path="/register" element={<RegisterScreen />} />
+            {/* Auth routes - only for guests (unauthenticated users) */}
+            <Route path="/login" element={<GuestRoute><LoginScreen /></GuestRoute>} />
+            <Route path="/register" element={<GuestRoute><RegisterScreen /></GuestRoute>} />
 
             {/* Routes with app layout (sidebar navigation, toasts) */}
             <Route element={<AppLayout />}>
               {/* Root path uses AuthGateway to check auth state */}
               <Route path="/" element={<AuthGateway />} />
-              <Route path="/session" element={<MeditationChat />} />
-              <Route path="/history" element={<SessionHistory />} />
-              <Route path="/history/:sessionId" element={<SessionDetail />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/settings" element={<Settings />} />
+              {/* Protected routes - require authentication */}
+              <Route path="/session" element={<ProtectedRoute><MeditationChat /></ProtectedRoute>} />
+              <Route path="/history" element={<ProtectedRoute><SessionHistory /></ProtectedRoute>} />
+              <Route path="/history/:sessionId" element={<ProtectedRoute><SessionDetail /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             </Route>
           </Routes>
         </ErrorBoundary>

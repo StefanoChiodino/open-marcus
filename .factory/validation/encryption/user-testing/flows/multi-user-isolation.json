@@ -1,0 +1,35 @@
+{
+  "flowId": "multi-user-isolation",
+  "milestone": "encryption",
+  "round": 2,
+  "assertions": [
+    {
+      "id": "VAL-MULTI-001",
+      "status": "pass",
+      "evidence": "User B calling GET /api/profile returned {\"error\":\"Profile not found\"} - properly isolated from User A's profile"
+    },
+    {
+      "id": "VAL-MULTI-002",
+      "status": "pass",
+      "evidence": "User B calling GET /api/sessions returned [] - no sessions visible (User A's sessions properly isolated)"
+    },
+    {
+      "id": "VAL-MULTI-003",
+      "status": "pass",
+      "evidence": "User B calling GET /api/sessions/{UserA_session_id} returned {\"error\":\"Session not found\"} - User A's session not accessible by User B"
+    }
+  ],
+  "testData": {
+    "userA": {
+      "id": "3df805a2-9d40-4230-8b78-2e9925cc4aa9",
+      "profileId": "10a61c9e-2c75-49a9-83ae-685bf3ea8869",
+      "sessionId": "c1cc6440-296b-4996-8a4f-a13d41500798"
+    },
+    "userB": {
+      "id": "28b54298-bb8b-4a2b-97c1-857d9b847412"
+    }
+  },
+  "blockers": [],
+  "frictions": [],
+  "toolsUsed": ["curl"]
+}

@@ -24,6 +24,16 @@ export interface ModelInfo {
 }
 
 /**
+ * STT Model information from servers/stt/ directory
+ */
+export interface SttModelInfo {
+  name: string;
+  path: string;
+  sizeMB: number;
+  memoryMB: number;
+}
+
+/**
  * Curated TTS voices for the voice dropdown
  * These are 6 English neural voices from edge-tts
  */
@@ -58,6 +68,7 @@ export interface SettingsResponse {
   ttsVoice: string;
   ttsRate: string;
   ttsPitch: string;
+  sttModel: string;
   systemInfo: {
     totalRamGB: number;
     recommendedModel: string;
@@ -96,6 +107,7 @@ export class SettingsAPIClient {
     ttsVoice?: string;
     ttsRate?: string;
     ttsPitch?: string;
+    sttModel?: string;
   }): Promise<SettingsResponse> {
     const response = await fetch(BASE_URL, {
       method: 'PUT',
@@ -167,6 +179,42 @@ export class SettingsAPIClient {
         }
       },
     });
+  }
+
+  /**
+   * Get list of available STT models from servers/stt/ directory
+   */
+  async getSttModels(): Promise<SttModelInfo[]> {
+    const response = await fetch(`${BASE_URL}/stt-models`, {
+      headers: authHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Server error' }));
+      throw new Error(error.error || `Failed to fetch STT models: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.models as SttModelInfo[];
+  }
+
+  /**
+   * Reload the STT model with a new model directory.
+   * Returns the result of the hot-reload operation.
+   */
+  async reloadSttModel(modelDir: string): Promise<{ success: boolean; message: string; model_dir: string }> {
+    const response = await fetch(`${BASE_URL}/stt-reload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ modelDir }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Server error' }));
+      throw new Error(error.error || `Failed to reload STT model: ${response.status}`);
+    }
+
+    return response.json();
   }
 }
 

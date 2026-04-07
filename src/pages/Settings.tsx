@@ -5,7 +5,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dataExportAPI } from '../lib/dataExportApi';
-import { settingsAPI, TTS_VOICES, TtsVoice, TTS_MIN_RATE, TTS_MAX_RATE, TTS_MIN_PITCH, TTS_MAX_PITCH } from '../lib/settingsApi';
+import { settingsAPI, TTS_VOICES, TtsVoice, TTS_MIN_RATE, TTS_MAX_RATE, TTS_MIN_PITCH, TTS_MAX_PITCH, SttModelInfo } from '../lib/settingsApi';
 import type { SettingsResponse } from '../lib/settingsApi';
 import { useToastStore } from '../stores/toastStore';
 import { useProfileStore } from '../stores/profileStore';
@@ -42,8 +42,15 @@ function Settings() {
   const [pitchValue, setPitchValue] = useState(0); // default +0Hz
   const [isSavingTts, setIsSavingTts] = useState(false);
 
+  // STT settings state
+  const [sttModels, setSttModels] = useState<SttModelInfo[]>([]);
+  const [selectedSttModel, setSelectedSttModel] = useState('');
+  const [isLoadingSttModels, setIsLoadingSttModels] = useState(true);
+  const [isReloadingStt, setIsReloadingStt] = useState(false);
+  const [showSttWarning, setShowSttWarning] = useState(false);
+
   /**
-   * Load settings on mount
+   * Load settings and STT models on mount
    */
   useEffect(() => {
     const loadSettings = async () => {
@@ -63,6 +70,10 @@ function Settings() {
         if (pitchMatch) {
           setPitchValue(parseInt(pitchMatch[1], 10));
         }
+        // Set STT model from settings
+        if (data.sttModel) {
+          setSelectedSttModel(data.sttModel);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load settings';
         addToast({
@@ -75,7 +86,19 @@ function Settings() {
       }
     };
 
+    const loadSttModels = async () => {
+      try {
+        const models = await settingsAPI.getSttModels();
+        setSttModels(models);
+      } catch (error) {
+        console.error('Failed to load STT models:', error);
+      } finally {
+        setIsLoadingSttModels(false);
+      }
+    };
+
     loadSettings();
+    loadSttModels();
   }, [addToast]);
 
   /**
@@ -272,6 +295,78 @@ function Settings() {
       }
     } finally {
       setIsSavingTts(false);
+    }
+  };
+
+  /**
+   * Handle STT model selection change
+   */
+  const handleSttModelChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newModel = event.target.value;
+    const prevModel = selectedSttModel;
+
+    // Show warning if switching to a larger model
+    if (newModel && prevModel) {
+      const newModelInfo = sttModels.find((m) => m.name === newModel);
+      const prevModelInfo = sttModels.find((m) => m.name === prevModel);
+      if (newModelInfo && prevModelInfo && newModelInfo.memoryMB > prevModelInfo.memoryMB) {
+        setShowSttWarning(true);
+      } else {
+        setShowSttWarning(false);
+      }
+    } else {
+      setShowSttWarning(false);
+    }
+
+    setSelectedSttModel(newModel);
+
+    // If model is selected, save the selection
+    if (newModel) {
+      try {
+        const updated = await settingsAPI.updateSettings({ sttModel: newModel });
+        setSettingsData(updated);
+        addToast({
+          type: 'success',
+          title: 'STT model saved',
+          message: `Selected ${newModel}. Click "Reload Model" to activate.`,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to save STT model';
+        addToast({
+          type: 'error',
+          title: 'Save failed',
+          message,
+        });
+        setSelectedSttModel(prevModel);
+      }
+    }
+  };
+
+  /**
+   * Handle STT model reload
+   */
+  const handleSttReload = async () => {
+    if (!selectedSttModel) return;
+
+    setIsReloadingStt(true);
+    setShowSttWarning(false);
+
+    try {
+      await settingsAPI.reloadSttModel(selectedSttModel);
+      addToast({
+        type: 'success',
+        title: 'Model reloaded',
+        message: `${selectedSttModel} is now active.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to reload STT model';
+      addToast({
+        type: 'error',
+        title: 'Reload failed',
+        message,
+      });
+    } finally {
+      setIsReloadingStt(false);
     }
   };
 
@@ -567,6 +662,73 @@ function Settings() {
               <p id="tts-pitch-help" className="tts-settings__help">
                 Adjust speech pitch. Default is +0Hz (natural pitch).
               </p>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Speech Recognition (STT) Section */}
+      <section className="settings-section" aria-labelledby="stt-heading">
+        <h3 className="settings-section__title" id="stt-heading">Speech Recognition (STT)</h3>
+
+        {isLoadingSttModels ? (
+          <div className="loading-spinner" role="status" aria-label="Loading STT models">
+            Loading STT models...
+          </div>
+        ) : (
+          <div className="stt-settings">
+            {/* Model Selection */}
+            <div className="stt-settings__control">
+              <label htmlFor="stt-model-select" className="stt-settings__label">
+                Model
+              </label>
+              <select
+                id="stt-model-select"
+                className="stt-settings__dropdown"
+                value={selectedSttModel}
+                onChange={handleSttModelChange}
+                disabled={isReloadingStt}
+              >
+                <option value="">Select a model...</option>
+                {sttModels.map((model) => (
+                  <option key={model.name} value={model.name}>
+                    {model.name} (~{model.memoryMB}MB RAM)
+                  </option>
+                ))}
+              </select>
+              <p className="stt-settings__help">
+                Select the Whisper model for speech recognition. Larger models are more accurate but require more memory.
+              </p>
+            </div>
+
+            {/* Warning for larger models */}
+            {showSttWarning && (
+              <div className="stt-settings__warning" role="alert">
+                <span className="stt-settings__warning-icon">⚠️</span>
+                <span className="stt-settings__warning-text">
+                  Switching to a larger model may increase memory usage and slow down transcription.
+                </span>
+              </div>
+            )}
+
+            {/* Reload Button */}
+            <div className="stt-settings__control">
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={handleSttReload}
+                disabled={isReloadingStt || !selectedSttModel}
+                aria-busy={isReloadingStt}
+              >
+                {isReloadingStt ? (
+                  <>
+                    <span className="loading-spinner" aria-hidden="true" />
+                    Reloading Model...
+                  </>
+                ) : (
+                  'Reload Model'
+                )}
+              </button>
             </div>
           </div>
         )}

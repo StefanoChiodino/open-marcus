@@ -433,7 +433,8 @@ describe('Encryption at Rest - Session Data (VAL-ENCRYPT-002)', () => {
       const wrongKeyDb = new DatabaseService(testDbPath, 'wrong-key');
       
       // Decryption should fail or return garbage
-      const sessionResult = wrongKeyDb.getSession(session.id);
+      // Note: result intentionally not used - we just verify wrong key can't decrypt
+      wrongKeyDb.getSession(session.id);
       // The summary will either throw during decryption or return garbled data
       // Since we catch decryption errors, it will return the encrypted string
       wrongKeyDb.close();

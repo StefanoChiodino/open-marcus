@@ -68,8 +68,8 @@ describe('Multi-User Isolation (VAL-MULTI-001, VAL-MULTI-002, VAL-MULTI-003)', (
   describe('Profile Isolation (VAL-MULTI-001)', () => {
     it('should list only User A profiles when querying as User A', () => {
       // User A creates profiles
-      const profileA1 = dbA.createProfile('User A Profile 1', 'Bio for user A 1');
-      const profileA2 = dbA.createProfile('User A Profile 2', 'Bio for user A 2');
+      dbA.createProfile('User A Profile 1', 'Bio for user A 1');
+      dbA.createProfile('User A Profile 2', 'Bio for user A 2');
       
       // User B creates a profile
       dbB.createProfile('User B Profile', 'Bio for user B');
@@ -88,8 +88,8 @@ describe('Multi-User Isolation (VAL-MULTI-001, VAL-MULTI-002, VAL-MULTI-003)', (
       dbA.createProfile('User A Profile 1', 'Bio for user A 1');
       
       // User B creates profiles
-      const profileB1 = dbB.createProfile('User B Profile 1', 'Bio for user B 1');
-      const profileB2 = dbB.createProfile('User B Profile 2', 'Bio for user B 2');
+      dbB.createProfile('User B Profile 1', 'Bio for user B 1');
+      dbB.createProfile('User B Profile 2', 'Bio for user B 2');
       
       // User B lists their profiles
       const userBProfiles = dbB.listProfilesByUserId(userBId);
@@ -251,7 +251,8 @@ describe('Multi-User Isolation (VAL-MULTI-001, VAL-MULTI-002, VAL-MULTI-003)', (
       // Decryption should fail or return garbage
       // Since getProfile catches decryption errors, it may return the profile with corrupted data
       // or null. We just verify that the data is NOT the original secret.
-      const userBAttempt = dbBWitUserAData.getProfile(profileA.id);
+      // Note: result intentionally not used - we verify by checking wrong key can't decrypt
+      dbBWitUserAData.getProfile(profileA.id);
       
       // The name should NOT match the original (either null, or corrupted)
       // This is expected because User B's key cannot decrypt User A's data
@@ -269,12 +270,12 @@ describe('Multi-User Isolation (VAL-MULTI-001, VAL-MULTI-002, VAL-MULTI-003)', (
       // User A creates profile, session, and messages
       const profileA = dbA.createProfile('User A', 'Bio');
       const sessionA = dbA.createSession(profileA.id);
-      const messageA = dbA.addMessage(sessionA.id, 'user', 'User A message');
+      dbA.addMessage(sessionA.id, 'user', 'User A message');
       
       // User B creates profile, session, and messages
       const profileB = dbB.createProfile('User B', 'Bio');
       const sessionB = dbB.createSession(profileB.id);
-      const messageB = dbB.addMessage(sessionB.id, 'user', 'User B message');
+      dbB.addMessage(sessionB.id, 'user', 'User B message');
       
       // List messages for User A's session (from User A's database)
       const messagesForA = dbA.listMessages(sessionA.id);
@@ -291,12 +292,12 @@ describe('Multi-User Isolation (VAL-MULTI-001, VAL-MULTI-002, VAL-MULTI-003)', (
       // User A creates profile, session, and action items
       const profileA = dbA.createProfile('User A', 'Bio');
       const sessionA = dbA.createSession(profileA.id);
-      const actionItemA = dbA.createActionItem(sessionA.id, 'User A action');
+      dbA.createActionItem(sessionA.id, 'User A action');
       
       // User B creates profile, session, and action items
       const profileB = dbB.createProfile('User B', 'Bio');
       const sessionB = dbB.createSession(profileB.id);
-      const actionItemB = dbB.createActionItem(sessionB.id, 'User B action');
+      dbB.createActionItem(sessionB.id, 'User B action');
       
       // List action items for User A's session (from User A's database)
       const actionItemsForA = dbA.listActionItems(sessionA.id);

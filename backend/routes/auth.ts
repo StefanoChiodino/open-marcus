@@ -14,6 +14,7 @@ import { hash, verify } from '../crypto/password.js';
 import { generateToken, verifyToken, blacklistToken } from '../crypto/token.js';
 import { logLoginSuccess, logLoginFailure, logLogout, logAuthError } from '../lib/authLogger.js';
 import { getCorrelationId } from '../lib/logger.js';
+import { getProfileService } from '../services/profile.js';
 
 const router = Router();
 
@@ -60,6 +61,10 @@ router.post('/register', async (req: Request, res: Response) => {
 
     // Create the user
     const user = db.createUser(username.trim(), passwordHash);
+
+    // Auto-create a default profile for the user
+    const profileService = getProfileService();
+    profileService.createProfileForUser(user.id, username.trim());
 
     // Generate session token
     const token = generateToken(user.id, user.username);

@@ -1,0 +1,15 @@
+{
+  "featureId": "auth-middleware-all-routes",
+  "reviewedAt": "2026-04-07T06:15:00.000Z",
+  "commitId": "a58738f",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Auth middleware correctly applied to all /api/* routes in server.ts. Protected routes: /api/profile, /api/sessions, /api/chat, /api/content, /api/export, /api/settings. Public routes: /health, /api/auth/*.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "auth-middleware-all-routes implementation is correct. Middleware properly mounted on /api prefix, ensuring all user-data routes require authentication."
+}

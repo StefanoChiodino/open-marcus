@@ -32,6 +32,9 @@ function Settings() {
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [isSavingModel, setIsSavingModel] = useState(false);
   const [selectedModel, setSelectedModel] = useState('');
+  const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadStatus, setDownloadStatus] = useState('');
 
   // TTS settings state
   const [selectedVoice, setSelectedVoice] = useState<TtsVoice>('en-US-GuyNeural');
@@ -80,41 +83,88 @@ function Settings() {
    */
   const handleModelChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newModel = event.target.value;
-    setSelectedModel(newModel);
-
+    
     // Check if this model is installed
     const isInstalled = settingsData?.installedModels.includes(newModel) ?? false;
 
-    setIsSavingModel(true);
-    try {
-      const updated = await settingsAPI.updateSettings({ selectedModel: newModel });
-      setSettingsData(updated);
+    if (!isInstalled) {
+      // Model not installed - start download
+      setDownloadingModel(newModel);
+      setDownloadProgress(0);
+      setDownloadStatus('Starting download...');
+      setIsSavingModel(true);
       
-      if (isInstalled) {
+      try {
+        const stream = settingsAPI.pullModel(newModel);
+        const reader = stream.getReader();
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          setDownloadProgress(value.percent ?? 0);
+          if (value.status) {
+            setDownloadStatus(value.status === 'success' ? 'Download complete!' : value.status);
+          }
+          if (value.message) {
+            setDownloadStatus(value.message);
+          }
+        }
+        
+        // Download complete - now save the model selection
+        setDownloadStatus('Saving selection...');
+        const updated = await settingsAPI.updateSettings({ selectedModel: newModel });
+        setSettingsData(updated);
+        
+        addToast({
+          type: 'success',
+          title: 'Model ready',
+          message: `${newModel} downloaded and selected. Changes take effect on next session.`,
+        });
+        
+        // Refresh to update installed models list
+        const refreshedData = await settingsAPI.getSettings();
+        setSettingsData(refreshedData);
+        setSelectedModel(newModel);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to download model';
+        addToast({
+          type: 'error',
+          title: 'Download failed',
+          message,
+        });
+        // Revert to previous value
+        setSelectedModel(settingsData?.selectedModel || '');
+      } finally {
+        setDownloadingModel(null);
+        setDownloadProgress(0);
+        setDownloadStatus('');
+        setIsSavingModel(false);
+      }
+    } else {
+      // Model is already installed - just save selection
+      setSelectedModel(newModel);
+      setIsSavingModel(true);
+      try {
+        const updated = await settingsAPI.updateSettings({ selectedModel: newModel });
+        setSettingsData(updated);
         addToast({
           type: 'success',
           title: 'Model updated',
           message: `Now using ${newModel}. Changes take effect on next session.`,
         });
-      } else {
-        // Model not installed - warn user it needs to be downloaded
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update model';
         addToast({
-          type: 'warning',
-          title: 'Model selected - requires download',
-          message: `${newModel} is not installed. Run 'ollama pull ${newModel}' to download it before your next session.`,
+          type: 'error',
+          title: 'Model update failed',
+          message,
         });
+        // Revert to previous value
+        setSelectedModel(settingsData?.selectedModel || '');
+      } finally {
+        setIsSavingModel(false);
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update model';
-      addToast({
-        type: 'error',
-        title: 'Model update failed',
-        message,
-      });
-      // Revert to previous value
-      setSelectedModel(settingsData?.selectedModel || '');
-    } finally {
-      setIsSavingModel(false);
     }
   };
 
@@ -376,11 +426,11 @@ function Settings() {
                 disabled={isSavingModel || (!settingsData?.ollamaOnline && settingsData?.installedModels.length === 0)}
                 aria-describedby="model-selection-help model-ram-explanation"
               >
-                {isSavingModel ? (
+                {isSavingModel && !downloadingModel ? (
                   <option value="">Updating model...</option>
                 ) : (
                   <>
-                    {/* Show installed models (available online or offline) */}
+                    {/* Show installed models with RAM usage */}
                     {settingsData?.installedModelsInfo.map((modelInfo) => (
                       <option key={modelInfo.name} value={modelInfo.name}>
                         {selectedModel === modelInfo.name
@@ -388,35 +438,44 @@ function Settings() {
                           : modelInfo.name} ({modelInfo.ramUsageLabel})
                       </option>
                     ))}
-                    {/* Show recommended models that aren't installed yet */}
-                    {settingsData?.systemInfo && (() => {
-                      const recommendedModels = [
-                        settingsData.systemInfo.recommendedModel,
-                        ...(settingsData.systemInfo.recommendedModelAlt || [])
-                      ].filter(m => m && !settingsData.installedModels.includes(m));
-                      
-                      if (recommendedModels.length === 0) return null;
-                      
-                      return (
-                        <>
-                          <optgroup label="Recommended for your system">
-                            {recommendedModels.map((model) => (
-                              <option key={model} value={model}>
-                                {selectedModel === model ? `✓ ${model}` : model}
-                              </option>
-                            ))}
-                          </optgroup>
-                        </>
-                      );
-                    })()}
+                    {/* Show recommended models that aren't installed yet - marked with download icon */}
+                    {settingsData && settingsData.recommendedModelsInfo && settingsData.recommendedModelsInfo.length > 0 && (
+                      <optgroup label="Available to download">
+                        {settingsData.recommendedModelsInfo.map((modelInfo) => (
+                          <option key={modelInfo.name} value={modelInfo.name}>
+                            {downloadingModel === modelInfo.name
+                              ? `↓ ${modelInfo.name} (${downloadProgress}%)`
+                              : `↓ ${modelInfo.name} (${modelInfo.ramUsageLabel}) - Click to download`}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </>
                 )}
               </select>
+
+              {/* Download Progress Bar */}
+              {downloadingModel && (
+                <div className="model-selection__download-progress" role="status" aria-live="polite">
+                  <div className="model-selection__download-info">
+                    <span className="model-selection__download-model">{downloadingModel}</span>
+                    <span className="model-selection__download-status">{downloadStatus}</span>
+                  </div>
+                  <div className="model-selection__progress-bar">
+                    <div
+                      className="model-selection__progress-fill"
+                      style={{ width: `${downloadProgress}%` }}
+                    />
+                  </div>
+                  <span className="model-selection__download-percent">{downloadProgress}%</span>
+                </div>
+              )}
+
               <p id="model-selection-help" className="model-selection__help">
                 {!settingsData?.ollamaOnline && settingsData?.installedModels.length === 0 &&
-                  'Ollama is offline. Install more models with `ollama pull <model>` to see them here.'}
+                  'Ollama is offline. Please start Ollama to manage models.'}
                 {settingsData?.ollamaOnline && settingsData.installedModels.length === 0 &&
-                  'No models installed. Install a model with `ollama pull <model>`. Recommended models are shown below.'}
+                  'No models installed. Select a model below to download it automatically.'}
                 {settingsData?.ollamaOnline && settingsData.installedModels.length > 0 &&
                   'Select an installed model or choose a recommended one below. Changes take effect on your next meditation session.'}
               </p>

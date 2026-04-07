@@ -252,6 +252,56 @@
   line-height: 1.4;
 }
 
+/* Model Download Progress */
+.model-selection__download-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--color-info-bg, #e8e4dc);
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #d4cfc7);
+}
+
+.model-selection__download-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.model-selection__download-model {
+  font-weight: 600;
+  color: var(--color-text, #3a3530);
+  font-size: 0.9rem;
+}
+
+.model-selection__download-status {
+  color: var(--color-text-secondary, #6b6560);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.model-selection__progress-bar {
+  height: 8px;
+  background: var(--color-border, #d4cfc7);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.model-selection__progress-fill {
+  height: 100%;
+  background: var(--color-accent, #b8960c);
+  border-radius: 4px;
+  transition: width 0.3s ease-out;
+}
+
+.model-selection__download-percent {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #6b6560);
+  text-align: right;
+}
+
 /* Mobile responsive */
 @media (max-width: 767px) {
   .settings-page {

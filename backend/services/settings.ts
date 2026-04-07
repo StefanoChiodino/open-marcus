@@ -16,6 +16,7 @@ export interface AppSettings {
   ttsVoice: string;
   ttsRate: string;
   ttsPitch: string;
+  sttModel: string;
 }
 
 /**
@@ -51,6 +52,7 @@ const SETTINGS_KEY_MODEL = 'ollama.model';
 const SETTINGS_KEY_TTS_VOICE = 'tts.voice';
 const SETTINGS_KEY_TTS_RATE = 'tts.rate';
 const SETTINGS_KEY_TTS_PITCH = 'tts.pitch';
+const SETTINGS_KEY_STT_MODEL = 'stt.model';
 
 /**
  * RAM tier for model recommendation
@@ -163,6 +165,7 @@ export class SettingsService {
     const savedTtsVoice = db.getSetting(SETTINGS_KEY_TTS_VOICE);
     const savedTtsRate = db.getSetting(SETTINGS_KEY_TTS_RATE);
     const savedTtsPitch = db.getSetting(SETTINGS_KEY_TTS_PITCH);
+    const savedSttModel = db.getSetting(SETTINGS_KEY_STT_MODEL);
 
     // Get selected model if set; otherwise use environment or default
     const savedModel = db.getSetting(SETTINGS_KEY_MODEL);
@@ -173,6 +176,7 @@ export class SettingsService {
         ttsVoice: savedTtsVoice || 'en-US-GuyNeural',
         ttsRate: savedTtsRate || '+25%',
         ttsPitch: savedTtsPitch || '+0Hz',
+        sttModel: savedSttModel || '',
       };
     }
 
@@ -183,6 +187,7 @@ export class SettingsService {
         ttsVoice: savedTtsVoice || 'en-US-GuyNeural',
         ttsRate: savedTtsRate || '+25%',
         ttsPitch: savedTtsPitch || '+0Hz',
+        sttModel: savedSttModel || '',
       };
     }
 
@@ -193,6 +198,7 @@ export class SettingsService {
       ttsVoice: savedTtsVoice || 'en-US-GuyNeural',
       ttsRate: savedTtsRate || '+25%',
       ttsPitch: savedTtsPitch || '+0Hz',
+      sttModel: savedSttModel || '',
     };
   }
 
@@ -219,6 +225,9 @@ export class SettingsService {
     }
     if (updates.ttsPitch !== undefined) {
       this.updateSetting(SETTINGS_KEY_TTS_PITCH, updates.ttsPitch);
+    }
+    if (updates.sttModel !== undefined) {
+      this.updateSetting(SETTINGS_KEY_STT_MODEL, updates.sttModel);
     }
     return this.getSettings();
   }

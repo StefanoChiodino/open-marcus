@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { DatabaseService } from '../db/database.js';
 import { getSettingsService, resetSettingsService } from '../services/settings.js';
 import { getOllamaService, resetOllamaService, OllamaModelInfo } from '../services/ollama.js';
+import { getSttService } from '../services/stt.js';
 import { settingsRouter } from './settings.js';
 
 const testDir = './data/test-settings-routes';
@@ -143,14 +144,13 @@ describe('Settings Routes', () => {
       expect(response.body.error).toContain('object');
     });
 
-    it('should return 400 when selectedModel is not in installed models list', async () => {
+    it('should allow selecting a model that is not yet installed (pre-selection)', async () => {
       const response = await request(app)
         .put('/api/settings')
-        .send({ selectedModel: 'nonexistent:model' })
-        .expect(400);
+        .send({ selectedModel: 'gemma4:31b' })
+        .expect(200);
 
-      expect(response.body.error).toContain('not installed');
-      expect(response.body.error).toContain('nonexistent:model');
+      expect(response.body.selectedModel).toBe('gemma4:31b');
     });
 
     it('should allow update when selectedModel is in installed models list', async () => {
@@ -377,6 +377,133 @@ describe('Settings Routes', () => {
       expect(response.body.ttsVoice).toBe('en-US-BrianNeural');
       expect(response.body.ttsRate).toBe('+0%');
       expect(response.body.ttsPitch).toBe('+0Hz');
+    });
+  });
+
+  describe('STT settings', () => {
+    it('should return sttModel in GET /api/settings response', async () => {
+      const response = await request(app).get('/api/settings').expect(200);
+
+      expect(response.body).toHaveProperty('sttModel');
+      expect(typeof response.body.sttModel).toBe('string');
+    });
+
+    it('should update sttModel via PUT', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ sttModel: 'sherpa-onnx-whisper-tiny.en' })
+        .expect(200);
+
+      expect(response.body.sttModel).toBe('sherpa-onnx-whisper-tiny.en');
+    });
+
+    it('should return 400 for empty sttModel', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ sttModel: '' })
+        .expect(400);
+
+      expect(response.body.error).toContain('empty');
+    });
+
+    it('should return 400 for non-string sttModel', async () => {
+      const response = await request(app)
+        .put('/api/settings')
+        .send({ sttModel: 123 })
+        .expect(400);
+
+      expect(response.body.error).toContain('string');
+    });
+
+    it('should persist sttModel across requests', async () => {
+      await request(app)
+        .put('/api/settings')
+        .send({ sttModel: 'sherpa-onnx-whisper-small' })
+        .expect(200);
+
+      const getResponse = await request(app).get('/api/settings').expect(200);
+      expect(getResponse.body.sttModel).toBe('sherpa-onnx-whisper-small');
+    });
+  });
+
+  describe('GET /api/settings/stt-models', () => {
+    it('should return list of available STT models', async () => {
+      const response = await request(app)
+        .get('/api/settings/stt-models')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('models');
+      expect(Array.isArray(response.body.models)).toBe(true);
+    });
+
+    it('should return model name, path, and sizeMB for each model', async () => {
+      const response = await request(app)
+        .get('/api/settings/stt-models')
+        .expect(200);
+
+      // The actual models depend on what's in servers/stt/
+      for (const model of response.body.models) {
+        expect(model).toHaveProperty('name');
+        expect(model).toHaveProperty('path');
+        expect(model).toHaveProperty('sizeMB');
+        expect(model).toHaveProperty('memoryMB');
+        expect(typeof model.name).toBe('string');
+        expect(typeof model.path).toBe('string');
+        expect(typeof model.sizeMB).toBe('number');
+        expect(typeof model.memoryMB).toBe('number');
+      }
+    });
+
+    it('should return empty array if no models found', async () => {
+      // This test assumes the actual servers/stt/ directory exists
+      // If it has models, the response won't be empty
+      const response = await request(app)
+        .get('/api/settings/stt-models')
+        .expect(200);
+
+      expect(response.body.models).toBeDefined();
+      expect(Array.isArray(response.body.models)).toBe(true);
+    });
+  });
+
+  describe('POST /api/settings/stt-reload', () => {
+    it('should return 400 if modelDir is not provided', async () => {
+      const response = await request(app)
+        .post('/api/settings/stt-reload')
+        .send({})
+        .expect(400);
+
+      expect(response.body.error).toContain('modelDir');
+    });
+
+    it('should return 400 if modelDir is not a string', async () => {
+      const response = await request(app)
+        .post('/api/settings/stt-reload')
+        .send({ modelDir: 123 })
+        .expect(400);
+
+      expect(response.body.error).toContain('string');
+    });
+
+    it('should return 400 if model directory does not exist', async () => {
+      const response = await request(app)
+        .post('/api/settings/stt-reload')
+        .send({ modelDir: 'nonexistent-model' })
+        .expect(400);
+
+      expect(response.body.error).toContain('not found');
+    });
+
+    it('should return 503 if STT server is not running', async () => {
+      const mockSttService = getSttService();
+      vi.spyOn(mockSttService, 'isOnline').mockResolvedValue(false);
+
+      const response = await request(app)
+        .post('/api/settings/stt-reload')
+        .send({ modelDir: 'sherpa-onnx-whisper-tiny.en' })
+        .expect(503);
+
+      expect(response.body.error).toContain('STT server');
     });
   });
 });

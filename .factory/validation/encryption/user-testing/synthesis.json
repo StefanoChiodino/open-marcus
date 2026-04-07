@@ -1,0 +1,37 @@
+{
+  "milestone": "encryption",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 9,
+    "passed": 6,
+    "failed": 3,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-ENCRYPT-001",
+    "VAL-ENCRYPT-002", 
+    "VAL-ENCRYPT-003",
+    "VAL-ENCRYPT-004",
+    "VAL-ENCRYPT-005",
+    "VAL-ENCRYPT-006"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-MULTI-001",
+      "reason": "Profile routes not properly scoped to user. POST /api/profile doesn't use authenticated userId. GET /api/profile is in PUBLIC_PATHS bypassing auth."
+    },
+    {
+      "id": "VAL-MULTI-002",
+      "reason": "Session routes not properly scoped to user. Backend unit tests fail because createSession doesn't associate sessions with authenticated user."
+    },
+    {
+      "id": "VAL-MULTI-003",
+      "reason": "Session detail routes not properly scoped to user. Backend unit tests show session.user_id doesn't match authenticated user."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null,
+  "summary": "Encryption (VAL-ENCRYPT-001 to VAL-ENCRYPT-006) all pass - data is properly encrypted at rest with AES-256-GCM and Argon2id key derivation. However, multi-user isolation (VAL-MULTI-001 to VAL-MULTI-003) fails because profile and session routes don't properly associate data with the authenticated user's ID. The backend unit tests for multi-user isolation fail because createProfile/createSession use getOrCreateDefaultUser() instead of the authenticated user's ID."
+}

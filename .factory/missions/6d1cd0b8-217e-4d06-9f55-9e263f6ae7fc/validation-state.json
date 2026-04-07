@@ -1,0 +1,53 @@
+{
+  "milestone": "encryption",
+  "assertions": {
+    "VAL-ENCRYPT-001": {
+      "status": "passed",
+      "validatedAt": "2026-04-07T00:38:00Z",
+      "evidence": "backend/db/encryption-verification.test.ts - 33 tests passed covering profile encryption"
+    },
+    "VAL-ENCRYPT-002": {
+      "status": "passed",
+      "validatedAt": "2026-04-07T00:38:00Z",
+      "evidence": "backend/db/encryption-verification.test.ts - Session summary and action_items encryption tests passed"
+    },
+    "VAL-ENCRYPT-003": {
+      "status": "passed",
+      "validatedAt": "2026-04-07T00:38:00Z",
+      "evidence": "backend/db/encryption-verification.test.ts - Message content encryption tests passed"
+    },
+    "VAL-ENCRYPT-004": {
+      "status": "passed",
+      "validatedAt": "2026-04-07T00:38:00Z",
+      "evidence": "backend/db/encryption-verification.test.ts - ActionItem content encryption tests passed"
+    },
+    "VAL-ENCRYPT-005": {
+      "status": "passed",
+      "validatedAt": "2026-04-07T00:39:00Z",
+      "evidence": "backend/db/multi-user-isolation.test.ts - Per-User Encryption tests passed"
+    },
+    "VAL-ENCRYPT-006": {
+      "status": "passed",
+      "validatedAt": "2026-04-07T00:38:00Z",
+      "evidence": "backend/crypto/encryption.test.ts - Key derivation tests passed (Argon2id)"
+    },
+    "VAL-MULTI-001": {
+      "status": "failed",
+      "validatedAt": "2026-04-07T00:41:00Z",
+      "reason": "Profile routes not properly scoped to user. POST /api/profile doesn't accept userId from auth token. GET /api/profile is in PUBLIC_PATHS so bypasses auth.",
+      "evidence": "API test: created profile as user1, returned profile has different user_id than authenticated user"
+    },
+    "VAL-MULTI-002": {
+      "status": "failed",
+      "validatedAt": "2026-04-07T00:39:00Z",
+      "reason": "Session routes not properly scoped to user. Backend tests fail: listSessionsByUserId returns 0 sessions.",
+      "evidence": "backend/db/multi-user-isolation.test.ts - 6 tests failed due to createSession not properly associating with user"
+    },
+    "VAL-MULTI-003": {
+      "status": "failed",
+      "validatedAt": "2026-04-07T00:39:00Z",
+      "reason": "Session routes not properly scoped to user. Backend tests fail due to user isolation issues.",
+      "evidence": "backend/db/multi-user-isolation.test.ts - Session detail isolation tests failed"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - heading "OpenMarcus" [level=1] [ref=e6]
+    - paragraph [ref=e7]: Your Stoic Mental Health Companion
+  - generic [ref=e9]:
+    - heading "Create Account" [level=2] [ref=e10]
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]: Username
+        - textbox "Username" [ref=e14]:
+          - /placeholder: Choose a username
+      - generic [ref=e15]:
+        - generic [ref=e16]: Password
+        - textbox "Password" [active] [ref=e17]:
+          - /placeholder: Choose a password
+          - text: Test
+        - generic [ref=e23]:
+          - paragraph [ref=e24]: "Password strength:"
+          - list [ref=e25]:
+            - listitem [ref=e26]:
+              - generic [ref=e27]: ○
+              - generic [ref=e28]: 8+ characters
+            - listitem [ref=e29]:
+              - generic [ref=e30]: ✓
+              - generic [ref=e31]: Uppercase letter
+            - listitem [ref=e32]:
+              - generic [ref=e33]: ✓
+              - generic [ref=e34]: Lowercase letter
+            - listitem [ref=e35]:
+              - generic [ref=e36]: ○
+              - generic [ref=e37]: Number
+            - listitem [ref=e38]:
+              - generic [ref=e39]: ○
+              - generic [ref=e40]: Special character
+      - button "Create Account" [disabled] [ref=e18]
+    - generic [ref=e19]:
+      - text: Already have an account?
+      - link "Sign in" [ref=e20] [cursor=pointer]:
+        - /url: /login
+  - note [ref=e21]:
+    - strong [ref=e22]: "Note:"
+    - text: OpenMarcus is not therapy or medical advice. It is a reflection tool based on Stoic philosophy.

@@ -1,0 +1,46 @@
+- generic [ref=e102]:
+  - link "Skip to main content" [ref=e103] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e104]:
+    - navigation "Main navigation" [ref=e105]:
+      - link "OpenMarcus" [ref=e107] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e109]: OpenMarcus
+      - list [ref=e110]:
+        - listitem [ref=e111]:
+          - link "Home" [ref=e112] [cursor=pointer]:
+            - /url: /
+            - img [ref=e114]
+            - generic [ref=e116]: Home
+        - listitem [ref=e117]:
+          - link "Meditation" [ref=e118] [cursor=pointer]:
+            - /url: /session
+            - img [ref=e120]
+            - generic [ref=e122]: Meditation
+        - listitem [ref=e123]:
+          - link "History" [ref=e124] [cursor=pointer]:
+            - /url: /history
+            - img [ref=e126]
+            - generic [ref=e128]: History
+        - listitem [ref=e129]:
+          - link "Profile" [ref=e130] [cursor=pointer]:
+            - /url: /profile
+            - img [ref=e132]
+            - generic [ref=e134]: Profile
+        - listitem [ref=e135]:
+          - link "Settings" [ref=e136] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e138]
+            - generic [ref=e140]: Settings
+      - button "Log out of your account" [ref=e142] [cursor=pointer]:
+        - img [ref=e144]
+        - generic [ref=e146]: Log Out
+    - main [ref=e147]:
+      - main [ref=e169]:
+        - generic [ref=e170]:
+          - generic [ref=e171]:
+            - heading "Welcome, Test User" [level=1] [ref=e173]
+            - button "Edit profile" [ref=e174] [cursor=pointer]: Edit Profile
+          - heading "Welcome to OpenMarcus" [level=3] [ref=e175]
+          - paragraph [ref=e176]: Your personal Stoic companion, inspired by the wisdom of Marcus Aurelius. Begin your journey of self-reflection and philosophical exploration.
+          - button "Begin meditation session" [ref=e177] [cursor=pointer]: Begin Meditation

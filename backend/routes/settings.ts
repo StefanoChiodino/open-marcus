@@ -497,7 +497,8 @@ function getSttModelsDir(): string {
 }
 
 /**
- * Get size of a directory recursively (in bytes)
+ * Get size of a directory recursively (in bytes).
+ * Uses statSync to follow symlinks, so symlinked directories are counted.
  */
 function getDirSize(dirPath: string): number {
   let totalSize = 0;
@@ -505,12 +506,15 @@ function getDirSize(dirPath: string): number {
     const entries = readdirSync(dirPath, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = join(dirPath, entry.name);
-      if (entry.isDirectory()) {
+      // Use statSync (not lstatSync) to follow symlinks
+      const stat = statSync(fullPath);
+      if (stat.isDirectory()) {
         totalSize += getDirSize(fullPath);
-      } else if (entry.isFile()) {
-        const stat = statSync(fullPath);
+      } else if (stat.isFile()) {
         totalSize += stat.size;
       }
+      // symlinks to files are treated as files (stat.isFile() returns true for symlink targets)
+      // symlinks to directories are treated as directories (stat.isDirectory() returns true for symlink targets)
     }
   } catch {
     // Ignore errors accessing directories
@@ -548,7 +552,21 @@ router.get('/stt-models', async (_req: Request, res: Response) => {
     const models: SttModelInfo[] = [];
 
     for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
+      // On macOS, readdirSync returns symlinks as symlinks (not directories).
+      // entry.isDirectory() returns false for symlinks. Use statSync to follow
+      // symlinks and check if the target is actually a directory.
+      let isDir = entry.isDirectory();
+      if (!isDir) {
+        // Check if this is a symlink that points to a directory
+        try {
+          const stat = statSync(join(sttModelsDir, entry.name));
+          isDir = stat.isDirectory();
+        } catch {
+          // Not a valid directory (broken symlink or other error)
+          isDir = false;
+        }
+      }
+      if (!isDir) continue;
 
       const modelName = entry.name;
       // Only include sherpa-onnx-whisper-* directories

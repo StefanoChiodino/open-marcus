@@ -1,0 +1,23 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - heading "OpenMarcus" [level=1] [ref=e6]
+    - paragraph [ref=e7]: Your Stoic Mental Health Companion
+  - generic [ref=e9]:
+    - heading "Welcome Back" [level=2] [ref=e10]
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]: Username
+        - textbox "Username" [active] [ref=e14]:
+          - /placeholder: Enter your username
+      - generic [ref=e15]:
+        - generic [ref=e16]: Password
+        - textbox "Password" [ref=e17]:
+          - /placeholder: Enter your password
+      - button "Sign In" [disabled] [ref=e18]
+    - generic [ref=e19]:
+      - text: New to OpenMarcus?
+      - link "Create an account" [ref=e20] [cursor=pointer]:
+        - /url: /register
+  - note [ref=e21]:
+    - strong [ref=e22]: "Note:"
+    - text: OpenMarcus is not therapy or medical advice. It is a reflection tool based on Stoic philosophy.

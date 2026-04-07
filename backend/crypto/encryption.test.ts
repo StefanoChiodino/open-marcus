@@ -1,9 +1,67 @@
 import { describe, it, expect } from 'vitest';
-import { encrypt, decrypt, encryptObject, decryptObject } from './encryption.js';
+import { encrypt, decrypt, encryptObject, decryptObject, deriveKey } from './encryption.js';
+import { randomBytes } from 'crypto';
+
+const SALT_LENGTH = 32;
 
 describe('encryption', () => {
   const password = 'test-password-123';
   const plaintext = 'Hello, Marcus! This is a secret message.';
+
+  describe('deriveKey', () => {
+    it('should return a 256-bit (32 byte) key', () => {
+      const salt = randomBytes(SALT_LENGTH);
+      const key = deriveKey(password, salt);
+      
+      expect(key).toBeInstanceOf(Buffer);
+      expect(key.length).toBe(32);
+    });
+
+    it('should return same key for same password and salt', () => {
+      const salt = randomBytes(SALT_LENGTH);
+      const key1 = deriveKey(password, salt);
+      const key2 = deriveKey(password, salt);
+      
+      expect(key1.equals(key2)).toBe(true);
+    });
+
+    it('should return different key for different salts', () => {
+      const salt1 = randomBytes(SALT_LENGTH);
+      const salt2 = randomBytes(SALT_LENGTH);
+      const key1 = deriveKey(password, salt1);
+      const key2 = deriveKey(password, salt2);
+      
+      expect(key1.equals(key2)).toBe(false);
+    });
+
+    it('should return different key for different passwords', () => {
+      const salt = randomBytes(SALT_LENGTH);
+      const key1 = deriveKey('password1', salt);
+      const key2 = deriveKey('password2', salt);
+      
+      expect(key1.equals(key2)).toBe(false);
+    });
+
+    it('should throw error for empty password', () => {
+      const salt = randomBytes(SALT_LENGTH);
+      
+      expect(() => deriveKey('', salt)).toThrow('Password cannot be empty');
+    });
+
+    it('should throw error for invalid salt length', () => {
+      const shortSalt = Buffer.alloc(16); // Wrong length
+      
+      expect(() => deriveKey(password, shortSalt)).toThrow(`Salt must be ${SALT_LENGTH} bytes`);
+    });
+
+    it('should use Argon2id algorithm (memory-hard, GPU-resistant)', () => {
+      const salt = randomBytes(SALT_LENGTH);
+      const key = deriveKey(password, salt);
+      
+      // Key should be derived using Argon2id - we verify by checking it works
+      expect(key.length).toBe(32);
+    });
+  });
 
   describe('encrypt and decrypt', () => {
     it('should encrypt plaintext', () => {

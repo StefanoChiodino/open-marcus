@@ -10,6 +10,7 @@ import ttsRoutes from './routes/tts.js';
 import settingsRoutes from './routes/settings.js';
 import authRoutes from './routes/auth.js';
 import { apiLogMiddleware } from './lib/apiLogMiddleware.js';
+import { errorLogMiddleware } from './lib/errorLogMiddleware.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const app = express();
@@ -48,11 +49,8 @@ app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-// Error handler
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
+// Error handler - logs all unhandled errors with request context
+app.use(errorLogMiddleware);
 
 // Initialize database and start server
 async function main() {

@@ -284,20 +284,26 @@ test.describe('Comprehensive History Tests', () => {
       await goToSessionPage(page);
       await createMeditationSession(page);
 
-      // Navigate to history page via sidebar to ensure session is persisted
-      await page.getByRole('link', { name: 'History' }).click();
-      await page.waitForLoadState('networkidle');
-      await expect(page.getByRole('heading', { name: 'Past Meditations' })).toBeVisible({ timeout: 10000 });
+      // Navigate to history page to get the session ID from the list
+      await goToHistoryPage(page);
 
-      // Wait for the session to be fully persisted
-      await page.waitForTimeout(3000);
-
-      // Click on the session from the list to navigate to detail
+      // Get the session link href which contains the session ID
       const sessionLink = page.getByRole('link', { name: /View session from/ }).first();
-      await sessionLink.click();
+      const sessionHref = await sessionLink.getAttribute('href');
+      expect(sessionHref).toMatch(/\/history\/[^/]+$/);
 
-      // Wait for detail page
-      await page.waitForURL(/\/history\/[^/]+$/);
+      // Extract session ID from href
+      const sessionId = sessionHref?.match(/\/history\/([^/]+)$/)?.[1];
+      expect(sessionId).toBeDefined();
+
+      // Now navigate directly to the session detail URL using page.goto()
+      await page.goto(`${FRONTEND_URL}/history/${sessionId}`);
+      await page.waitForLoadState('networkidle');
+
+      // Should be on the session detail page (URL matches /history/{sessionId})
+      await expect(page).toHaveURL(/\/history\/[^/]+$/);
+
+      // Should see Session Review heading
       await expect(page.getByRole('heading', { name: 'Session Review' })).toBeVisible({ timeout: 10000 });
 
       // Should see "Back to History" button

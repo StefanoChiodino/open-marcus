@@ -33,6 +33,8 @@ const PUBLIC_PATHS = [
   // STT settings endpoints - accessible without auth for frontend Settings page
   '/settings/stt-models',   // GET - list available STT models (read-only info)
   '/settings/stt-reload',   // POST - trigger STT model hot-reload (server config, not user data)
+  // Model download endpoint - public so users can download models before/without logging in
+  '/settings/pull-model',  // POST - download Ollama model (download is public, model selection is per-user)
 ];
 
 /**

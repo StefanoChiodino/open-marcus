@@ -16,6 +16,7 @@ describe('STT Routes', () => {
     getSttService('127.0.0.1', 49997);
     app = express();
     app.use(express.raw({ type: 'audio/*', limit: '50mb' }));
+    app.use(express.json());
     app.use('/api/stt', sttRoutes);
   });
 
@@ -73,6 +74,37 @@ describe('STT Routes', () => {
     it('should return 503 when STT server is not running', async () => {
       const res = await request(app)
         .get('/api/stt/health');
+
+      expect(res.status).toBe(503);
+    });
+  });
+
+  describe('POST /api/stt/reload - validation', () => {
+    it('should return 400 when modelDir is missing', async () => {
+      const res = await request(app)
+        .post('/api/stt/reload')
+        .set('Content-Type', 'application/json')
+        .send({});
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('modelDir is required and must be a string');
+    });
+
+    it('should return 400 when modelDir is not a string', async () => {
+      const res = await request(app)
+        .post('/api/stt/reload')
+        .set('Content-Type', 'application/json')
+        .send({ modelDir: 123 });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('modelDir is required and must be a string');
+    });
+
+    it('should return 503 when STT server is not running', async () => {
+      const res = await request(app)
+        .post('/api/stt/reload')
+        .set('Content-Type', 'application/json')
+        .send({ modelDir: '/some/model' });
 
       expect(res.status).toBe(503);
     });

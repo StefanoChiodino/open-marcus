@@ -224,7 +224,24 @@
     width: 64px;
   }
 
-  .navigation__toggle {
+  .navigation--collapsed .navigation__toggle {
+    display: none;
+  }
+
+  .navigation--collapsed .navigation__list {
+    align-items: center;
+  }
+
+  .navigation--collapsed .navigation__link {
+    justify-content: center;
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .navigation--collapsed .navigation__link-icon {
+    margin: 0;
+  }
+
+  .navigation--collapsed .navigation__brand-text {
     display: none;
   }
 }

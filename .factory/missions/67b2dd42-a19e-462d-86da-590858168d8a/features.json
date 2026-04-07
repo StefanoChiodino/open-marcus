@@ -74,12 +74,32 @@
         "Manual: Set voice to en-US-ChristopherNeural in Settings",
         "Manual: Start meditation, enable voice output, verify different voice is used"
       ],
+      "fulfills": [],
+      "status": "completed"
+    },
+    {
+      "id": "fix-auth-onboarding-blocker",
+      "description": "Fix pre-existing auth middleware issue that blocks profile creation. Auth middleware (commit eb9dfb0) broke POST /api/profile - it returns 401 because /api/profile is not in public paths. Fix: Add POST /api/profile to public paths in auth middleware. AFTER THIS FIX: Re-validate VAL-TTS-006 and VAL-CROSS-001.",
+      "skillName": "backend-worker",
+      "milestone": "fix-auth-blocker",
+      "preconditions": [
+        "Auth middleware exists in backend"
+      ],
+      "expectedBehavior": [
+        "POST /api/profile works without auth token (public path)",
+        "Profile creation succeeds from frontend onboarding flow",
+        "User can access meditation session after profile creation"
+      ],
+      "verificationSteps": [
+        "Manual: Create profile via frontend, verify success",
+        "Manual: Access meditation session after profile creation"
+      ],
       "fulfills": ["VAL-TTS-006", "VAL-CROSS-001"],
       "status": "pending"
     },
     {
       "id": "stt-settings-backend",
-      "description": "Add STT model settings to backend. Add sttModel field to AppSettings. Add GET /api/settings/stt-models endpoint that lists available sherpa-onnx models from servers/stt/ directory with their sizes. Add POST /api/settings/stt-reload endpoint that hot-reloads the STT model (destroys old recognizer, creates new one with specified model).",
+      "description": "Add STT model settings to backend. Add sttModel field to AppSettings. Add GET /api/settings/stt-models endpoint that lists available sherpa-onnx models from servers/stt/ directory with their sizes. Add POST /api/settings/stt-reload endpoint that hot-reloads the STT model (destroys old recognizer, creates new one with specified model). NOTE: This feature sets up the API endpoints and validation. True hot-reload implementation is done by stt-hot-reload-impl feature.",
       "skillName": "backend-worker",
       "milestone": "stt-settings",
       "preconditions": [
@@ -101,6 +121,31 @@
         "curl http://localhost:8765/health returns 200 after reload"
       ],
       "fulfills": ["VAL-STT-004", "VAL-STT-006"],
+      "status": "pending"
+    },
+    {
+      "id": "stt-hot-reload-impl",
+      "description": "Implement true hot-reload for STT models by modifying servers/stt/server.mjs to support a POST /reload endpoint that dynamically switches Whisper models without restarting the server. The endpoint should: (1) Stop the current recognizer, (2) Detect the new model config from the specified model directory, (3) Create a new recognizer with the new model, (4) Return success. The backend routes/stt.ts should proxy /api/stt/reload to the STT server's /reload endpoint.",
+      "skillName": "backend-worker",
+      "milestone": "stt-settings",
+      "preconditions": [
+        "STT server at servers/stt/server.mjs exists and loads model at startup",
+        "Backend routes/stt.ts exists and proxies to STT server"
+      ],
+      "expectedBehavior": [
+        "STT server has POST /reload endpoint that accepts { modelDir } parameter",
+        "Reload stops old recognizer, creates new one with specified model",
+        "During reload, /health returns { status: 'reloading', model_loaded: false }",
+        "After reload, /health returns { status: 'ok', model_loaded: true }",
+        "Backend /api/stt/reload proxies to STT server /reload endpoint",
+        "Concurrent transcription requests during reload return 503"
+      ],
+      "verificationSteps": [
+        "curl -X POST http://localhost:8765/reload -d '{\"modelDir\": \"sherpa-onnx-whisper-tiny.en\"}'",
+        "Verify old transcription requests fail during reload",
+        "Verify new transcription requests succeed after reload"
+      ],
+      "fulfills": [],
       "status": "pending"
     },
     {

@@ -22,7 +22,8 @@ This mission adds TTS (Text-to-Speech) and STT (Speech-to-Text) settings to the 
 **Off-Limits:**
 - Ports 3000-3010 (user's dev servers)
 - /data directory
-- Do NOT modify the TTS server (servers/tts/server.py) or STT server (servers/stt/server.mjs) - only add API endpoints to the Node.js backend that proxy to these servers
+- Do NOT modify the TTS server (servers/tts/server.py) - only add API endpoints to the Node.js backend that proxy to these servers
+- STT server (servers/stt/server.mjs) MAY be modified to implement hot-reload of Whisper models
 
 ## Coding Conventions
 
@@ -74,3 +75,9 @@ This mission adds TTS (Text-to-Speech) and STT (Speech-to-Text) settings to the 
 - STT model reload completes within 5 seconds
 - Settings persist across browser sessions
 - UI shows appropriate loading states and error handling
+
+## Known Pre-Existing Issues (Do Not Fix)
+
+These issues are unrelated to this mission. Workers and validators should note them but not attempt fixes.
+
+- **VAL-TTS-006 and VAL-CROSS-001 blocked**: Home page shows onboarding form repeatedly even after profile creation, preventing access to meditation session. This is a pre-existing state management bug in the HomePage/onboarding flow - NOT related to TTS settings implementation. Discovered during user-testing validation of tts-settings milestone.

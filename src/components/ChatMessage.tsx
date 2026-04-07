@@ -27,7 +27,7 @@ function ChatMessage({ role, content, isStreaming = false }: ChatMessageProps) {
           </svg>
         ) : (
           <img
-            src="https://upload.wikimedia.org/wikipedia/commons/d/d6/Marcus_Annius_Verus_Caesar.jpg"
+            src="/open-marcus-logo.jpg"
             alt="Marcus Aurelius"
             width="24"
             height="24"

@@ -5,6 +5,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['backend/**/*.{test,spec}.{js,mjs,cjs,ts,mts,tsx,jsx}'],
+    maxWorkers: 10,
+    minWorkers: 1,
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: [

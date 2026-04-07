@@ -12,6 +12,7 @@ import './Layout.css';
 const TABLET_MIN = 768;
 const TABLET_MAX = 1199;
 const MOBILE_MAX = 767;
+const DESKTOP_MIN = 1200;
 
 interface LayoutProps {
   children?: React.ReactNode;
@@ -55,17 +56,38 @@ function useIsTabletBreakpoint(): boolean {
   return isTablet;
 }
 
+function useIsDesktopBreakpoint(): boolean {
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth >= DESKTOP_MIN;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= DESKTOP_MIN);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return isDesktop;
+}
+
 function AppLayout({ children }: LayoutProps) {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const isMobile = useIsMobileBreakpoint();
   const isTablet = useIsTabletBreakpoint();
+  const isDesktop = useIsDesktopBreakpoint();
 
-  // Auto-collapse sidebar on tablet; mobile uses bottom nav (toggle hidden)
+  // Auto-collapse sidebar on tablet; auto-expand on desktop
   useEffect(() => {
     if (isTablet) {
       setNavCollapsed(true);
+    } else if (isDesktop) {
+      setNavCollapsed(false);
     }
-  }, [isTablet]);
+  }, [isTablet, isDesktop]);
 
   // Focus management: moves focus to page heading on route changes for screen readers
   useFocusManagement();
@@ -81,7 +103,7 @@ function AppLayout({ children }: LayoutProps) {
         <Navigation
           isCollapsed={navCollapsed || isTablet}
           onToggle={handleToggleNav}
-          hideToggle={isMobile || isTablet}
+          hideToggle={isMobile || isTablet || isDesktop}
         />
         <main className="app-layout__main" id="main-content" tabIndex={-1}>
           {children || <Outlet />}

@@ -28,9 +28,7 @@ function Navigation({ isCollapsed = false, onToggle, hideToggle = false }: Navig
       <div className="navigation__brand">
         <NavLink to="/" className="navigation__brand-link">
           <span className="navigation__brand-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="currentColor">
-              <path d="M14 2L4 7v14l10 5 10-5V7L14 2zm0 2.5L21.5 8 14 11.5 6.5 8 14 4.5zM6 10.2l7 3.5v9.8l-7-3.5v-9.8zm9 13.3v-9.8l7-3.5v9.8l-7 3.5z" />
-            </svg>
+            <img src="/open-marcus-logo-transparent.png" alt="" width="28" height="28" />
           </span>
           {!isCollapsed && <span className="navigation__brand-text">OpenMarcus</span>}
         </NavLink>

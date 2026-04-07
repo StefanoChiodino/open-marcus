@@ -149,9 +149,7 @@ function MeditationChat() {
       <div className="meditation-chat" role="main" aria-label="Meditation Session">
         <div className="meditation-chat__welcome">
           <div className="meditation-chat__icon" aria-hidden="true">
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="currentColor">
-              <path d="M32 4L12 14v36l20 10 20-10V14L32 4zm0 5.5l12.5 6.25L32 22 19.5 15.75 32 9.5zM16 20l14 7v20l-14-7V20zm18 27V27l14-7v20l-14 7zM32 25.5l14 7v16l-14-7v-16z" />
-            </svg>
+            <img src="/open-marcus-logo.jpg" alt="" width="64" height="64" />
           </div>
           <h2 className="meditation-chat__title">
             Meditation with Marcus Aurelius

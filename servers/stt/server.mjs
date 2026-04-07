@@ -68,17 +68,26 @@ function findModelDir() {
 const MODEL_DIR = findModelDir();
 
 /**
+ * Get the effective model directory (supports runtime override during reload).
+ */
+function getModelDir() {
+  // @ts-ignore - runtime override for reload
+  return global.__MODEL_DIR || MODEL_DIR;
+}
+
+/**
  * Detect model type from directory contents and build the recognizer config.
  */
 function detectModelConfig() {
-  const dirName = basename(MODEL_DIR);
-  const files = readdirSync(MODEL_DIR);
+  const effectiveModelDir = getModelDir();
+  const dirName = basename(effectiveModelDir);
+  const files = readdirSync(effectiveModelDir);
 
   const encoderFile = files.find(f => f.includes('encoder') && f.endsWith('.onnx'));
   const decoderFile = files.find(f => f.includes('decoder') && f.endsWith('.onnx'));
   const tokensFile = files.find(f => f.endsWith('-tokens.txt')) || files.find(f => f === 'tokens.txt');
 
-  if (!tokensFile) throw new Error(`No tokens file found in ${MODEL_DIR}`);
+  if (!tokensFile) throw new Error(`No tokens file found in ${effectiveModelDir}`);
 
   if (dirName.includes('whisper') && encoderFile && decoderFile) {
     // Prefer int8 if available
@@ -90,10 +99,10 @@ function detectModelConfig() {
         featConfig: { sampleRate: 16000, featureDim: 80 },
         modelConfig: {
           whisper: {
-            encoder: join(MODEL_DIR, int8Encoder || encoderFile),
-            decoder: join(MODEL_DIR, int8Decoder || decoderFile),
+            encoder: join(effectiveModelDir, int8Encoder || encoderFile),
+            decoder: join(effectiveModelDir, int8Decoder || decoderFile),
           },
-          tokens: join(MODEL_DIR, tokensFile),
+          tokens: join(effectiveModelDir, tokensFile),
           numThreads: NUM_THREADS,
           provider: 'cpu',
           debug: 0,
@@ -102,7 +111,7 @@ function detectModelConfig() {
     };
   }
 
-  throw new Error(`Cannot detect model type in ${MODEL_DIR}. Found files: ${files.join(', ')}`);
+  throw new Error(`Cannot detect model type in ${effectiveModelDir}. Found files: ${files.join(', ')}`);
 }
 
 // ── WAV parsing ─────────────────────────────────────────────
@@ -160,8 +169,10 @@ function parseWav(buf) {
 
 let recognizer = null;
 let loadPromise = null;
+let isReloading = false;
+let currentModelDir = MODEL_DIR;
 
-async function loadModel() {
+async function loadModel(newModelDir = MODEL_DIR) {
   // Use createRequire for the native module
   let sherpa_onnx;
   try {
@@ -170,11 +181,19 @@ async function loadModel() {
     throw new Error(`Failed to load sherpa-onnx-node: ${err.message}`);
   }
 
-  console.log(`Loading model from ${MODEL_DIR} (${NUM_THREADS} threads)...`);
+  console.log(`Loading model from ${newModelDir} (${NUM_THREADS} threads)...`);
   const t0 = Date.now();
 
+  // Temporarily override MODEL_DIR for detectModelConfig
+  const savedModelDir = MODEL_DIR;
+  // @ts-ignore - runtime override
+  global.__MODEL_DIR = newModelDir;
   const detected = detectModelConfig();
+  // @ts-ignore - restore
+  global.__MODEL_DIR = savedModelDir;
+  
   recognizer = new sherpa_onnx.OfflineRecognizer(detected.config);
+  currentModelDir = newModelDir;
   console.log(`Model ready in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 }
 
@@ -186,6 +205,34 @@ async function getRecognizer() {
     await loadPromise;
   }
   return recognizer;
+}
+
+/**
+ * Reload the model with a new model directory.
+ * During reload, the server returns 503 for transcribe requests.
+ */
+async function reloadModel(newModelDir) {
+  if (isReloading) {
+    throw new Error('Reload already in progress');
+  }
+
+  isReloading = true;
+
+  try {
+    // Stop current recognizer if exists
+    if (recognizer) {
+      recognizer = null;
+    }
+    if (loadPromise) {
+      await loadPromise.catch(() => {}); // Wait for any in-progress load
+    }
+    loadPromise = null;
+
+    // Load new model
+    await loadModel(newModelDir);
+  } finally {
+    isReloading = false;
+  }
 }
 
 // ── HTTP server ─────────────────────────────────────────────
@@ -214,15 +261,61 @@ const server = createServer(async (req, res) => {
   // GET /health
   if (req.method === 'GET' && url === '/health') {
     jsonResponse(res, 200, {
-      status: 'ok',
-      model_loaded: recognizer !== null,
-      model_dir: MODEL_DIR,
+      status: isReloading ? 'reloading' : 'ok',
+      model_loaded: recognizer !== null && !isReloading,
+      model_dir: currentModelDir,
+    });
+    return;
+  }
+
+  // POST /reload
+  if (req.method === 'POST' && url === '/reload') {
+    let body;
+    try {
+      body = await collectBody(req);
+    } catch {
+      jsonResponse(res, 400, { error: 'Failed to read request body' });
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(body.toString());
+    } catch {
+      jsonResponse(res, 400, { error: 'Invalid JSON body' });
+      return;
+    }
+
+    const { modelDir: newModelDir } = parsed;
+    if (!newModelDir || typeof newModelDir !== 'string') {
+      jsonResponse(res, 400, { error: 'modelDir is required and must be a string' });
+      return;
+    }
+
+    // Validate the new model directory exists
+    if (!existsSync(newModelDir)) {
+      jsonResponse(res, 400, { error: `Model directory does not exist: ${newModelDir}` });
+      return;
+    }
+
+    // Start reload in background and return immediately
+    jsonResponse(res, 202, { message: 'Reload started', model_dir: newModelDir });
+
+    // Perform reload asynchronously
+    reloadModel(newModelDir).catch(err => {
+      console.error('Reload failed:', err.message);
     });
     return;
   }
 
   // POST /transcribe
   if (req.method === 'POST' && url === '/transcribe') {
+    // Return 503 if reloading
+    if (isReloading || !recognizer) {
+      jsonResponse(res, 503, { error: 'STT server is reloading, please try again later' });
+      return;
+    }
+
     let body;
     try {
       body = await collectBody(req);

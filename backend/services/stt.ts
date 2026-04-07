@@ -88,6 +88,32 @@ export class SttService {
     const data = await response.json();
     return { text: data.text ?? '' };
   }
+
+  /**
+   * Reload the STT model with a new model directory.
+   * @param modelDir - Path to the new model directory
+   */
+  async reload(modelDir: string): Promise<{ message: string; model_dir: string }> {
+    const isOnline = await this.isOnline();
+    if (!isOnline) {
+      throw new SttOfflineError();
+    }
+
+    const response = await fetch(`${this.baseUrl()}/reload`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ modelDir }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`STT reload failed (${response.status}): ${body}`);
+    }
+
+    return response.json();
+  }
 }
 
 // Singleton instance

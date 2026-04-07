@@ -22,6 +22,7 @@ function HomePage() {
     <div className="home-page">
       <main className="home-main">
         <div className="welcome-card">
+          <img src="/open-marcus-logo-transparent.png" alt="" className="home-page__logo" />
           {profile && (
             <ProfileDisplay profile={profile} onEdit={handleEdit} />
           )}

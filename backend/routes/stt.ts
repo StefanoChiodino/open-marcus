@@ -64,4 +64,42 @@ router.get('/health', async (_req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/stt/reload
+ *
+ * Triggers a hot-reload of the STT model with a new model directory.
+ *
+ * Request:
+ *   Content-Type: application/json
+ *   Body: { "modelDir": "/path/to/model" }
+ *
+ * Response:
+ *   202: { "message": "Reload started", "model_dir": "..." }
+ *   400: { "error": "..." } - Invalid model directory
+ *   503: { "error": "..." } - STT server is not running or reloading
+ */
+router.post('/reload', async (req: Request, res: Response) => {
+  try {
+    const body = req.body || {};
+    const { modelDir } = body;
+
+    if (!modelDir || typeof modelDir !== 'string') {
+      res.status(400).json({ error: 'modelDir is required and must be a string' });
+      return;
+    }
+
+    const sttService = getSttService();
+    const result = await sttService.reload(modelDir);
+
+    res.status(202).json(result);
+  } catch (error) {
+    console.error('STT reload error:', error);
+    if (error instanceof SttOfflineError) {
+      res.status(503).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'STT reload failed' });
+    }
+  }
+});
+
 export default router;

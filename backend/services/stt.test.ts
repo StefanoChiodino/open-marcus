@@ -52,4 +52,12 @@ describe('SttService', () => {
       expect(svc1).not.toBe(svc2);
     });
   });
+
+  describe('reload', () => {
+    it('should throw SttOfflineError when STT server is not running', async () => {
+      const offlineService = new SttService('127.0.0.1', 49996);
+
+      await expect(offlineService.reload('/some/model')).rejects.toThrow(SttOfflineError);
+    });
+  });
 });

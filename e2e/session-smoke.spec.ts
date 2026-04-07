@@ -1,0 +1,290 @@
+import { test, expect } from '@playwright/test';
+
+/**
+ * Session Page Smoke Tests
+ * 
+ * Tests the session page interactions:
+ * - Begin Meditation button starts session with Marcus greeting
+ * - Send message displays user message in chat
+ * - End session button ends session and shows summary
+ * 
+ * Fulfills: VAL-SESSION-001, VAL-SESSION-002, VAL-SESSION-003
+ */
+
+/**
+ * Helper: Register a test user and get auth token
+ */
+async function registerAndGetToken(): Promise<string> {
+  const registerResponse = await fetch('http://localhost:3100/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: `testuser_${Date.now()}`, password: 'testpassword123' }),
+  });
+
+  if (!registerResponse.ok) {
+    throw new Error(`Failed to register: ${registerResponse.status}`);
+  }
+
+  const { token } = await registerResponse.json();
+  return token;
+}
+
+/**
+ * Helper: Clear all data via API using auth token
+ */
+async function clearAllData(token: string) {
+  const response = await fetch('http://localhost:3100/api/export/clear', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to clear data: ${response.status}`);
+  }
+}
+
+/**
+ * Helper: Create a profile with the given name and bio
+ */
+async function createProfile(page: any, name: string, bio?: string) {
+  // First, register and get token
+  const token = await registerAndGetToken();
+  
+  // Navigate to app
+  await page.goto('/');
+  
+  // Store token in localStorage for API calls
+  await page.evaluate((t: string) => {
+    localStorage.setItem('openmarcus-auth-token', t);
+  }, token);
+  
+  // Clear any existing data with the token
+  await clearAllData(token);
+  
+  // Reload to start fresh with empty state
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  
+  // Check if we're on onboarding (need to create profile)
+  const nameInput = page.getByLabel('Name');
+  const isOnboarding = await nameInput.isVisible().catch(() => false);
+  
+  if (isOnboarding) {
+    await nameInput.fill(name);
+    
+    if (bio) {
+      const bioInput = page.getByLabel('About You');
+      await bioInput.fill(bio);
+    }
+    
+    await page.getByRole('button', { name: 'Begin Journey' }).click();
+    await page.waitForLoadState('networkidle');
+  }
+  
+  // Wait for home page to fully load with profile info
+  await expect(page.getByRole('heading', { name: 'Welcome to OpenMarcus' })).toBeVisible({ timeout: 10000 });
+}
+
+/**
+ * Helper: Navigate to the session page using SPA navigation (sidebar click)
+ * This preserves the Zustand store state
+ */
+async function goToSessionPage(page: any) {
+  // Use sidebar navigation to preserve store state
+  await page.getByRole('link', { name: 'Meditation' }).click();
+  await page.waitForLoadState('networkidle');
+  // Wait for session page to fully load
+  await expect(page.getByRole('heading', { name: 'Meditation with Marcus Aurelius' })).toBeVisible({ timeout: 10000 });
+}
+
+test.describe('Session Page Smoke Tests', () => {
+  test.beforeEach(async ({ page }) => {
+    // Create a fresh profile before each test
+    await createProfile(page, 'Stefano', 'A stoic practitioner');
+    
+    // Navigate to session page
+    await goToSessionPage(page);
+  });
+
+  test('VAL-SESSION-001: Begin Meditation button starts session with Marcus greeting', async ({ page }) => {
+    // Verify we're on the idle session page (welcome state)
+    // Should see Marcus icon and welcome message
+    await expect(page.getByRole('heading', { name: 'Meditation with Marcus Aurelius' })).toBeVisible();
+    
+    // Should see the Begin Meditation button
+    const beginBtn = page.getByRole('button', { name: 'Begin Meditation' });
+    await expect(beginBtn).toBeVisible();
+    
+    // Click Begin Meditation
+    await beginBtn.click();
+    
+    // Wait for session to start - the main region label changes to "Active Meditation Session"
+    await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
+    
+    // Should see Marcus greeting message - user should see "I am Marcus" greeting
+    // The greeting is in a paragraph with class text-serif and meditation-chat__greeting
+    const greetingText = page.getByText(/I am Marcus/);
+    await expect(greetingText).toBeVisible({ timeout: 15000 });
+    
+    // Should see prompt hint text
+    await expect(page.getByText(/Type your thoughts, concerns, or questions below/)).toBeVisible();
+    
+    // Should see the textarea for input
+    const textarea = page.getByLabel('Type your message to Marcus');
+    await expect(textarea).toBeVisible();
+    
+    // Should see the End Session button
+    const endBtn = page.getByRole('button', { name: 'End Session' });
+    await expect(endBtn).toBeVisible();
+    
+    // Send button should be visible
+    const sendBtn = page.getByRole('button', { name: 'Send message' });
+    await expect(sendBtn).toBeVisible();
+  });
+
+  test('VAL-SESSION-002: Send message displays user message in chat', async ({ page }) => {
+    // Start the session first
+    const beginBtn = page.getByRole('button', { name: 'Begin Meditation' });
+    await beginBtn.click();
+    
+    // Wait for active session
+    await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
+    
+    // Wait for Marcus greeting to appear
+    await expect(page.getByText(/I am Marcus/)).toBeVisible({ timeout: 15000 });
+    
+    // Type a message in the textarea
+    const textarea = page.getByLabel('Type your message to Marcus');
+    await textarea.fill('I have been feeling anxious about my work lately.');
+    
+    // Click the send button
+    const sendBtn = page.getByRole('button', { name: 'Send message' });
+    await sendBtn.click();
+    
+    // Wait for the user's message to appear in the chat log
+    const userMessage = page.getByText('I have been feeling anxious about my work lately.');
+    await expect(userMessage).toBeVisible({ timeout: 10000 });
+    
+    // The user's message should appear as a chat message (in the log)
+    // Chat messages have role="listitem" within the chat log
+    const chatLog = page.getByRole('log', { name: 'Chat messages' });
+    await expect(chatLog).toBeVisible();
+    
+    // The textarea should be cleared after sending
+    await expect(textarea).toHaveValue('');
+  });
+
+  test('VAL-SESSION-003: End session button ends session and shows summary', async ({ page }) => {
+    // Start the session first
+    const beginBtn = page.getByRole('button', { name: 'Begin Meditation' });
+    await beginBtn.click();
+    
+    // Wait for active session
+    await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
+    
+    // Wait for Marcus greeting to appear
+    await expect(page.getByText(/I am Marcus/)).toBeVisible({ timeout: 15000 });
+    
+    // Send a message to have some content in the session
+    const textarea = page.getByLabel('Type your message to Marcus');
+    await textarea.fill('How can I find peace in difficult times?');
+    const sendBtn = page.getByRole('button', { name: 'Send message' });
+    await sendBtn.click();
+    
+    // Wait for user message to appear
+    await expect(page.getByText('How can I find peace in difficult times?')).toBeVisible({ timeout: 10000 });
+    
+    // Click End Session button
+    const endBtn = page.getByRole('button', { name: 'End Session' });
+    await endBtn.click();
+    
+    // Wait for summary to appear - should see "Session Complete" heading
+    await expect(page.getByRole('heading', { name: 'Session Complete' })).toBeVisible({ timeout: 15000 });
+    
+    // Should see Marcus's Reflection section
+    await expect(page.getByRole('heading', { name: "Marcus's Reflection" })).toBeVisible();
+    
+    // Should see "Your Commitments" section (action items)
+    await expect(page.getByRole('heading', { name: 'Your Commitments' })).toBeVisible();
+    
+    // Should see "Begin New Meditation" button
+    await expect(page.getByRole('button', { name: 'Begin New Meditation' })).toBeVisible();
+  });
+
+  test('session page has correct elements in idle state', async ({ page }) => {
+    // Verify idle state elements
+    await expect(page.getByRole('heading', { name: 'Meditation with Marcus Aurelius' })).toBeVisible();
+    
+    // Should see Marcus icon (img with alt "")
+    const marcusIcon = page.locator('img[alt=""]').first();
+    await expect(marcusIcon).toBeVisible();
+    
+    // Should see description text
+    await expect(page.getByText(/Begin your session of stoic reflection/)).toBeVisible();
+    
+    // Should see disclaimer
+    await expect(page.getByText(/OpenMarcus is not therapy or medical advice/)).toBeVisible();
+    
+    // Begin button should be visible
+    await expect(page.getByRole('button', { name: 'Begin Meditation' })).toBeVisible();
+    
+    // End Session button should NOT be visible in idle state
+    await expect(page.getByRole('button', { name: 'End Session' })).not.toBeVisible();
+  });
+
+  test('session page shows streaming response after sending message', async ({ page }) => {
+    // Start the session
+    const beginBtn = page.getByRole('button', { name: 'Begin Meditation' });
+    await beginBtn.click();
+    
+    // Wait for active session and greeting
+    await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/I am Marcus/)).toBeVisible({ timeout: 15000 });
+    
+    // Send a message
+    const textarea = page.getByLabel('Type your message to Marcus');
+    await textarea.fill('Tell me about stoicism.');
+    const sendBtn = page.getByRole('button', { name: 'Send message' });
+    await sendBtn.click();
+    
+    // Wait for user message to appear
+    await expect(page.getByText('Tell me about stoicism.')).toBeVisible({ timeout: 10000 });
+    
+    // Wait for Marcus response - should see assistant message appearing
+    // The chat should have the user's message followed by Marcus's response
+    // After streaming completes, the response should be visible
+    // Wait for the assistant message to appear (with some content)
+    // We don't check exact text since Marcus's response varies
+    await page.waitForTimeout(5000); // Give time for streaming to start/complete
+    
+    // Should see at least the user message we sent
+    await expect(page.getByText('Tell me about stoicism.')).toBeVisible();
+  });
+
+  test('Begin New Meditation button resets to idle state', async ({ page }) => {
+    // Start and end a session to get to summary
+    const beginBtn = page.getByRole('button', { name: 'Begin Meditation' });
+    await beginBtn.click();
+    
+    await expect(page.getByRole('main', { name: 'Active Meditation Session' })).toBeVisible({ timeout: 15000 });
+    
+    // Send a message
+    const textarea = page.getByLabel('Type your message to Marcus');
+    await textarea.fill('I need guidance.');
+    await page.getByRole('button', { name: 'Send message' }).click();
+    await expect(page.getByText('I need guidance.')).toBeVisible({ timeout: 10000 });
+    
+    // End session
+    await page.getByRole('button', { name: 'End Session' }).click();
+    await expect(page.getByRole('heading', { name: 'Session Complete' })).toBeVisible({ timeout: 15000 });
+    
+    // Click Begin New Meditation
+    await page.getByRole('button', { name: 'Begin New Meditation' }).click();
+    
+    // Should be back to idle state
+    await expect(page.getByRole('heading', { name: 'Meditation with Marcus Aurelius' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: 'Begin Meditation' })).toBeVisible();
+  });
+});

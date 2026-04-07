@@ -14,6 +14,15 @@ export interface OllamaChatResponse {
   done: boolean;
 }
 
+/**
+ * Information about an installed Ollama model
+ */
+export interface OllamaModelInfo {
+  name: string;
+  sizeBytes: number;
+  modifiedAt: string;
+}
+
 export class OllamaOfflineError extends Error {
   constructor(message: string = 'Unable to connect to AI. Please ensure Ollama is running.') {
     super(message);
@@ -63,15 +72,19 @@ export class OllamaService {
   /**
    * Get the list of installed models from Ollama
    */
-  async listModels(): Promise<string[]> {
+  async listModels(): Promise<OllamaModelInfo[]> {
     const response = await fetch(`${this.host}/api/tags`);
     if (!response.ok) {
       const text = await response.text();
       throw new Error(`Failed to list Ollama models: ${response.status} ${response.statusText} - ${text}`);
     }
     const data = await response.json();
-    const models: { name: string }[] = data.models || [];
-    return models.map((m) => m.name);
+    const models: OllamaModelInfo[] = (data.models || []).map((m: { name: string; size?: number; modified_at?: string }) => ({
+      name: m.name,
+      sizeBytes: m.size || 0,
+      modifiedAt: m.modified_at || '',
+    }));
+    return models;
   }
 
   /**
@@ -174,6 +187,98 @@ export class OllamaService {
       reader.releaseLock();
     }
   }
+
+  /**
+   * Pull a model from Ollama registry with progress streaming.
+   * Yields progress updates as the model downloads.
+   */
+  async *pullModel(modelName: string): AsyncIterable<ModelPullProgress> {
+    const response = await fetch(`${this.host}/api/pull`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: modelName,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama pull error: ${response.status} ${response.statusText}`);
+    }
+
+    if (!response.body) {
+      throw new Error('Ollama response body is null');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    try {
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete lines
+        const lines = buffer.split('\n');
+        // Keep the last partial line in the buffer
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim()) {
+            continue;
+          }
+
+          try {
+            const data = JSON.parse(line);
+            yield {
+              status: data.status || 'unknown',
+              digest: data.digest || '',
+              total: data.total || 0,
+              completed: data.completed || 0,
+            };
+          } catch {
+            // Skip invalid JSON lines
+          }
+        }
+      }
+
+      // Process any remaining data in buffer
+      if (buffer.trim()) {
+        try {
+          const data = JSON.parse(buffer);
+          yield {
+            status: data.status || 'unknown',
+            digest: data.digest || '',
+            total: data.total || 0,
+            completed: data.completed || 0,
+          };
+        } catch {
+          // Skip invalid JSON
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+}
+
+/**
+ * Progress update during model pull
+ */
+export interface ModelPullProgress {
+  status: string;
+  digest: string;
+  total: number;
+  completed: number;
 }
 
 // Singleton instance

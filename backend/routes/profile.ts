@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getDatabase } from '../db/database.js';
+import { getProfileService } from '../services/profile.js';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 // Validation error class (duplicated here to avoid circular dependency issues)
 class ValidationError extends Error {
@@ -11,12 +13,19 @@ class ValidationError extends Error {
 
 const router = Router();
 
-// GET /api/profile - Get current profile
-router.get('/', (_req: Request, res: Response) => {
+// GET /api/profile - Get current profile (for authenticated user)
+router.get('/', (req: Request, res: Response) => {
   try {
-    const db = getDatabase();
-    const profiles = db.listProfiles();
-    const profile = profiles.length > 0 ? profiles[0] : null;
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
+    const profileService = getProfileService();
+    const profile = profileService.getCurrentProfileByUserId(userId);
     
     if (!profile) {
       res.status(404).json({ error: 'Profile not found' });

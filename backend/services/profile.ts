@@ -47,6 +47,15 @@ export class ProfileService {
   }
 
   /**
+   * Get the current profile for a specific user (multi-user isolation)
+   * Returns the first profile for the user
+   */
+  getCurrentProfileByUserId(userId: string): Profile | null {
+    const profiles = this.getDb().listProfilesByUserId(userId);
+    return profiles.length > 0 ? profiles[0] : null;
+  }
+
+  /**
    * Get profile by ID
    */
   getProfile(id: string): Profile | null {

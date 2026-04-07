@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { getSessionService, resetSessionService, ValidationError } from '../services/session.js';
 import { getProfileService } from '../services/profile.js';
 import { getSessionSummaryService } from '../services/sessionSummary.js';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 // Type-safe params interface
 interface SessionParams {
@@ -10,11 +11,19 @@ interface SessionParams {
 
 const router = Router();
 
-// GET /api/sessions - List all sessions
-router.get('/', (_req: Request, res: Response) => {
+// GET /api/sessions - List all sessions for authenticated user
+router.get('/', (req: Request, res: Response) => {
   try {
+    const authReq = req as unknown as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
     const sessionService = getSessionService();
-    const sessions = sessionService.listAllSessions();
+    const sessions = sessionService.listSessionsByUserId(userId);
     
     // Return sessions with message count for history listing
     const sessionsWithMeta = sessions.map(session => {
@@ -33,14 +42,29 @@ router.get('/', (_req: Request, res: Response) => {
   }
 });
 
-// GET /api/sessions/:id - Get session with messages
+// GET /api/sessions/:id - Get session with messages (user isolation check)
 router.get('/:id', (req: Request<SessionParams>, res: Response) => {
   try {
     const id = req.params.id;
+    const authReq = req as unknown as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
     const sessionService = getSessionService();
     const result = sessionService.getSession(id);
     
     if (!result) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+    
+    // Multi-user isolation: ensure session belongs to the user
+    const session = result.session;
+    if (session.user_id !== userId) {
       res.status(404).json({ error: 'Session not found' });
       return;
     }
@@ -55,24 +79,37 @@ router.get('/:id', (req: Request<SessionParams>, res: Response) => {
 // POST /api/sessions - Create a new session
 router.post('/', (req: Request, res: Response) => {
   try {
-    const { profile_id } = req.body;
+    const authReq = req as unknown as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
     
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
+    const { profile_id } = req.body;
+    const profileService = getProfileService();
     const sessionService = getSessionService();
     
-    // If profile_id is not provided, try to get the current profile
+    // If profile_id is not provided, try to get the current profile for this user
     let profileId = profile_id;
     if (!profileId) {
-      const profileService = getProfileService();
-      const profile = profileService.getCurrentProfile();
+      const profile = profileService.getCurrentProfileByUserId(userId);
       if (!profile) {
-        const profile = req.body.profile_id;
-        if (!profile) {
-          res.status(400).json({ error: 'Profile ID is required' });
-          return;
-        }
-        profileId = profile;
-      } else {
-        profileId = profile.id;
+        res.status(400).json({ error: 'Profile ID is required' });
+        return;
+      }
+      profileId = profile.id;
+    } else {
+      // If profile_id is provided, verify it belongs to this user
+      const profile = profileService.getProfile(profileId);
+      if (!profile) {
+        res.status(404).json({ error: 'Profile not found' });
+        return;
+      }
+      if (profile.user_id !== userId) {
+        res.status(403).json({ error: 'Access denied' });
+        return;
       }
     }
     
@@ -93,6 +130,14 @@ router.post('/', (req: Request, res: Response) => {
 // POST /api/sessions/:id/messages - Add a message to a session
 router.post('/:id/messages', (req: Request<SessionParams>, res: Response) => {
   try {
+    const authReq = req as unknown as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
     const id = req.params.id;
     const { role, content } = req.body;
     
@@ -102,6 +147,18 @@ router.post('/:id/messages', (req: Request<SessionParams>, res: Response) => {
     }
     
     const sessionService = getSessionService();
+    
+    // Verify session belongs to user
+    const session = sessionService.getSessionWithoutMessages(id);
+    if (!session) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+    if (session.user_id !== userId) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+    
     const message = sessionService.addMessage(id, role, content);
     
     res.status(201).json(message);
@@ -119,6 +176,14 @@ router.post('/:id/messages', (req: Request<SessionParams>, res: Response) => {
 // PUT /api/sessions/:id/end - End a session with summary
 router.put('/:id/end', (req: Request<SessionParams>, res: Response) => {
   try {
+    const authReq = req as unknown as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
     const id = req.params.id;
     const { summary, action_items } = req.body;
     
@@ -128,14 +193,26 @@ router.put('/:id/end', (req: Request<SessionParams>, res: Response) => {
     }
     
     const sessionService = getSessionService();
-    const session = sessionService.endSession(id, summary, action_items || []);
     
+    // Verify session belongs to user
+    const session = sessionService.getSessionWithoutMessages(id);
     if (!session) {
       res.status(404).json({ error: 'Session not found' });
       return;
     }
+    if (session.user_id !== userId) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
     
-    res.json(session);
+    const endedSession = sessionService.endSession(id, summary, action_items || []);
+    
+    if (!endedSession) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+    
+    res.json(endedSession);
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: error.message });
@@ -150,12 +227,24 @@ router.put('/:id/end', (req: Request<SessionParams>, res: Response) => {
 // POST /api/sessions/:id/end-and-summarize - End session with AI-generated summary
 router.post('/:id/end-and-summarize', async (req: Request<SessionParams>, res: Response) => {
   try {
+    const authReq = req as unknown as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
     const id = req.params.id;
     const sessionService = getSessionService();
 
-    // Verify session exists
+    // Verify session belongs to user
     const session = sessionService.getSessionWithoutMessages(id);
     if (!session) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+    if (session.user_id !== userId) {
       res.status(404).json({ error: 'Session not found' });
       return;
     }
@@ -191,6 +280,14 @@ router.post('/:id/end-and-summarize', async (req: Request<SessionParams>, res: R
 // PATCH /api/sessions/:id/status - Update session status
 router.patch('/:id/status', (req: Request<SessionParams>, res: Response) => {
   try {
+    const authReq = req as unknown as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
     const id = req.params.id;
     const { status } = req.body;
     
@@ -200,14 +297,26 @@ router.patch('/:id/status', (req: Request<SessionParams>, res: Response) => {
     }
     
     const sessionService = getSessionService();
-    const session = sessionService.updateSessionStatus(id, status);
     
+    // Verify session belongs to user
+    const session = sessionService.getSessionWithoutMessages(id);
     if (!session) {
       res.status(404).json({ error: 'Session not found' });
       return;
     }
+    if (session.user_id !== userId) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
     
-    res.json(session);
+    const updatedSession = sessionService.updateSessionStatus(id, status);
+    
+    if (!updatedSession) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+    
+    res.json(updatedSession);
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: error.message });
@@ -222,8 +331,27 @@ router.patch('/:id/status', (req: Request<SessionParams>, res: Response) => {
 // DELETE /api/sessions/:id - Delete a session
 router.delete('/:id', (req: Request<SessionParams>, res: Response) => {
   try {
+    const authReq = req as unknown as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
     const id = req.params.id;
     const sessionService = getSessionService();
+    
+    // Verify session belongs to user
+    const session = sessionService.getSessionWithoutMessages(id);
+    if (!session) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+    if (session.user_id !== userId) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
     
     const deleted = sessionService.deleteSession(id);
     

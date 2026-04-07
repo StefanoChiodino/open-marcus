@@ -4,6 +4,7 @@ import { getSessionService } from '../services/session.js';
 import { getProfileService } from '../services/profile.js';
 import { buildSystemPrompt, generateGreeting } from '../services/persona.js';
 import { getSettingsService } from '../services/settings.js';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -23,12 +24,21 @@ const router = Router();
  *
  * Error responses:
  *   - 400: Missing session_id or message
- *   - 404: Session not found
+ *   - 401: Unauthorized (no auth token)
+ *   - 404: Session not found or doesn't belong to user
  *   - 503: Ollama is not running
  *   - 500: Internal server error
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
     const { session_id, message } = req.body;
 
     // Validate request body
@@ -53,9 +63,15 @@ router.post('/', async (req: Request, res: Response) => {
       ollamaService.setModel(settings.selectedModel);
     }
 
-    // Verify session exists
+    // Verify session exists and belongs to user
     const session = sessionService.getSessionWithoutMessages(session_id);
     if (!session) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+    
+    // Multi-user isolation: ensure session belongs to the user
+    if (session.user_id !== userId) {
       res.status(404).json({ error: 'Session not found' });
       return;
     }

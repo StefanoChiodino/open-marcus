@@ -168,6 +168,27 @@ export class DatabaseService {
   }
 
   /**
+   * List profiles for a specific user (multi-user isolation)
+   */
+  listProfilesByUserId(userId: string): Profile[] {
+    const sql = 'SELECT * FROM profiles WHERE user_id = ? ORDER BY created_at DESC';
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const results = stmt.all(userId) as Profile[];
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: results.length,
+    });
+    
+    return results;
+  }
+
+  /**
    * Get the raw encrypted_data string from the database (for encryption verification)
    * Returns the encrypted_data exactly as stored, without any decryption or parsing
    */
@@ -396,7 +417,7 @@ export class DatabaseService {
   }
 
   /**
-   * List all sessions
+   * List all sessions (for backward compatibility - prefer listSessionsByUserId for multi-user)
    * Decrypts summary and action_items for each session.
    */
   listAllSessions(): Session[] {
@@ -405,6 +426,37 @@ export class DatabaseService {
     
     const stmt = this.db.prepare(sql);
     const results = stmt.all() as Session[];
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: results.length,
+    });
+    
+    // Decrypt session data
+    for (const session of results) {
+      this.decryptSessionFields(session);
+    }
+    
+    return results;
+  }
+
+  /**
+   * List sessions for a specific user (multi-user isolation)
+   * Decrypts summary and action_items for each session.
+   */
+  listSessionsByUserId(userId: string): Session[] {
+    const sql = `
+      SELECT * FROM sessions
+      WHERE user_id = ?
+      ORDER BY started_at DESC
+    `;
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    const results = stmt.all(userId) as Session[];
     
     logQuery({
       sql,

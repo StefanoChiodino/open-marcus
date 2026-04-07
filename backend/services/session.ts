@@ -92,6 +92,13 @@ export class SessionService {
   }
 
   /**
+   * List all sessions for a specific user (multi-user isolation)
+   */
+  listSessionsByUserId(userId: string): Session[] {
+    return this.getDb().listSessionsByUserId(userId);
+  }
+
+  /**
    * End a session with summary and action items
    */
   endSession(id: string, summary: string, actionItems: string[]): Session | null {

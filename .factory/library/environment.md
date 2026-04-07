@@ -6,7 +6,6 @@ Environment variables, external dependencies, and setup notes for OpenMarcus.
 
 **Backend:**
 - `PORT` - Backend server port (default: 3100)
-- `DATABASE_URL` - PostgreSQL connection string
 - `JWT_SECRET` - Secret for JWT token signing
 
 **Frontend:**
@@ -21,7 +20,7 @@ Environment variables, external dependencies, and setup notes for OpenMarcus.
 ## External Dependencies
 
 ### Required
-- **PostgreSQL** - On localhost:5432
+- **SQLite** - Local database via better-sqlite3 (no external DB needed)
 - **Node.js** - For backend and frontend dev
 
 ### Optional (app works without but features limited)
@@ -40,10 +39,7 @@ pnpm install
 # Install Playwright browsers
 npx playwright install chromium
 
-# Start database (if using docker)
-docker compose up -d postgres
-
-# Start backend
+# Start backend (creates SQLite DB automatically on first run)
 PORT=3100 npx tsx backend/server.ts &
 
 # Start frontend
@@ -52,10 +48,10 @@ PORT=3101 npm run dev:frontend &
 
 ### Database Setup
 
-The backend uses PostgreSQL. Ensure:
-- Database exists: `openmarcus`
-- User has appropriate permissions
-- Migrations have run
+The backend uses SQLite via better-sqlite3. Database file is created automatically at:
+- `./data/openmarcus.db` (relative to project root)
+
+No external database server needed - SQLite stores data locally in a single file.
 
 ### External Services
 
@@ -89,14 +85,11 @@ python3 server.py --port 8766
 | Ollama | 11434 |
 | STT | 8765 |
 | TTS | 8766 |
-| PostgreSQL | 5432 |
 
 ## Platform Notes
 
 **macOS:**
 - Uses `lsof -ti :PORT | xargs kill` for stopping services
-- Docker Desktop for PostgreSQL
 
 **Linux:**
 - May need `fuser -k PORT/tcp` instead of `lsof`
-- PostgreSQL typically via native install or Docker

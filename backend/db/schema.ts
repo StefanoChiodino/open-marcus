@@ -13,8 +13,8 @@ export interface Profile {
   id: string;
   user_id: string; // FK to users (1:1)
   name: string;
-  bio: string | null;
-  encrypted_data: string; // JSON string of EncryptedData
+  bio: null; // Bio is NOT stored in plaintext - only in encrypted_data for privacy
+  encrypted_data: string; // JSON string of EncryptedData (contains encrypted name + bio)
   created_at: string;
   updated_at: string;
 }
@@ -55,12 +55,13 @@ export interface ActionItem {
  * SQL statements to create the schema (without user_id - added in migration 004)
  */
 export const CREATE_TABLES_SQL = `
--- Profiles table: stores user profile data (encrypted)
+-- Profiles table: stores user profile data
+-- bio is stored ONLY in encrypted_data, not in plaintext for privacy
 CREATE TABLE IF NOT EXISTS profiles (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  bio TEXT,
-  encrypted_data TEXT NOT NULL,
+  bio TEXT, -- kept for schema compatibility but always NULL (bio is in encrypted_data)
+  encrypted_data TEXT NOT NULL, -- contains encrypted { name, bio }
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -132,12 +133,13 @@ CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
  */
 export const ADD_USER_ID_COLUMNS_SQL = `
 -- Recreate profiles table with user_id column
+-- bio is stored ONLY in encrypted_data for privacy (plaintext bio column kept NULL)
 CREATE TABLE IF NOT EXISTS profiles_new (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   name TEXT NOT NULL,
-  bio TEXT,
-  encrypted_data TEXT NOT NULL,
+  bio TEXT, -- kept for schema compatibility but always NULL
+  encrypted_data TEXT NOT NULL, -- contains encrypted { name, bio }
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -145,7 +147,7 @@ CREATE TABLE IF NOT EXISTS profiles_new (
 
 -- Copy data (empty since we clear below)
 INSERT INTO profiles_new (id, user_id, name, bio, encrypted_data, created_at, updated_at)
-SELECT id, '', name, bio, encrypted_data, created_at, updated_at FROM profiles;
+SELECT id, '', name, NULL, encrypted_data, created_at, updated_at FROM profiles;
 
 -- Drop old table and rename new one
 DROP TABLE profiles;

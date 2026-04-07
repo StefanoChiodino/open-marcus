@@ -7,19 +7,12 @@ commands:
   lint: npm run lint
 
 services:
-  postgres:
-    start: docker compose up -d postgres
-    stop: docker compose stop postgres
-    healthcheck: pg_isready -h localhost -p 5432
-    port: 5432
-    depends_on: []
-
   backend:
     start: PORT=3100 npx tsx backend/server.ts
     stop: lsof -ti :3100 | xargs kill
     healthcheck: curl -sf http://localhost:3100/health
     port: 3100
-    depends_on: [postgres]
+    depends_on: []
 
   frontend:
     start: PORT=3101 npm run dev:frontend

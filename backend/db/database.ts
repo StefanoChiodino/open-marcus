@@ -61,7 +61,8 @@ export class DatabaseService {
     const getDuration = startQueryTimer();
     
     const stmt = this.db.prepare(sql);
-    stmt.run(id, defaultUser.id, name, bio, JSON.stringify(encryptedData));
+    // Bio is stored ONLY in encrypted_data, not in plaintext bio column
+    stmt.run(id, defaultUser.id, name, null, JSON.stringify(encryptedData));
     
     logQuery({
       sql,
@@ -88,7 +89,8 @@ export class DatabaseService {
     const getDuration = startQueryTimer();
     
     const stmt = this.db.prepare(sql);
-    stmt.run(id, userId, name, bio, JSON.stringify(encryptedData));
+    // Bio is stored ONLY in encrypted_data, not in plaintext bio column
+    stmt.run(id, userId, name, null, JSON.stringify(encryptedData));
     
     logQuery({
       sql,
@@ -135,7 +137,8 @@ export class DatabaseService {
     const getDuration = startQueryTimer();
     
     const stmt = this.db.prepare(sql);
-    const result = stmt.run(name, bio, JSON.stringify(encryptedData), id);
+    // Bio is stored ONLY in encrypted_data, not in plaintext bio column
+    const result = stmt.run(name, null, JSON.stringify(encryptedData), id);
     
     logQuery({
       sql,
@@ -1092,7 +1095,7 @@ export class DatabaseService {
             profile.id,
             defaultUser.id,
             profile.name,
-            profile.bio || null,
+            null, // bio stored ONLY in encrypted_data
             profile.encrypted_data || null,
             profile.created_at,
             profile.updated_at,

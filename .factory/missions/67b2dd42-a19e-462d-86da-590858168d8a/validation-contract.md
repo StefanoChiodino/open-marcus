@@ -92,3 +92,27 @@ Evidence: screenshot of STT reload complete, screenshot of voice transcription w
 TTS and STT settings saved in one browser session are preserved and displayed when reopening the Settings page in a new session.
 Tool: agent-browser
 Evidence: screenshot of settings in session 1, screenshot of same settings in session 2
+
+## Area: Session Loading
+
+### VAL-SESSION-LOAD-001: Session loaded from history shows session content
+When a user navigates to /history/{sessionId} for a session they created, the session detail page loads successfully and displays the conversation.
+Tool: agent-browser
+Evidence: screenshot of session detail page, no error message
+
+### VAL-SESSION-LOAD-002: Session loading shows clear error for non-existent session
+When a user navigates to /history/{invalidSessionId}, the page shows a clear "Session not found" error message (not a crash).
+Tool: agent-browser
+Evidence: screenshot of error message, no console errors
+
+### VAL-SESSION-LOAD-003: Direct URL session loading works for valid sessions
+Navigating directly to /history/{sessionId} (deep link) for a valid session displays the session detail page correctly.
+Tool: agent-browser
+Evidence: screenshot of session detail page via direct URL
+
+## Cross-Area Flows
+
+### VAL-SESSION-HISTORY-001: Session created in meditation appears in history
+After completing a meditation session, the session appears in the history list and can be clicked to view session detail.
+Tool: agent-browser
+Evidence: screenshot of history list with new session, click navigates to detail

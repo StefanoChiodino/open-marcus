@@ -16,6 +16,10 @@
     "VAL-STT-008": { "status": "pending" },
     "VAL-CROSS-001": { "status": "pending", "notes": "Blocked by pre-existing auth middleware issue - fix-auth-onboarding-blocker feature created to resolve" },
     "VAL-CROSS-002": { "status": "pending" },
-    "VAL-CROSS-003": { "status": "pending" }
+    "VAL-CROSS-003": { "status": "pending" },
+    "VAL-SESSION-LOAD-001": { "status": "pending", "notes": "Session loading from history - new assertion from session-not-found bug report" },
+    "VAL-SESSION-LOAD-002": { "status": "pending", "notes": "Non-existent session shows clear error - new assertion from session-not-found bug report" },
+    "VAL-SESSION-LOAD-003": { "status": "pending", "notes": "Direct URL session loading - new assertion from session-not-found bug report" },
+    "VAL-SESSION-HISTORY-001": { "status": "pending", "notes": "Session appears in history after meditation - new assertion from session-not-found bug report" }
   }
 }

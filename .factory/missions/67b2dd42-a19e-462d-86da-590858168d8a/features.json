@@ -1,6 +1,55 @@
 {
   "features": [
     {
+      "id": "fix-session-user-migration",
+      "description": "Fix orphaned sessions created before commit c46ba18 that have user_id='default_user' instead of the authenticated user. These sessions appear in history but fail to load with 'Session not found'. The fix: (1) Add migration script that reassigns sessions with user_id='default_user' to the correct authenticated user, (2) OR add endpoint POST /api/admin/migrate-sessions that does the same, (3) OR delete orphaned sessions from the frontend history list if they can't be loaded. Root cause: before c46ba18, profile creation bypassed auth and associated profiles with 'default_user', so sessions created with those profiles inherited wrong user_id.",
+      "skillName": "backend-worker",
+      "milestone": "session-loading-fix",
+      "preconditions": [
+        "Database has sessions table with user_id column",
+        "Users table exists with id and email columns",
+        "Sessions may exist with user_id='default_user'"
+      ],
+      "expectedBehavior": [
+        "Sessions created by authenticated users are associated with that user's id",
+        "Loading a session from history works for all sessions created after profile creation",
+        "Users see their own sessions in history, not orphaned sessions from other users",
+        "API returns 404 only for sessions that genuinely don't exist (not user mismatch)"
+      ],
+      "verificationSteps": [
+        "Check database: SELECT * FROM sessions WHERE user_id='default_user' (should return 0 after fix)",
+        "Manual: Create profile, start meditation, end session, go to history, click session - should load",
+        "Manual: Verify no 'Session not found' errors for your own sessions"
+      ],
+      "fulfills": ["VAL-SESSION-LOAD-001", "VAL-SESSION-LOAD-003"],
+      "status": "pending"
+    },
+    {
+      "id": "e2e-session-loading-comprehensive",
+      "description": "Add comprehensive e2e tests for session loading from history. Tests MUST cover: (1) Direct URL access to /history/{sessionId} for a valid session loads session detail, (2) Invalid/non-existent session ID shows 'Session not found' error, (3) Session created in meditation appears in history list, (4) Clicking session in history navigates to session detail, (5) Session detail shows conversation content. IMPORTANT: Do NOT use clearAllData() in beforeEach - tests must run with existing data to catch user isolation bugs. Tests should create their own session if needed, but must NOT clear existing data.",
+      "skillName": "e2e-worker",
+      "milestone": "session-loading-fix",
+      "preconditions": [
+        "Playwright e2e tests exist in e2e/ directory",
+        "History page exists at /history route",
+        "Session detail page exists at /history/{sessionId} route"
+      ],
+      "expectedBehavior": [
+        "test('Direct URL session loading') - page.goto(/history/{sessionId}) shows session detail",
+        "test('Invalid session shows error') - page.goto(/history/invalid-id) shows 'Session not found'",
+        "test('Session in history list') - session created in meditation appears in history",
+        "test('Click session in history') - clicking session in history list navigates to detail",
+        "test('Session detail shows content') - session detail page shows conversation"
+      ],
+      "verificationSteps": [
+        "npm run test:e2e -- --grep 'session loading|history.*session' (all tests pass)",
+        "No tests should use clearAllData() or delete data before running",
+        "Tests should work with existing database data (user isolation)"
+      ],
+      "fulfills": ["VAL-SESSION-LOAD-001", "VAL-SESSION-LOAD-002", "VAL-SESSION-LOAD-003", "VAL-SESSION-HISTORY-001"],
+      "status": "pending"
+    },
+    {
       "id": "tts-settings-backend",
       "description": "Extend AppSettings interface to include ttsVoice, ttsRate, ttsPitch. Add TTS settings to GET /api/settings response. Add TTS settings to PUT /api/settings endpoint. Validate TTS settings (voice from curated list, rate -50% to +100%, pitch -50Hz to +50Hz).",
       "skillName": "backend-worker",

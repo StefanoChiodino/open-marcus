@@ -98,6 +98,42 @@
       "status": "pending"
     },
     {
+      "id": "fix-stt-symlink-detection",
+      "description": "Fix bug in GET /api/settings/stt-models where symlinked model directories are not detected. On macOS, readdirSync returns symlinks as symlinks, not directories. Fix: use lstatSync or statSync to check if the entry is a directory (following symlinks).",
+      "skillName": "backend-worker",
+      "milestone": "stt-settings",
+      "preconditions": [
+        "GET /api/settings/stt-models endpoint exists in backend/routes/settings.ts"
+      ],
+      "expectedBehavior": [
+        "Symlinked directories in servers/stt/ are detected as valid model directories",
+        "curl GET /api/settings/stt-models returns non-empty array with model info"
+      ],
+      "verificationSteps": [
+        "curl GET /api/settings/stt-models returns model array"
+      ],
+      "fulfills": [],
+      "status": "pending"
+    },
+    {
+      "id": "fix-auth-profile-public",
+      "description": "Fix auth middleware to add /profile to PUBLIC_PATHS. The previous fix was reverted. POST /api/profile should work without auth token.",
+      "skillName": "backend-worker",
+      "milestone": "stt-settings",
+      "preconditions": [
+        "Auth middleware exists in backend/middleware/auth.ts"
+      ],
+      "expectedBehavior": [
+        "POST /api/profile works without auth token",
+        "Profile creation succeeds from frontend onboarding flow"
+      ],
+      "verificationSteps": [
+        "curl -X POST http://localhost:3100/api/profile -d '{\"name\":\"Test\"}' returns 201"
+      ],
+      "fulfills": [],
+      "status": "pending"
+    },
+    {
       "id": "stt-settings-backend",
       "description": "Add STT model settings to backend. Add sttModel field to AppSettings. Add GET /api/settings/stt-models endpoint that lists available sherpa-onnx models from servers/stt/ directory with their sizes. Add POST /api/settings/stt-reload endpoint that hot-reloads the STT model (destroys old recognizer, creates new one with specified model). NOTE: This feature sets up the API endpoints and validation. True hot-reload implementation is done by stt-hot-reload-impl feature.",
       "skillName": "backend-worker",

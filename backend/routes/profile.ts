@@ -39,16 +39,11 @@ router.get('/', (req: Request, res: Response) => {
   }
 });
 
-// POST /api/profile - Create new profile
+// POST /api/profile - Create new profile (public during onboarding)
 router.post('/', (req: Request, res: Response) => {
   try {
     const authReq = req as AuthenticatedRequest;
     const userId = authReq.user?.userId;
-    
-    if (!userId) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
-    }
     
     const { name, bio } = req.body;
     
@@ -58,7 +53,12 @@ router.post('/', (req: Request, res: Response) => {
     }
     
     const profileService = getProfileService();
-    const profile = profileService.createProfileForUser(userId, name.trim(), bio || null);
+    
+    // If user is authenticated, associate profile with user
+    // If not authenticated (onboarding), create profile without user association
+    const profile = userId 
+      ? profileService.createProfileForUser(userId, name.trim(), bio || null)
+      : profileService.createProfile(name.trim(), bio || null);
     
     res.status(201).json(profile);
   } catch (error) {

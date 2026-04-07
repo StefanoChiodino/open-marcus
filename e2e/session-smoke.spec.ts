@@ -135,8 +135,8 @@ test.describe('Session Page Smoke Tests', () => {
     const textarea = page.getByLabel('Type your message to Marcus');
     await expect(textarea).toBeVisible();
     
-    // Should see the End Session button
-    const endBtn = page.getByRole('button', { name: 'End Session' });
+    // Should see the End Session button (aria-label is "End meditation session")
+    const endBtn = page.getByRole('button', { name: 'End meditation session' });
     await expect(endBtn).toBeVisible();
     
     // Send button should be visible
@@ -193,15 +193,21 @@ test.describe('Session Page Smoke Tests', () => {
     const sendBtn = page.getByRole('button', { name: 'Send message' });
     await sendBtn.click();
     
-    // Wait for user message to appear
+    // Wait for user message to appear in chat
     await expect(page.getByText('How can I find peace in difficult times?')).toBeVisible({ timeout: 10000 });
     
-    // Click End Session button
-    const endBtn = page.getByRole('button', { name: 'End Session' });
+    // Wait for the loading indicator to disappear (streaming in progress indicator)
+    // This indicates Marcus has started responding
+    await expect(page.getByText('Marcus is reflecting...')).not.toBeVisible({ timeout: 30000 });
+    
+    // Click End Session button (aria-label is "End meditation session")
+    const endBtn = page.getByRole('button', { name: 'End meditation session' });
+    await expect(endBtn).toBeVisible();
     await endBtn.click();
     
     // Wait for summary to appear - should see "Session Complete" heading
-    await expect(page.getByRole('heading', { name: 'Session Complete' })).toBeVisible({ timeout: 15000 });
+    // Use longer timeout as this involves API call to generate summary
+    await expect(page.getByRole('heading', { name: 'Session Complete' })).toBeVisible({ timeout: 60000 });
     
     // Should see Marcus's Reflection section
     await expect(page.getByRole('heading', { name: "Marcus's Reflection" })).toBeVisible();
@@ -209,8 +215,8 @@ test.describe('Session Page Smoke Tests', () => {
     // Should see "Your Commitments" section (action items)
     await expect(page.getByRole('heading', { name: 'Your Commitments' })).toBeVisible();
     
-    // Should see "Begin New Meditation" button
-    await expect(page.getByRole('button', { name: 'Begin New Meditation' })).toBeVisible();
+    // Should see "Begin New Meditation" button (aria-label is "Begin a new meditation session")
+    await expect(page.getByRole('button', { name: 'Begin a new meditation session' })).toBeVisible();
   });
 
   test('session page has correct elements in idle state', async ({ page }) => {
@@ -276,12 +282,15 @@ test.describe('Session Page Smoke Tests', () => {
     await page.getByRole('button', { name: 'Send message' }).click();
     await expect(page.getByText('I need guidance.')).toBeVisible({ timeout: 10000 });
     
-    // End session
-    await page.getByRole('button', { name: 'End Session' }).click();
-    await expect(page.getByRole('heading', { name: 'Session Complete' })).toBeVisible({ timeout: 15000 });
+    // Wait for streaming to start (loading indicator appears then disappears)
+    await expect(page.getByText('Marcus is reflecting...')).not.toBeVisible({ timeout: 30000 });
     
-    // Click Begin New Meditation
-    await page.getByRole('button', { name: 'Begin New Meditation' }).click();
+    // End session (aria-label is "End meditation session")
+    await page.getByRole('button', { name: 'End meditation session' }).click();
+    await expect(page.getByRole('heading', { name: 'Session Complete' })).toBeVisible({ timeout: 60000 });
+    
+    // Click Begin New Meditation (aria-label is "Begin a new meditation session")
+    await page.getByRole('button', { name: 'Begin a new meditation session' }).click();
     
     // Should be back to idle state
     await expect(page.getByRole('heading', { name: 'Meditation with Marcus Aurelius' })).toBeVisible({ timeout: 10000 });

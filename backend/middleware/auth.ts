@@ -29,6 +29,7 @@ const PUBLIC_PATHS = [
   '/auth/login',       // /api/auth/login appears as /auth/login
   '/auth/verify',      // /api/auth/verify appears as /auth/verify
   '/auth/logout',      // /api/auth/logout appears as /auth/logout
+  '/profile',          // /api/profile - POST (create profile) is public for onboarding
 ];
 
 /**

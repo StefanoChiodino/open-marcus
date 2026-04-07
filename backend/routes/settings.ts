@@ -577,11 +577,8 @@ router.get('/stt-models', async (_req: Request, res: Response) => {
 /**
  * POST /api/settings/stt-reload
  *
- * Triggers hot-reload of the STT model.
- * The STT server is restarted with the specified model directory.
- *
- * Since we cannot modify the STT server (servers/stt/server.mjs),
- * this endpoint uses child_process to restart the STT server.
+ * Triggers hot-reload of the STT model via the sherpa-onnx server.
+ * The STT server's POST /reload endpoint performs the actual model switch.
  */
 router.post('/stt-reload', async (req: Request, res: Response) => {
   try {
@@ -611,19 +608,14 @@ router.post('/stt-reload', async (req: Request, res: Response) => {
       return;
     }
 
-    // Note: Since we cannot modify the STT server (AGENTS.md restriction),
-    // we cannot do a true hot-reload without modifying server.mjs.
-    // Instead, we just verify the model exists and return success.
-    // The actual hot-reload would require modifying the STT server
-    // to support dynamic model switching.
-    //
-    // For now, we just return success if the model exists and STT is online.
-    // The frontend will need to restart the STT server when changing models.
+    // Trigger hot-reload via the STT service which proxies to sherpa-onnx /reload endpoint
+    // The sherpa-onnx server handles the actual model switching asynchronously
+    const result = await sttService.reload(modelPath);
 
     res.json({
       success: true,
-      message: 'STT model verified',
-      model_dir: modelPath,
+      message: result.message || 'STT model reload initiated',
+      model_dir: result.model_dir || modelPath,
     });
   } catch (error) {
     console.error('Error reloading STT model:', error);

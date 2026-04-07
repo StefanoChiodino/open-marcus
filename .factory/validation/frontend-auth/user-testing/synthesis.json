@@ -1,6 +1,6 @@
 {
   "milestone": "frontend-auth",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "assertionsSummary": {
     "total": 14,
@@ -11,6 +11,9 @@
   "passedAssertions": [
     "VAL-AUTH-006",
     "VAL-AUTH-007",
+    "VAL-AUTH-008",
+    "VAL-AUTH-009",
+    "VAL-AUTH-010",
     "VAL-FRONTEND-001",
     "VAL-FRONTEND-002",
     "VAL-FRONTEND-003",
@@ -25,7 +28,7 @@
   "failedAssertions": [
     {
       "id": "VAL-PWD-GUIDE-001",
-      "reason": "Password guidance checkmarks not visible on registration form - no visual indicators shown below password field"
+      "reason": "Password guidance checkmarks not visible on registration form - screenshot shows only username/password fields without checkmarks"
     },
     {
       "id": "VAL-PWD-GUIDE-002",
@@ -35,8 +38,8 @@
   "blockedAssertions": [],
   "appliedUpdates": [
     {
-      "target": "user-testing.md",
-      "description": "App now uses auth flow (login/register) instead of onboarding flow. Registration page shows username/password fields but no password guidance checkmarks are visible.",
+      "target": "validation-state.json",
+      "description": "Updated VAL-AUTH-008/009/010 to passed based on curl testing. VAL-PWD-GUIDE-001/002 remain failed.",
       "source": "flow-report"
     }
   ],

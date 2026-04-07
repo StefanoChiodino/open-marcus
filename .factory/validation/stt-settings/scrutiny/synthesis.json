@@ -1,0 +1,58 @@
+{
+  "milestone": "stt-settings",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": { "passed": true, "command": "npm run test", "exitCode": 0 },
+    "typecheck": { "passed": true, "command": "npm run typecheck", "exitCode": 0 },
+    "lint": { "passed": true, "command": "npm run lint", "exitCode": 0 }
+  },
+  "reviewsSummary": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [
+    {
+      "target": "e2e/history-smoke.spec.ts",
+      "description": "Fixed unused variable 'sessionUrl' causing typecheck failure",
+      "sourceFeature": "scrutiny-validator-stt-settings"
+    }
+  ],
+  "suggestedGuidanceUpdates": [],
+  "rejectedObservations": [],
+  "previousRound": null,
+  "featureReviews": {
+    "tts-settings-frontend": {
+      "review": "TTS settings section implemented correctly with: voice dropdown showing 6 curated voices (en-US-GuyNeural, en-US-ChristopherNeural, en-US-BrianNeural, en-GB-ThomasNeural, en-US-JennyNeural, en-US-MichelleNeural), rate slider range -50% to +100% with default +25%, pitch slider range -50Hz to +50Hz with default +0Hz. Settings persist via PUT /api/settings on change and are loaded via GET /api/settings on mount.",
+      "fulfills": ["VAL-TTS-001", "VAL-TTS-002", "VAL-TTS-003", "VAL-TTS-004"]
+    },
+    "tts-settings-backend": {
+      "review": "TTS settings backend properly implemented. GET /api/settings returns ttsVoice, ttsRate, ttsPitch. PUT /api/settings validates: voice must be from TTS_VOICES list, rate must match /^([+-]?\\d+)%$/ and be between -50 and 100, pitch must match /^([+-]?\\d+)Hz$/ and be between -50 and 50. Invalid settings return 400 with descriptive error.",
+      "fulfills": ["VAL-TTS-005"]
+    },
+    "tts-voice-integration": {
+      "review": "TTS voice integration complete. App.tsx calls fetchSettings() on mount to load TTS settings. useTTSStore (Zustand) caches voice/rate/pitch. VoiceControls.speak() retrieves cached settings via useTTSStore.getState() and passes them to voiceAPI.synthesize(). Settings are also updated in store when Settings page saves changes.",
+      "fulfills": []
+    },
+    "stt-settings-backend": {
+      "review": "STT settings backend implemented correctly. GET /api/settings/stt-models returns array of {name, path, sizeMB, memoryMB} for sherpa-onnx models in servers/stt/. POST /api/settings/stt-reload accepts modelDir, validates it exists, and triggers hot-reload via STT service.",
+      "fulfills": ["VAL-STT-004", "VAL-STT-006"]
+    },
+    "stt-hot-reload-impl": {
+      "review": "Hot-reload implementation in servers/stt/server.mjs works correctly. POST /reload accepts {modelDir}, returns 202 immediately, performs reload asynchronously. During reload, /health returns {status: 'reloading', model_loaded: false}. After reload completes, /health returns {status: 'ok', model_loaded: true}. During reload, transcribe returns 503.",
+      "fulfills": []
+    },
+    "stt-settings-frontend": {
+      "review": "STT settings frontend implemented correctly. Dropdown lists models with size (e.g., 'sherpa-onnx-whisper-tiny.en (~40MB RAM)'). Warning banner appears when switching to larger model. Reload Model button triggers POST /api/settings/stt-reload. Loading spinner shown during reload (aria-busy=true). Error toast on failure. Previous model remains active if reload fails.",
+      "fulfills": ["VAL-STT-001", "VAL-STT-002", "VAL-STT-003", "VAL-STT-005", "VAL-STT-008"]
+    },
+    "stt-model-integration": {
+      "review": "STT model integration complete. VoiceControls uses voiceAPI.transcribe() which proxies to /api/stt/transcribe. The STT service proxies to sherpa-onnx server on port 8765. After model reload, new transcriptions use the reloaded model automatically since the STT server handles model switching internally.",
+      "fulfills": ["VAL-STT-007", "VAL-CROSS-002", "VAL-CROSS-003"]
+    }
+  },
+  "notes": "Subagent spawning failed due to model configuration issues ('Invalid model: custom:minimax-m2.7'). Performed direct code review instead. All implementation appears correct and complete."
+}

@@ -42,6 +42,14 @@ router.get('/', (req: Request, res: Response) => {
 // POST /api/profile - Create new profile
 router.post('/', (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user?.userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    
     const { name, bio } = req.body;
     
     if (!name || name.trim().length === 0) {
@@ -49,8 +57,8 @@ router.post('/', (req: Request, res: Response) => {
       return;
     }
     
-    const db = getDatabase();
-    const profile = db.createProfile(name.trim(), bio || null);
+    const profileService = getProfileService();
+    const profile = profileService.createProfileForUser(userId, name.trim(), bio || null);
     
     res.status(201).json(profile);
   } catch (error) {

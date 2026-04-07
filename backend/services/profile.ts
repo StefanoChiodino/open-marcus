@@ -38,6 +38,22 @@ export class ProfileService {
   }
 
   /**
+   * Create a new profile for a specific user (multi-user mode)
+   */
+  createProfileForUser(userId: string, name: string, bio: string | null = null): Profile {
+    if (!name || name.trim().length === 0) {
+      throw new ValidationError('Name is required');
+    }
+    
+    if (!userId || userId.trim().length === 0) {
+      throw new ValidationError('User ID is required');
+    }
+    
+    const trimmedName = name.trim();
+    return this.getDb().createProfileForUser(userId, trimmedName, bio);
+  }
+
+  /**
    * Get the current/only profile
    * Returns the first profile in the system (for single-user app)
    */

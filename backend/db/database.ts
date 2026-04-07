@@ -74,6 +74,33 @@ export class DatabaseService {
   }
 
   /**
+   * Create a new profile for a specific user (multi-user mode).
+   * Associates the profile directly with the given userId.
+   */
+  createProfileForUser(userId: string, name: string, bio: string | null = null, data: object = {}): Profile {
+    const id = randomUUID();
+    const encryptedData = encryptObject({ ...data, name, bio }, this.encryptionPassword);
+    
+    const sql = `
+      INSERT INTO profiles (id, user_id, name, bio, encrypted_data)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    const getDuration = startQueryTimer();
+    
+    const stmt = this.db.prepare(sql);
+    stmt.run(id, userId, name, bio, JSON.stringify(encryptedData));
+    
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+    });
+    
+    return this.getProfile(id)!;
+  }
+
+  /**
    * Get a profile by ID
    */
   getProfile(id: string): Profile | null {

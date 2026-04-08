@@ -1,6 +1,6 @@
 {
   "milestone": "auth-flows",
-  "round": 2,
+  "round": 3,
   "status": "fail",
   "assertionsSummary": {
     "total": 22,
@@ -46,11 +46,19 @@
     "status": "blocked",
     "behaviorUnchanged": true,
     "evidenceFiles": [
-      "auth-flows/onboarding-retest/VAL-ONBOARD-001-registration-form.png",
-      "auth-flows/onboarding-retest/VAL-ONBOARD-001-after-registration.png",
-      "auth-flows/onboarding-retest/VAL-ONBOARD-001-profile-page.png",
-      "auth-flows/onboarding-retest/VAL-ONBOARD-001-auto-created-profile.png"
+      "auth-flows/onboarding-retest/VAL-ONBOARD-001-01-login-page.png",
+      "auth-flows/onboarding-retest/VAL-ONBOARD-001-02-registration-page.png",
+      "auth-flows/onboarding-retest/VAL-ONBOARD-001-03-registration-filled.png",
+      "auth-flows/onboarding-retest/VAL-ONBOARD-001-04-after-registration.png",
+      "auth-flows/onboarding-retest/VAL-ONBOARD-001-05-profile-page.png"
     ],
     "conclusion": "Behavior has NOT changed since round 1. Registration auto-creates profile with username as name, preventing access to onboarding form with 'Begin Journey' button."
+  },
+  "round3Retest": {
+    "assertion": "VAL-ONBOARD-001",
+    "testDate": "2026-04-08",
+    "testUsername": "testuser1775623899",
+    "result": "FAILED - behavior unchanged",
+    "detail": "User registered with username testuser1775623899. After registration, was redirected directly to home page with profile already existing. Onboarding ProfileForm with 'Begin Journey' button was never displayed."
   }
 }

@@ -3,8 +3,8 @@
  */
 
 import type {
-  SessionDTO,
   SessionDetail,
+  SessionDTO,
   SessionSummaryResponse,
   StreamToken,
 } from '../shared/types';
@@ -19,13 +19,12 @@ function authHeaders(): HeadersInit {
 
 export class SessionAPIClient {
   /**
-   * Create a new meditation session
+   * Create a new meditation session for the authenticated user
    */
-  async createSession(profileId?: string): Promise<SessionDTO> {
+  async createSession(): Promise<SessionDTO> {
     const response = await fetch(`${BASE_URL}/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify(profileId ? { profile_id: profileId } : {}),
     });
 
     if (!response.ok) {
@@ -71,7 +70,11 @@ export class SessionAPIClient {
   /**
    * End a session with summary
    */
-  async endSession(sessionId: string, summary: string, actionItems?: string[]): Promise<SessionDTO> {
+  async endSession(
+    sessionId: string,
+    summary: string,
+    actionItems?: string[]
+  ): Promise<SessionDTO> {
     const response = await fetch(`${BASE_URL}/sessions/${sessionId}/end`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
@@ -127,7 +130,7 @@ export class SessionAPIClient {
    */
   async *streamChat(
     sessionId: string,
-    message: string,
+    message: string
   ): AsyncGenerator<StreamToken, void, unknown> {
     const response = await fetch(`${BASE_URL}/chat`, {
       method: 'POST',

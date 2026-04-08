@@ -2,9 +2,10 @@ import { Router, Request, Response } from 'express';
 import { getOllamaService, OllamaOfflineError } from '../services/ollama.js';
 import { getSessionService } from '../services/session.js';
 import { getProfileService } from '../services/profile.js';
-import { buildSystemPrompt, generateGreeting } from '../services/persona.js';
+import { buildSystemPrompt } from '../services/persona.js';
 import { getSettingsService } from '../services/settings.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
+import { buildTokenLimitedContext, estimateMessagesTokens } from '../lib/tokenizer.js';
 
 const router = Router();
 
@@ -97,9 +98,17 @@ router.post('/', async (req: Request, res: Response) => {
     const profile = profileService.getProfile(session.profile_id);
     const userName = profile?.name || '';
 
-    // Build conversation history for Ollama with persona system prompt
+    // Build conversation history with token-based limiting
     const history = sessionService.listMessages(session_id);
-    const messages = buildChatMessages(history, userName);
+    const systemPrompt = buildSystemPrompt();
+    
+    // Use token-based context limiting to prevent memory issues
+    const messages = buildTokenLimitedContext(systemPrompt, history, userName);
+
+    // Log context stats
+    const totalChars = messages.reduce((sum, m) => sum + m.content.length, 0);
+    const totalTokens = estimateMessagesTokens(messages);
+    console.log(`[CHAT] Sending ${messages.length} messages, ~${totalChars} chars, ~${totalTokens} tokens`);
 
     // Set up streaming response headers
     res.setHeader('Content-Type', 'application/x-ndjson');
@@ -109,22 +118,18 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Stream the response
     let fullResponse = '';
+    let lastTokenTime = Date.now();
+    let streamFinished = false;
+    const STREAM_TIMEOUT_MS = 15000; // 15 seconds of no new tokens = stream ended
 
     try {
       for await (const token of ollamaService.streamChat(messages)) {
         fullResponse += token;
+        lastTokenTime = Date.now();
         // Write token as ndjson
         res.write(JSON.stringify({ token }) + '\n');
       }
-
-      // Save assistant response
-      if (fullResponse.trim().length > 0) {
-        sessionService.addMessage(session_id, 'assistant', fullResponse);
-      }
-
-      // Send completion marker
-      res.write(JSON.stringify({ done: true, full_response: fullResponse.trim() }) + '\n');
-      res.end();
+      streamFinished = true;
     } catch (streamError) {
       // If streaming fails
       console.error('Streaming error:', streamError);
@@ -140,7 +145,28 @@ router.post('/', async (req: Request, res: Response) => {
         res.write(JSON.stringify({ error: errMsg }) + '\n');
         res.end();
       }
+      return;
     }
+
+    // Even if streamFinished is true, we need to check if we're actually done
+    // or if the stream ended prematurely (Ollama bug where done:true is not received)
+    // If no new tokens arrived within the timeout, consider the stream complete
+    if (!streamFinished) {
+      const timeSinceLastToken = Date.now() - lastTokenTime;
+      if (timeSinceLastToken > STREAM_TIMEOUT_MS) {
+        console.log('[CHAT] Stream timeout - treating stream end as completion');
+        streamFinished = true;
+      }
+    }
+
+    // Save assistant response
+    if (fullResponse.trim().length > 0) {
+      sessionService.addMessage(session_id, 'assistant', fullResponse);
+    }
+
+    // Send completion marker
+    res.write(JSON.stringify({ done: true, full_response: fullResponse.trim() }) + '\n');
+    res.end();
   } catch (error) {
     // Only send error if headers haven't been sent
     if (!res.headersSent) {
@@ -158,32 +184,4 @@ router.post('/', async (req: Request, res: Response) => {
  * Build the message array for Ollama including persona system prompt.
  * On first user message, prefix with name disclosure and greeting.
  */
-function buildChatMessages(
-  history: Array<{ role: 'user' | 'assistant'; content: string }>,
-  userName: string,
-): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
-  const systemMessage = { role: 'system' as const, content: buildSystemPrompt() };
-
-  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [systemMessage];
-
-  // If this is the first user message, inject persona greeting
-  const isFirstUserMessage = history.length === 1 && history[0]?.role === 'user';
-  if (isFirstUserMessage && userName) {
-    messages.push({ role: 'user', content: `My name is ${userName}.` });
-    messages.push({ role: 'assistant', content: generateGreeting(userName) });
-    // Now add the actual user message
-    messages.push({ role: 'user', content: history[0].content });
-  } else {
-    // Regular conversation history
-    for (const msg of history) {
-      messages.push({
-        role: msg.role === 'user' ? 'user' : 'assistant',
-        content: msg.content,
-      });
-    }
-  }
-
-  return messages;
-}
-
 export default router;

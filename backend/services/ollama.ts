@@ -114,6 +114,7 @@ export class OllamaService {
   /**
    * Send a streaming chat request to Ollama
    * Yields each token as it arrives
+   * The loop terminates when Ollama sends done:true OR when the response body is exhausted
    */
   async *streamChat(messages: OllamaMessage[]): AsyncIterable<string> {
     const response = await fetch(`${this.host}/api/chat`, {
@@ -141,11 +142,14 @@ export class OllamaService {
 
     try {
       let buffer = '';
+      let streamDone = false;
 
-      while (true) {
+      while (!streamDone) {
         const { done, value } = await reader.read();
 
         if (done) {
+          // Response body exhausted - stream is complete
+          streamDone = true;
           break;
         }
 
@@ -163,6 +167,12 @@ export class OllamaService {
 
           try {
             const data = JSON.parse(line);
+            // Check if Ollama signals completion
+            if (data.done === true) {
+              streamDone = true;
+              // Don't yield here - the last message.content was already yielded above
+              break;
+            }
             if (data.message?.content) {
               yield data.message.content;
             }
@@ -172,7 +182,7 @@ export class OllamaService {
         }
       }
 
-      // Process any remaining data in buffer
+      // Process any remaining data in buffer (including final token after done:true)
       if (buffer.trim()) {
         try {
           const data = JSON.parse(buffer);

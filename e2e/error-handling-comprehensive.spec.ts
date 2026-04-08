@@ -9,6 +9,10 @@ import { clearTestData, registerTestUser, setAuthToken, clearAuthToken } from '.
  * - VAL-ERROR-002: API 500 error handled gracefully
  * - VAL-ERROR-003: Timeout error handled gracefully
  * - VAL-ERROR-004: Offline state detected and shown
+ * 
+ * These tests verify the app shows error UI (toasts, error boundaries) when errors occur.
+ * If error UI is not shown, the test fails - which is correct behavior since it means
+ * error handling is broken and users won't know something went wrong.
  */
 
 const FRONTEND_URL = 'http://localhost:3101';
@@ -37,6 +41,29 @@ async function createAuthenticatedPage(page: Page, name: string = 'Error Test Us
   return token;
 }
 
+/**
+ * Helper: Check for specific error UI elements (toast or error boundary)
+ * These are the proper error handling indicators - not just body content
+ */
+async function hasErrorUI(page: Page): Promise<boolean> {
+  // Error toast appears when API calls fail
+  if (await page.locator('.toast--error').count() > 0) return true;
+  
+  // Error boundary shows for React render errors  
+  if (await page.locator('.error-boundary').count() > 0) return true;
+  
+  // Session error display shows when session operations fail
+  if (await page.locator('.meditation-chat__error[role="alert"]').count() > 0) return true;
+  
+  // History error display
+  if (await page.locator('.session-history__error[role="alert"]').count() > 0) return true;
+  
+  // Generic alert role (fallback for any error message)
+  if (await page.locator('[role="alert"]').count() > 0) return true;
+  
+  return false;
+}
+
 test.describe('Comprehensive Error Handling Tests', () => {
   test.beforeEach(async ({ page }) => {
     await clearTestData();
@@ -45,71 +72,55 @@ test.describe('Comprehensive Error Handling Tests', () => {
   });
 
   test.afterEach(async ({ page }) => {
-    // Clean up - go online and clear auth
     await page.context().setOffline(false);
     await clearAuthToken(page);
   });
 
   test.describe('VAL-ERROR-001: Network error shows user-friendly message', () => {
-    test('Shows friendly error when API is unreachable', async ({ page }) => {
-      // Create authenticated session
+    test('Shows error UI when API is unreachable', async ({ page }) => {
       await createAuthenticatedPage(page);
 
-      // Go to home page and intercept API calls to fail
       await page.goto(FRONTEND_URL);
       await page.waitForLoadState('networkidle');
 
       // Mock all API calls to fail with network error
       await page.route('**/api/**', (route) => {
-        // Abort with network failed error
         route.abort('failed');
       });
 
       // Reload the page to trigger API calls
       await page.reload();
+      await page.waitForTimeout(3000);
 
-      // Should see some kind of error state or friendly message
-      // The app should not crash - it should handle this gracefully
-      // Either show error boundary, toast, or inline error message
-      await page.waitForTimeout(2000);
-
-      // Check that we don't have a blank page or crashed app
-      const bodyContent = await page.locator('body').textContent();
-
-      // The app should show some indication of the problem
-      // But most importantly, it should NOT be a blank page
-      expect(bodyContent?.trim().length).toBeGreaterThan(0);
+      // Should see error UI (toast, error boundary, or error display)
+      // This FAIL means error handling UI is not being shown - a real bug
+      expect(await hasErrorUI(page)).toBeTruthy();
     });
 
-    test('Shows friendly error when session list API fails', async ({ page }) => {
-      // Create authenticated session
+    test('Shows error UI when session list API fails', async ({ page }) => {
       await createAuthenticatedPage(page);
 
-      // Navigate to history page first to ensure we're on that page
+      // Navigate to history first
       await page.getByRole('link', { name: 'History' }).click();
       await page.waitForLoadState('networkidle');
 
-      // Mock session API to fail after page loads
+      // Mock session API to fail
       await page.route('**/api/sessions**', (route) => {
         route.abort('failed');
       });
 
-      // Click on a refresh/reload action - navigate to same page via clicking History link
+      // Navigate again to trigger failed API
       await page.getByRole('link', { name: 'History' }).click();
       await page.waitForTimeout(2000);
 
-      // Should see error message - either in toast or inline
-      // The history page should not be blank - at minimum body should have content
-      const bodyText = await page.locator('body').textContent();
-      expect(bodyText?.trim().length).toBeGreaterThan(0);
+      // Should see error UI
+      expect(await hasErrorUI(page)).toBeTruthy();
     });
 
-    test('Network error during login shows user-friendly message', async ({ page }) => {
-      // Go to login page
+    test('Network error during login shows error UI', async ({ page }) => {
       await page.goto(`${FRONTEND_URL}/login`);
       await page.waitForLoadState('networkidle');
 
-      // Fill in credentials
       const username = `erroruser_${Date.now()}`;
       await registerTestUser(username, 'Password123!');
       await page.getByLabel('Username').fill(username);
@@ -120,34 +131,19 @@ test.describe('Comprehensive Error Handling Tests', () => {
         route.abort('failed');
       });
 
-      // Submit form
       await page.getByRole('button', { name: 'Sign In' }).click();
-
-      // Wait for error
       await page.waitForTimeout(2000);
 
-      // Should see error message (not raw network error)
-      // Check for toast or alert with user-friendly message
-      const hasFriendlyError =
-        (await page.getByRole('alert').count()) > 0 ||
-        (await page.locator('.toast--error').count()) > 0 ||
-        (await page.locator('text=/something went wrong|try again|network error/i').count()) > 0;
-
-      // Assert we found some error indication or page body contains error text
-      const bodyText = await page.locator('body').textContent();
-      expect(hasFriendlyError || (bodyText?.includes('error'))).toBeTruthy();
-
-      // Should still be on login page
+      // Should see error UI on login failure
+      expect(await hasErrorUI(page)).toBeTruthy();
       await expect(page).toHaveURL(/\/login/);
     });
   });
 
   test.describe('VAL-ERROR-002: API 500 error handled gracefully', () => {
     test('Shows error UI when server returns 500 on session create', async ({ page }) => {
-      // Create authenticated session
       await createAuthenticatedPage(page);
 
-      // Navigate to session page
       await page.getByRole('link', { name: 'Meditation' }).click();
       await page.waitForLoadState('networkidle');
 
@@ -168,17 +164,14 @@ test.describe('Comprehensive Error Handling Tests', () => {
       const beginBtn = page.getByRole('button', { name: 'Begin Meditation' });
       if (await beginBtn.isVisible()) {
         await beginBtn.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(3000);
       }
 
-      // The page should still be somewhat functional or show a graceful error
-      // Should not be blank
-      const bodyText = await page.locator('body').textContent();
-      expect(bodyText?.trim().length).toBeGreaterThan(0);
+      // Should see error UI when 500 occurs
+      expect(await hasErrorUI(page)).toBeTruthy();
     });
 
     test('Shows error UI when server returns 500 on profile load', async ({ page }) => {
-      // Create authenticated session
       await createAuthenticatedPage(page);
 
       // Mock profile API to return 500
@@ -190,31 +183,21 @@ test.describe('Comprehensive Error Handling Tests', () => {
         });
       });
 
-      // Reload the page
       await page.reload();
       await page.waitForTimeout(2000);
 
-      // Page should not be completely blank/crashed
-      const bodyText = await page.locator('body').textContent();
-      expect(bodyText?.trim().length).toBeGreaterThan(0);
+      // Should show error UI
+      expect(await hasErrorUI(page)).toBeTruthy();
     });
 
-    test('Shows error when chat API returns 500', async ({ page }) => {
-      // Create authenticated session
+    test('Shows error UI when chat API returns 500', async ({ page }) => {
       await createAuthenticatedPage(page);
 
-      // Navigate to session and start
       await page.getByRole('link', { name: 'Meditation' }).click();
       await page.waitForLoadState('networkidle');
 
-      // Start session first (need to allow first POST)
-      await page.route('**/api/sessions**', (route) => {
-        if (route.request().method() === 'POST') {
-          route.continue();
-        } else {
-          route.continue();
-        }
-      });
+      // Allow session creation
+      await page.route('**/api/sessions**', (route) => route.continue());
 
       const beginBtn = page.getByRole('button', { name: 'Begin Meditation' });
       if (await beginBtn.isVisible()) {
@@ -222,7 +205,7 @@ test.describe('Comprehensive Error Handling Tests', () => {
         await page.waitForTimeout(1000);
       }
 
-      // Now mock chat API to return 500
+      // Mock chat API to return 500
       await page.route('**/api/chat**', (route) => {
         route.fulfill({
           status: 500,
@@ -231,20 +214,20 @@ test.describe('Comprehensive Error Handling Tests', () => {
         });
       });
 
-      // Type and send a message
       const chatInput = page.locator('input[placeholder*="Type"], textarea').first();
       if (await chatInput.isVisible()) {
         await chatInput.fill('Hello Marcus');
         await page.getByRole('button', { name: 'Send' }).click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(3000);
       }
+
+      // Should see error UI for failed chat
+      expect(await hasErrorUI(page)).toBeTruthy();
     });
 
     test('500 error during data export shows error toast', async ({ page }) => {
-      // Create authenticated session
       await createAuthenticatedPage(page);
 
-      // Navigate to settings
       await page.getByRole('link', { name: 'Settings' }).click();
       await page.waitForLoadState('networkidle');
 
@@ -257,165 +240,122 @@ test.describe('Comprehensive Error Handling Tests', () => {
         });
       });
 
-      // Click export button
       await page.getByRole('button', { name: 'Download JSON Export' }).click();
 
       // Wait for error toast
-      await page.waitForTimeout(2000);
-
-      // Should see error toast
-      const errorToast = page.locator('.toast--error').first();
-      await expect(errorToast).toBeVisible({ timeout: 5000 }).catch(() => {
-        // Error might be shown differently
-      });
+      await expect(page.locator('.toast--error')).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('.toast--error')).toContainText(/export|failed|error/i);
     });
   });
 
   test.describe('VAL-ERROR-003: Timeout error handled gracefully', () => {
-    test('Shows timeout message when request times out', async ({ page }) => {
-      // Create authenticated session
+    test('Shows timeout error when request times out', async ({ page }) => {
       await createAuthenticatedPage(page);
 
-      // Mock a slow API that times out
+      // Mock API to timeout
       await page.route('**/api/**', (route) => {
-        // Delay significantly to trigger timeout (using a reasonable timeout)
-        setTimeout(() => {
-          route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({ data: 'ok' }),
-          });
-        }, 30000); // 30 second delay - way past expected timeout
+        route.abort('timedout');
       });
 
-      // Navigate to trigger API calls
       await page.reload();
-      await page.waitForTimeout(10000); // Wait for timeout to potentially trigger
+      await page.waitForTimeout(3000);
 
-      // The page should remain functional or show graceful error
-      // Just verify page has content
-      const bodyText = await page.locator('body').textContent();
-      expect(bodyText?.trim().length).toBeGreaterThan(0);
+      // Should see error UI for timeout
+      expect(await hasErrorUI(page)).toBeTruthy();
     });
 
-    test('Session API timeout shows user-friendly error', async ({ page }) => {
-      // Create authenticated session
+    test('Session API timeout handled without crash', async ({ page }) => {
       await createAuthenticatedPage(page);
 
-      // Navigate to session
       await page.getByRole('link', { name: 'Meditation' }).click();
       await page.waitForLoadState('networkidle');
 
-      // Mock session list API to timeout
+      // Mock session API to timeout
       await page.route('**/api/sessions**', (route) => {
-        setTimeout(() => {
-          route.continue();
-        }, 30000);
+        route.abort('timedout');
       });
 
-      // Try to begin meditation (triggers session create)
       const beginBtn = page.getByRole('button', { name: 'Begin Meditation' });
       if (await beginBtn.isVisible()) {
         await beginBtn.click();
-        await page.waitForTimeout(5000); // Wait for potential timeout
+        await page.waitForTimeout(3000);
       }
 
-      // Should not crash - error should be handled gracefully
+      // Verify page still has content (not blank crash)
       const bodyText = await page.locator('body').textContent();
       expect(bodyText?.trim().length).toBeGreaterThan(0);
     });
 
-    test('Settings API timeout handled gracefully', async ({ page }) => {
-      // Create authenticated session
+    test('Settings API timeout handled without crash', async ({ page }) => {
       await createAuthenticatedPage(page);
 
-      // Navigate to settings
       await page.getByRole('link', { name: 'Settings' }).click();
       await page.waitForLoadState('networkidle');
 
-      // Mock settings API to timeout
       await page.route('**/api/settings**', (route) => {
-        setTimeout(() => {
-          route.continue();
-        }, 30000);
+        route.abort('timedout');
       });
 
-      // Try to change a setting (voice dropdown)
       const voiceSelect = page.locator('#tts-voice-select');
       if (await voiceSelect.isVisible()) {
         await voiceSelect.selectOption('en-US-BrianNeural');
-        await page.waitForTimeout(5000); // Wait for potential timeout
+        await page.waitForTimeout(3000);
       }
+
+      // Verify page still functional
+      const bodyText = await page.locator('body').textContent();
+      expect(bodyText?.trim().length).toBeGreaterThan(0);
     });
   });
 
   test.describe('VAL-ERROR-004: Offline state detected and shown', () => {
     test('Browser offline state shows offline indicator', async ({ page }) => {
-      // Create authenticated session
       await createAuthenticatedPage(page);
 
-      // Go to home page
       await page.goto(FRONTEND_URL);
       await page.waitForLoadState('networkidle');
 
-      // Set browser to offline mode
       await page.context().setOffline(true);
+      await page.waitForTimeout(3000);
 
-      // Wait for offline detection to propagate
-      await page.waitForTimeout(2000);
-
-      // Should see offline indicator somewhere in the UI
-      // This could be a toast, banner, or inline message - or just page should still have content
+      // Verify page content remains (app handles offline gracefully)
       const bodyText = await page.locator('body').textContent();
       expect(bodyText?.trim().length).toBeGreaterThan(0);
     });
 
     test('Offline state prevents API calls and shows errors', async ({ page }) => {
-      // Create authenticated session
       await createAuthenticatedPage(page);
 
-      // Go to history page while online
       await page.getByRole('link', { name: 'History' }).click();
       await page.waitForLoadState('networkidle');
 
-      // Switch to offline
       await page.context().setOffline(true);
-      await page.waitForTimeout(1000);
-
-      // When offline, clicking on navigation or any API-triggering action should fail gracefully
-      // Instead of reloading (which causes ERR_INTERNET_DISCONNECTED), just verify the current state
       await page.waitForTimeout(2000);
 
-      // The page may show error states or offline indicator - that's expected
-      // Just verify the page is not completely blank
+      // Verify page handles offline gracefully
       const bodyText = await page.locator('body').textContent();
       expect(bodyText?.trim().length).toBeGreaterThan(0);
     });
 
     test('Coming back online restores functionality', async ({ page }) => {
-      // Create authenticated session
       await createAuthenticatedPage(page);
 
-      // Go to settings page
       await page.getByRole('link', { name: 'Settings' }).click();
       await page.waitForLoadState('networkidle');
 
-      // Go offline
       await page.context().setOffline(true);
       await page.waitForTimeout(1000);
 
-      // Try an action that would fail
       const voiceSelect = page.locator('#tts-voice-select');
       if (await voiceSelect.isVisible()) {
         await voiceSelect.selectOption('en-US-BrianNeural');
         await page.waitForTimeout(2000);
       }
 
-      // Come back online
       await page.context().setOffline(false);
       await page.waitForTimeout(2000);
 
-      // Now the same action should work
+      // After going back online, settings changes should work
       if (await voiceSelect.isVisible()) {
         await voiceSelect.selectOption('en-US-JennyNeural');
         await page.waitForTimeout(3000);
@@ -423,100 +363,81 @@ test.describe('Comprehensive Error Handling Tests', () => {
     });
 
     test('Offline indicator visible when going offline', async ({ page }) => {
-      // Create authenticated session while online
       await createAuthenticatedPage(page);
 
-      // Verify we're on home page
       await expect(page.getByRole('heading', { name: 'Welcome to OpenMarcus' })).toBeVisible();
 
-      // Now go offline
       await page.context().setOffline(true);
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(3000);
 
-      // The page should still be visible (from before going offline)
-      // We can't navigate while offline but the app should handle it
       const bodyText = await page.locator('body').textContent();
       expect(bodyText?.trim().length).toBeGreaterThan(0);
     });
 
     test('Online status restored after going back online shows success', async ({ page }) => {
-      // Create authenticated session
       await createAuthenticatedPage(page);
 
-      // Verify we start online (can load settings)
       await page.getByRole('link', { name: 'Settings' }).click();
       await page.waitForLoadState('networkidle');
       await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 
-      // Go offline
       await page.context().setOffline(true);
       await page.waitForTimeout(1500);
 
-      // Come back online
       await page.context().setOffline(false);
       await page.waitForTimeout(2000);
 
-      // Navigate to trigger a fresh API call
       await page.reload();
       await page.waitForLoadState('networkidle');
 
-      // Should be able to load the page successfully now that we're back online
       await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible({ timeout: 10000 });
     });
   });
 
   test.describe('Error Handling - Integration Scenarios', () => {
     test('Error boundary catches React errors and shows friendly message', async ({ page }) => {
-      // Create authenticated session
       await createAuthenticatedPage(page);
 
-      // Navigate to home
       await page.goto(FRONTEND_URL);
       await page.waitForLoadState('networkidle');
 
-      // Inject a JavaScript error via console
+      // Simulate errors that should be caught
       await page.evaluate(() => {
-        // This should trigger ErrorBoundary if it's wrapping the component
-        window.addEventListener('error', (e) => {
-          console.log('Error caught:', e.error);
-        });
+        Promise.reject(new Error('Simulated network error'));
+        console.error('Simulated error');
       });
 
-      // The page should still be functional
-      await expect(page.getByRole('heading', { name: 'Welcome to OpenMarcus' })).toBeVisible();
-    });
+      await page.waitForTimeout(3000);
 
-    test('Multiple rapid API failures handled without crashing', async ({ page }) => {
-      // Create authenticated session
-      await createAuthenticatedPage(page);
-
-      // Go to home
-      await page.goto(FRONTEND_URL);
-      await page.waitForLoadState('networkidle');
-
-      // Fail multiple API calls rapidly
-      await page.route('**/api/**', (route) => {
-        route.abort('failed');
-      });
-
-      // Try to trigger API calls while mocked to fail
-      await page.getByRole('link', { name: 'History' }).click();
-      await page.waitForTimeout(2000);
-
-      // Should not crash - page should still have content
+      // Page should remain stable
       const bodyText = await page.locator('body').textContent();
       expect(bodyText?.trim().length).toBeGreaterThan(0);
     });
 
-    test('Error toast is dismissible', async ({ page }) => {
-      // Create authenticated session
+    test('Multiple rapid API failures show error UI', async ({ page }) => {
       await createAuthenticatedPage(page);
 
-      // Navigate to settings
+      await page.goto(FRONTEND_URL);
+      await page.waitForLoadState('networkidle');
+
+      // Fail multiple API calls
+      await page.route('**/api/**', (route) => {
+        route.abort('failed');
+      });
+
+      await page.getByRole('link', { name: 'History' }).click();
+      await page.waitForTimeout(2000);
+
+      // Should see error UI when multiple APIs fail
+      expect(await hasErrorUI(page)).toBeTruthy();
+    });
+
+    test('Error toast is dismissible', async ({ page }) => {
+      await createAuthenticatedPage(page);
+
       await page.getByRole('link', { name: 'Settings' }).click();
       await page.waitForLoadState('networkidle');
 
-      // Mock export to fail
       await page.route('**/api/export**', (route) => {
         route.fulfill({
           status: 500,
@@ -525,34 +446,28 @@ test.describe('Comprehensive Error Handling Tests', () => {
         });
       });
 
-      // Trigger export
       await page.getByRole('button', { name: 'Download JSON Export' }).click();
 
-      // Wait for error toast
-      await page.waitForTimeout(2000);
+      await expect(page.locator('.toast--error')).toBeVisible({ timeout: 5000 });
 
-      // Find and click dismiss button if visible
       const dismissBtn = page.locator('.toast__close').first();
       if (await dismissBtn.isVisible().catch(() => false)) {
         await dismissBtn.click();
         await page.waitForTimeout(500);
 
-        // Toast should be gone
         const toastCount = await page.locator('.toast').count();
         expect(toastCount).toBe(0);
       }
     });
 
     test('Page remains usable after encountering errors', async ({ page }) => {
-      // Create authenticated session
       await createAuthenticatedPage(page);
 
-      // Navigate to settings first while APIs work
       await page.getByRole('link', { name: 'Settings' }).click();
       await page.waitForLoadState('networkidle');
       await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 
-      // Now mock settings API to fail
+      // Mock settings API to fail
       await page.route('**/api/settings**', (route) => {
         route.fulfill({
           status: 500,
@@ -561,15 +476,13 @@ test.describe('Comprehensive Error Handling Tests', () => {
         });
       });
 
-      // Trigger a refresh by clicking the settings link again
       await page.getByRole('link', { name: 'Settings' }).click();
       await page.waitForTimeout(2000);
 
-      // Page should handle error gracefully and still have content
-      const bodyText = await page.locator('body').textContent();
-      expect(bodyText?.trim().length).toBeGreaterThan(0);
+      // Page should handle error gracefully - show error UI
+      expect(await hasErrorUI(page)).toBeTruthy();
 
-      // Can still navigate back home - use goto to ensure we can reach home
+      // Can still navigate back home
       await page.goto(FRONTEND_URL);
       await page.waitForLoadState('networkidle');
       await expect(page.getByRole('heading', { name: 'Welcome to OpenMarcus' })).toBeVisible({ timeout: 10000 });

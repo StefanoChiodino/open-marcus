@@ -15,6 +15,15 @@ vi.mock('../lib/api', () => ({
   },
 }));
 
+// Mock the toast store
+vi.mock('./toastStore', () => ({
+  useToastStore: {
+    getState: vi.fn(() => ({
+      addToast: vi.fn(),
+    })),
+  },
+}));
+
 describe('profileStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();

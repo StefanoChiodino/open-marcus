@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { profileAPI } from '../lib/api';
 import type { ProfileDTO, ProfileFormData, ProfileStatus } from '../shared/types';
+import { useToastStore } from './toastStore';
 
 interface ProfileState {
   profile: ProfileDTO | null;
@@ -39,6 +40,11 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load profile';
       set({ error: message, status: 'error' });
+      useToastStore.getState().addToast({
+        type: 'error',
+        title: 'Profile Load Failed',
+        message,
+      });
     }
   },
 
@@ -58,6 +64,11 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save profile';
       set({ error: message, status: 'error', isEditing: false });
+      useToastStore.getState().addToast({
+        type: 'error',
+        title: 'Profile Save Failed',
+        message,
+      });
     }
   },
 

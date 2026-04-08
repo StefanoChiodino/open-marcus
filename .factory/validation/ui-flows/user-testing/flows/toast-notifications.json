@@ -1,0 +1,22 @@
+{
+  "group": "toast-notifications",
+  "assertions": ["VAL-TOAST-001", "VAL-TOAST-002", "VAL-TOAST-003", "VAL-TOAST-004"],
+  "status": "pass",
+  "testsRun": 16,
+  "testsPassed": 16,
+  "testsFailed": 0,
+  "passedAssertions": ["VAL-TOAST-001", "VAL-TOAST-002", "VAL-TOAST-003", "VAL-TOAST-004"],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "frictions": [
+    "Database clear failed: 401 - these are warnings but tests still pass"
+  ],
+  "blockers": [],
+  "toolsUsed": ["playwright"],
+  "evidence": {
+    "testFile": "e2e/toast-notifications-comprehensive.spec.ts",
+    "command": "npm run test:e2e -- toast-notifications-comprehensive.spec.ts",
+    "exitCode": 0,
+    "duration": "1.1m"
+  }
+}

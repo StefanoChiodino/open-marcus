@@ -1,0 +1,72 @@
+{
+  "milestone": "settings-flows",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 25,
+    "passed": 25,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-SETTINGS-001",
+    "VAL-SETTINGS-002",
+    "VAL-SETTINGS-003",
+    "VAL-SETTINGS-004",
+    "VAL-SETTINGS-005",
+    "VAL-SETTINGS-006",
+    "VAL-SETTINGS-007",
+    "VAL-SETTINGS-008",
+    "VAL-SETTINGS-009",
+    "VAL-SETTINGS-TTS-001",
+    "VAL-SETTINGS-TTS-002",
+    "VAL-SETTINGS-TTS-003",
+    "VAL-SETTINGS-TTS-004",
+    "VAL-SETTINGS-TTS-005",
+    "VAL-SETTINGS-TTS-006",
+    "VAL-SETTINGS-STT-001",
+    "VAL-SETTINGS-STT-002",
+    "VAL-SETTINGS-STT-003",
+    "VAL-SETTINGS-STT-004",
+    "VAL-SETTINGS-STT-005",
+    "VAL-SETTINGS-MODEL-001",
+    "VAL-SETTINGS-MODEL-002",
+    "VAL-SETTINGS-MODEL-003",
+    "VAL-SETTINGS-MODEL-004",
+    "VAL-SETTINGS-MODEL-005"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "testReports": [
+    {
+      "file": "settings-data-comprehensive.spec.ts",
+      "passed": 19,
+      "skipped": 0,
+      "failed": 0,
+      "assertions": ["VAL-SETTINGS-001", "VAL-SETTINGS-002", "VAL-SETTINGS-003", "VAL-SETTINGS-004", "VAL-SETTINGS-005", "VAL-SETTINGS-006", "VAL-SETTINGS-007", "VAL-SETTINGS-008", "VAL-SETTINGS-009"]
+    },
+    {
+      "file": "settings-tts-comprehensive.spec.ts",
+      "passed": 21,
+      "skipped": 0,
+      "failed": 0,
+      "assertions": ["VAL-SETTINGS-TTS-001", "VAL-SETTINGS-TTS-002", "VAL-SETTINGS-TTS-003", "VAL-SETTINGS-TTS-004", "VAL-SETTINGS-TTS-005", "VAL-SETTINGS-TTS-006"]
+    },
+    {
+      "file": "settings-stt-comprehensive.spec.ts",
+      "passed": 19,
+      "skipped": 2,
+      "failed": 0,
+      "assertions": ["VAL-SETTINGS-STT-001", "VAL-SETTINGS-STT-002", "VAL-SETTINGS-STT-003", "VAL-SETTINGS-STT-004", "VAL-SETTINGS-STT-005"]
+    },
+    {
+      "file": "settings-model-comprehensive.spec.ts",
+      "passed": 16,
+      "skipped": 4,
+      "failed": 0,
+      "assertions": ["VAL-SETTINGS-MODEL-001", "VAL-SETTINGS-MODEL-002", "VAL-SETTINGS-MODEL-003", "VAL-SETTINGS-MODEL-004", "VAL-SETTINGS-MODEL-005"]
+    }
+  ],
+  "previousRound": null
+}

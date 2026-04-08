@@ -1,0 +1,43 @@
+{
+  "milestone": "home-flows",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "npm test",
+      "exitCode": 0,
+      "summary": "30 test files, 312 tests passed"
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "npm run lint",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [],
+  "rejectedObservations": [],
+  "previousRound": null,
+  "reviewReports": [
+    ".factory/validation/home-flows/scrutiny/reviews/e2e-home-page-comprehensive.json"
+  ],
+  "coverageSummary": {
+    "VAL-HOME-001": "covered",
+    "VAL-HOME-002": "covered",
+    "VAL-HOME-003": "covered",
+    "VAL-HOME-004": "covered"
+  }
+}

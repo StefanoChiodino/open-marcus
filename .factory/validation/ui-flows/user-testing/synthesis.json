@@ -1,11 +1,11 @@
 {
   "milestone": "ui-flows",
-  "round": 5,
+  "round": 6,
   "status": "fail",
   "assertionsSummary": {
     "total": 15,
-    "passed": 12,
-    "failed": 3,
+    "passed": 13,
+    "failed": 2,
     "blocked": 0
   },
   "passedAssertions": [
@@ -26,37 +26,37 @@
   "failedAssertions": [
     {
       "id": "VAL-ERROR-001",
-      "reason": "Chat and settings network errors don't show error UI. The session list API unreachable scenario passes, but network errors during chat and settings load fail - no error toast appears when hasErrorUI() is checked."
+      "reason": "Network error during chat (send message) doesn't show error UI. Network error during session list API (history page) DOES show error UI. Pattern: errors during 'secondary' operations show error UI, errors during 'primary' session operations (beginSession, sendMessage) don't."
     },
     {
       "id": "VAL-ERROR-002",
-      "reason": "500 errors during session create and chat API don't show error UI. 500 on profile load and data export DO show error toasts correctly. The issue is specific to session/chat failures - MeditationChat component doesn't properly render error state when beginSession() or sendMessage() fails."
+      "reason": "500 on session create (POST /api/sessions) and 500 on chat API don't show error UI. 500 on profile load and 500 on data export DO show error toast. Same pattern as VAL-ERROR-001: MeditationChat component doesn't properly render error view for session/chat operations."
     }
   ],
   "blockedAssertions": [],
   "previousRound": ".factory/validation/ui-flows/user-testing/synthesis.json",
   "flowReports": [
     {
-      "group": "error-handling-retest-round-5",
+      "group": "error-handling-retest-round-6",
       "testFile": "e2e/error-handling-comprehensive.spec.ts",
       "testsRun": 18,
-      "testsPassed": 15,
-      "testsFailed": 3,
+      "testsPassed": 14,
+      "testsFailed": 4,
       "status": "fail",
-      "notes": "Round 5 re-test after add-error-toasts-to-stores. Tests confirm: (1) Toast implementation exists in sessionStore and is called in catch blocks, (2) Toast works for profile load and data export 500s, (3) Toast does NOT work for session create and chat API failures, (4) MeditationChat doesn't properly render error state when status becomes 'error' - UI stays in idle view showing 'Begin Meditation' button."
+      "notes": "Round 6 re-test after fix-meditation-chat-error-state (commit 657c8ed). Pattern confirmed: (1) Toast IS added in sessionStore catch blocks, (2) Toast works for profile load, data export, session list errors (History component catches these), (3) Toast does NOT work for session create and chat API failures - MeditationChat component doesn't show error view, (4) Tests confirm 'Network error during settings load' PASSES because settings component catches the error. The issue is SPECIFIC to MeditationChat not rendering error state for beginSession/sendMessage failures."
     }
   ],
   "systemicIssues": [
     {
       "severity": "blocking",
-      "description": "MeditationChat component doesn't handle error status properly. When sessionStore.beginSession() fails with 500 and sets status='error', MeditationChat falls through to active chat view but the error is not visible because the component renders the idle view (if/else logic issue or state not updating).",
-      "impact": "VAL-ERROR-001 (network error during chat) and VAL-ERROR-002 (500 on session create, 500 on chat API) cannot pass - error UI never appears.",
-      "rootCause": "Component logic issue in MeditationChat.tsx - the error display div only renders in the 'active chat view' but status='error' may cause incorrect view rendering. Or the toast is added to store but component doesn't re-render."
+      "description": "MeditationChat component has conditional logic that causes it to fall through to idle view when beginSession() fails. The error view condition check runs BEFORE the component falls through to the idle view, but when status is 'starting' and error is first set (async state update), the component may re-render before the error state propagates properly, causing it to show the welcome view instead of error view.",
+      "impact": "VAL-ERROR-001 (network error during chat) and VAL-ERROR-002 (500 on session create, 500 on chat API) cannot pass.",
+      "rootCause": "React/Zustand timing issue: when beginSession() fails, set() is called with {status: 'error', error: message}. But in the MeditationChat component, when the useSessionStore hook returns with status='starting' and error=null on first render, the error view condition is FALSE (due to displayError = error || ... short-circuit). Then when the store updates to status='error', the component re-renders but may not properly detect the state change before showing the fallback idle view."
     }
   ],
   "services": {
     "backend": "localhost:3100 - running",
     "frontend": "localhost:3101 - running"
   },
-  "reRunNotes": "Round 5 re-test after add-error-toasts-to-stores (status: completed). Implementation partially works: toast IS added in sessionStore catch blocks, but MeditationChat doesn't render error state properly for session/chat failures. Settings/profile errors work fine. This is a frontend component bug, not a store bug."
+  "reRunNotes": "Round 6 re-test after fix-meditation-chat-error-state. The fix (commit 657c8ed) added error view with explicit check for status==='error'. But the issue persists because: (1) When beginSession() is called, status becomes 'starting', (2) API call fails and catch block calls set({status: 'error', error: message}), (3) useSessionStore() returns new state with error non-null, (4) But the component's displayError calculation might be short-circuiting before the store update fully propagates. OR the real issue is that the error view condition requires status to be one of ['error', 'active', 'streaming', 'starting'] - but when session creation fails, the component stays in 'starting' state which DOES pass the condition, yet the error is still not showing. This suggests the issue is in how React re-renders on Zustand state change - the component might be re-rendering with stale error value from the previous render cycle."
 }

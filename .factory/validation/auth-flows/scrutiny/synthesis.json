@@ -1,0 +1,46 @@
+{
+  "milestone": "auth-flows",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": { "passed": true, "command": "npm run test", "exitCode": 0, "details": "312 tests passed across 30 test files" },
+    "typecheck": { "passed": true, "command": "npm run typecheck", "exitCode": 0 },
+    "lint": { "passed": true, "command": "npm run lint", "exitCode": 0 }
+  },
+  "reviewsSummary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Fix documentation inaccuracy for 'fix-profile-bio-not-null' root cause. The bug is a TypeScript type issue (Profile.bio typed as null instead of string | null), NOT a database NOT NULL constraint. The database schema (backend/db/schema.ts) never had NOT NULL on bio column. Remove incorrect 'Profile bio NOT NULL constraint' description from any bug entries.",
+      "evidence": "fix-profile-bio-not-null review found: 'bio TEXT,' in schema.ts without NOT NULL. Worker correctly fixed TypeScript types instead of database schema.",
+      "isSystemic": false
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Clarify service startup responsibilities: e2e-worker skill says 'Startup and cleanup are handled by worker-base', but workers often start services manually. Document when workers should vs shouldn't invoke services manually, or make worker-base handle ALL service lifecycle consistently.",
+      "evidence": "e2e-protected-routes-comprehensive review: 'transcript shows: service.start backend, service.start frontend manually invoked. Skill says these are handled by worker-base.'",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "The convention for shared helpers in e2e/helpers.ts is aspirational but not implemented. Either create e2e/helpers.ts with registerUserWithoutProfile() and other helpers, or remove the convention from AGENTS.md to avoid confusion.",
+      "evidence": "e2e-onboarding-comprehensive review: 'helpers.ts does not exist; worker defined helpers inline in test file.' e2e-protected-routes-comprehensive review: 'AGENTS.md says to create shared helpers in e2e/helpers.ts, but this file does not exist.'",
+      "isSystemic": true
+    },
+    {
+      "target": "validation-contract.md",
+      "suggestion": "Fix VAL-ONBOARD-003 description: says '500+ chars' but actual frontend has 50 char max (ProfileForm.tsx:91). Update contract to match actual behavior or coordinate with frontend to allow longer names.",
+      "evidence": "e2e-onboarding-comprehensive review: 'VAL-ONBOARD-003 description says 500+ chars but implementation uses 50 char max (matching actual frontend code at src/components/ProfileForm.tsx:91 maxLength={50})'",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null
+}

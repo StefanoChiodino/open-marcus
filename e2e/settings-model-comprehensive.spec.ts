@@ -297,7 +297,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 	test.describe('VAL-SETTINGS-MODEL-003: Changing model saves immediately', () => {
 		test('Changing model triggers API PUT request', async ({ page }) => {
 			// Create profile and get token
-			const token = await createProfile(page, 'Model Save User', 'Testing model save');
+			await createProfile(page, 'Model Save User', 'Testing model save');
 
 			// Navigate to settings page
 			await goToSettingsPage(page);
@@ -314,7 +314,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 
 			// Skip test if no models available
 			if (count <= 1) {
-				test.skip('Not enough models available to test change');
+				test.skip(true, 'Not enough models available to test change');
 				return;
 			}
 
@@ -323,7 +323,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 			const initialValue = await select.inputValue();
 
 			if (secondModelValue === initialValue) {
-				test.skip('Only one model available to select');
+				test.skip(true, 'Only one model available to select');
 				return;
 			}
 
@@ -365,7 +365,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 			const count = await options.count();
 
 			if (count <= 1) {
-				test.skip('Not enough models available to test toast');
+				test.skip(true, 'Not enough models available to test toast');
 				return;
 			}
 
@@ -374,7 +374,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 			const initialValue = await select.inputValue();
 
 			if (secondModelValue === initialValue || !secondModelValue) {
-				test.skip('Only one model available to select');
+				test.skip(true, 'Only one model available to select');
 				return;
 			}
 
@@ -407,7 +407,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 			const count = await options.count();
 
 			if (count <= 1) {
-				test.skip('Not enough models available to test');
+				test.skip(true, 'Not enough models available to test');
 				return;
 			}
 
@@ -416,7 +416,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 			const initialValue = await select.inputValue();
 
 			if (secondModelValue === initialValue || !secondModelValue) {
-				test.skip('Only one model available');
+				test.skip(true, 'Only one model available');
 				return;
 			}
 
@@ -439,7 +439,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 	test.describe('VAL-SETTINGS-MODEL-004: Model selection persists after reload', () => {
 		test('Model selection persists after page reload', async ({ page }) => {
 			// Create profile and get token
-			const token = await createProfile(page, 'Model Persist User', 'Testing model persistence');
+			await createProfile(page, 'Model Persist User', 'Testing model persistence');
 
 			// Navigate to settings page
 			await goToSettingsPage(page);
@@ -455,7 +455,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 			const count = await options.count();
 
 			if (count <= 1) {
-				test.skip('Not enough models available to test persistence');
+				test.skip(true, 'Not enough models available to test persistence');
 				return;
 			}
 
@@ -464,7 +464,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 			const initialValue = await select.inputValue();
 
 			if (secondModelValue === initialValue || !secondModelValue) {
-				test.skip('Only one model available');
+				test.skip(true, 'Only one model available');
 				return;
 			}
 
@@ -509,7 +509,7 @@ test.describe('Comprehensive Model Selection Tests', () => {
 			const count = await options.count();
 
 			if (count <= 1) {
-				test.skip('Not enough models available to test');
+				test.skip(true, 'Not enough models available to test');
 				return;
 			}
 

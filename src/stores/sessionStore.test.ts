@@ -41,7 +41,7 @@ describe('SessionStore', () => {
       const mockSession = { id: 'session-1', profile_id: 'p1', status: 'intro' as const };
       (sessionAPI.createSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
 
-      await useSessionStore.getState().beginSession('p1');
+      await useSessionStore.getState().beginSession();
 
       const state = useSessionStore.getState();
       expect(state.currentSession).toEqual(mockSession);
@@ -54,7 +54,7 @@ describe('SessionStore', () => {
         new Error('Network error'),
       );
 
-      await useSessionStore.getState().beginSession('p1');
+      await useSessionStore.getState().beginSession();
 
       const state = useSessionStore.getState();
       expect(state.status).toBe('error');
@@ -65,7 +65,7 @@ describe('SessionStore', () => {
       const mockSession = { id: 'persist-session-123', profile_id: 'p1', status: 'intro' as const };
       (sessionAPI.createSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockSession);
 
-      await useSessionStore.getState().beginSession('p1');
+      await useSessionStore.getState().beginSession();
 
       expect(localStorage.getItem('openmarcus-active-session-id')).toBe('persist-session-123');
     });
@@ -75,7 +75,7 @@ describe('SessionStore', () => {
         new Error('Network error'),
       );
 
-      await useSessionStore.getState().beginSession('p1');
+      await useSessionStore.getState().beginSession();
 
       expect(localStorage.getItem('openmarcus-active-session-id')).toBeNull();
     });
@@ -98,7 +98,7 @@ describe('SessionStore', () => {
       });
 
       // Start session first
-      await useSessionStore.getState().beginSession('p1');
+      await useSessionStore.getState().beginSession();
 
       // End session
       await useSessionStore.getState().endSession();
@@ -117,7 +117,7 @@ describe('SessionStore', () => {
         new Error('Summary failed'),
       );
 
-      await useSessionStore.getState().beginSession('p1');
+      await useSessionStore.getState().beginSession();
       await useSessionStore.getState().endSession();
 
       const state = useSessionStore.getState();
@@ -141,7 +141,7 @@ describe('SessionStore', () => {
       });
 
       // Start and persist
-      await useSessionStore.getState().beginSession('p1');
+      await useSessionStore.getState().beginSession();
       expect(localStorage.getItem('openmarcus-active-session-id')).toBe('s-end-persist');
 
       // End should clear the persisted ID

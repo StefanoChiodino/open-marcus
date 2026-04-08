@@ -294,7 +294,7 @@ test.describe('Comprehensive STT Settings Tests', () => {
 	test.describe('VAL-SETTINGS-STT-003: Changing STT model saves and reloads', () => {
 		test('Changing model triggers API save', async ({ page }) => {
 			// Create profile and get token
-			const token = await createProfile(page, 'STT Save User', 'Testing STT save');
+			await createProfile(page, 'STT Save User', 'Testing STT save');
 
 			// Navigate to settings page
 			await goToSettingsPage(page);
@@ -311,7 +311,7 @@ test.describe('Comprehensive STT Settings Tests', () => {
 
 			// Skip test if no models available
 			if (count <= 1) {
-				test.skip('No STT models available to test');
+				test.skip(true, 'No STT models available to test');
 				return;
 			}
 
@@ -319,7 +319,7 @@ test.describe('Comprehensive STT Settings Tests', () => {
 			const modelOptions = await options.all();
 
 			if (modelOptions.length <= 1) {
-				test.skip('Not enough STT models to test change');
+				test.skip(true, 'Not enough STT models to test change');
 				return;
 			}
 
@@ -329,7 +329,7 @@ test.describe('Comprehensive STT Settings Tests', () => {
 			// Set up network monitoring for the settings API call with timeout
 			const settingsRequestPromise = page.waitForRequest(request =>
 				request.url().includes('/api/settings') && request.method() === 'PUT'
-			, 10000);
+			, { timeout: 10000 });
 
 			// Change the model selection
 			await select.selectOption(firstModelValue!);
@@ -368,12 +368,12 @@ test.describe('Comprehensive STT Settings Tests', () => {
 
 			// Skip test if no models available
 			if (count <= 1) {
-				test.skip('No STT models available to test');
+				test.skip(true, 'No STT models available to test');
 				return;
 			}
 
 			if (count < 3) {
-				test.skip('Not enough STT models to test change');
+				test.skip(true, 'Not enough STT models to test change');
 				return;
 			}
 
@@ -410,7 +410,7 @@ test.describe('Comprehensive STT Settings Tests', () => {
 	test.describe('VAL-SETTINGS-STT-004: STT model persists after reload', () => {
 		test('Model selection persists after page reload', async ({ page }) => {
 			// Create profile and get token
-			const token = await createProfile(page, 'STT Persist User', 'Testing STT persistence');
+			await createProfile(page, 'STT Persist User', 'Testing STT persistence');
 
 			// Navigate to settings page
 			await goToSettingsPage(page);
@@ -525,12 +525,12 @@ test.describe('Comprehensive STT Settings Tests', () => {
 
 			// Skip test if no models available
 			if (count <= 1) {
-				test.skip('No STT models available to test');
+				test.skip(true, 'No STT models available to test');
 				return;
 			}
 
 			if (count < 3) {
-				test.skip('Not enough STT models to test change');
+				test.skip(true, 'Not enough STT models to test change');
 				return;
 			}
 

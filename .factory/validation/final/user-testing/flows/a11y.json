@@ -1,0 +1,102 @@
+{
+  "groupId": "a11y",
+  "testedAt": "2026-04-08T15:45:00.000Z",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "backendUrl": "http://localhost:3100",
+    "workingDirectory": "/Users/stefano/repos/open-marcus",
+    "testFile": "e2e/accessibility-comprehensive.spec.ts"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-A11Y-001",
+      "title": "All interactive elements are keyboard accessible",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to /login", "expected": "Login form with interactive elements", "observed": "Login form displayed with Username, Password, Sign In button, Create an account link" },
+        { "action": "Press Tab to navigate through elements", "expected": "Focus moves to each interactive element", "observed": "Tab moved focus from Username -> Password -> Sign In button -> Create an account link" },
+        { "action": "Navigate to /register", "expected": "Register form with interactive elements", "observed": "Register form displayed with Username, Password, Create Account button, Sign in link" },
+        { "action": "Verify all form elements have labels", "expected": "Inputs have associated labels", "observed": "Username and Password inputs have labels via label[for] attributes" }
+      ],
+      "evidence": {
+        "screenshots": ["final/evidence/a11y/VAL-A11Y-001-login-page.png", "final/evidence/a11y/VAL-A11Y-001-login-form-annotated.png", "final/evidence/a11y/VAL-A11Y-001-register-page.png"],
+        "consoleErrors": "none",
+        "keyboardNavigation": "Tab key successfully moves focus through all interactive elements in logical order"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-A11Y-002",
+      "title": "Focus states are visible",
+      "status": "pass",
+      "steps": [
+        { "action": "Focus on Username input", "expected": "Visible focus indicator", "observed": "Box-shadow focus indicator: rgba(201, 162, 39, 0.15) 0px 0px 0px 3px" },
+        { "action": "Focus on Password input", "expected": "Visible focus indicator", "observed": "Same box-shadow focus indicator as Username field" },
+        { "action": "Check computed styles", "expected": "Focus styles present", "observed": "borderColor changes to golden rgb(201, 162, 39) on focus, boxShadow shows 3px golden glow" }
+      ],
+      "evidence": {
+        "screenshots": ["final/evidence/a11y/VAL-A11Y-002-username-focused.png", "final/evidence/a11y/VAL-A11Y-002-password-focused.png"],
+        "focusStyles": {
+          "inputBoxShadow": "rgba(201, 162, 39, 0.15) 0px 0px 0px 3px",
+          "inputBorderColor": "rgb(201, 162, 39)",
+          "focusIndicatorVisible": true
+        },
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-A11Y-003",
+      "title": "Form inputs have labels",
+      "status": "pass",
+      "steps": [
+        { "action": "Check login form inputs", "expected": "Inputs have associated labels", "observed": "Username input: hasLabel=true, labelText='Username'; Password input: hasLabel=true, labelText='Password'" },
+        { "action": "Check register form inputs", "expected": "Inputs have associated labels", "observed": "Username input: hasLabel=true, labelText='Username'; Password input: hasLabel=true, labelText='Password'" },
+        { "action": "Verify label association", "expected": "Labels properly associated via for attribute", "observed": "Labels use for attribute matching input id (login-username, login-password, register-username, register-password)" }
+      ],
+      "evidence": {
+        "screenshots": ["final/evidence/a11y/VAL-A11Y-001-login-page.png", "final/evidence/a11y/VAL-A11Y-001-register-page.png"],
+        "labelAnalysis": {
+          "loginUsername": { "id": "login-username", "hasLabel": true, "labelText": "Username", "ariaLabel": null },
+          "loginPassword": { "id": "login-password", "hasLabel": true, "labelText": "Password", "ariaLabel": null },
+          "registerUsername": { "id": "register-username", "hasLabel": true, "labelText": "Username", "ariaLabel": null },
+          "registerPassword": { "id": "register-password", "hasLabel": true, "labelText": "Password", "ariaLabel": null }
+        },
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-A11Y-004",
+      "title": "Color contrast meets WCAG AA",
+      "status": "fail",
+      "steps": [
+        { "action": "Measure heading contrast ratio", "expected": "Minimum 4.5:1 for normal text", "observed": "Heading 'Welcome Back': textColor rgb(45,42,38), bgColor rgb(245,240,232), ratio 12.59:1 - PASSES" },
+        { "action": "Measure label contrast ratio", "expected": "Minimum 4.5:1 for normal text", "observed": "Label text: textColor rgb(74,69,61), bgColor rgb(245,240,232), ratio 8.38:1 - PASSES" },
+        { "action": "Measure button text contrast ratio", "expected": "Minimum 4.5:1 for normal text (or 3:1 for large text)", "observed": "Button text: textColor rgb(245,240,232), bgColor rgb(201,162,39), ratio 2.13:1 - FAILS" },
+        { "action": "Check button text size", "expected": "16px is normal text (requires 4.5:1)", "observed": "Button font-size is 16px, not 'large text', so requires 4.5:1 contrast" }
+      ],
+      "evidence": {
+        "screenshots": ["final/evidence/a11y/VAL-A11Y-004-home-page.png"],
+        "contrastAnalysis": {
+          "heading": { "textColor": "rgb(45, 42, 38)", "bgColor": "rgb(245, 240, 232)", "ratio": 12.59, "passesAA": true },
+          "label": { "textColor": "rgb(74, 69, 61)", "bgColor": "rgb(245, 240, 232)", "ratio": 8.38, "passesAA": true },
+          "button": { "textColor": "rgb(245, 240, 232)", "bgColor": "rgb(201, 162, 39)", "ratio": 2.13, "passesAA": false }
+        },
+        "consoleErrors": "none"
+      },
+      "issues": "Button text contrast (2.13:1) does not meet WCAG AA requirements. Cream colored text on golden background fails both the 4.5:1 standard text requirement and the 3:1 large text requirement (since button text is only 16px)."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Disk space was nearly full (only 116MB available) during testing, causing some screenshot operations to fail with ENOSPC error",
+      "resolved": true,
+      "resolution": "Removed temporary PNG files from project root to free up space",
+      "affectedAssertions": []
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 4 accessibility assertions: 3 passed (VAL-A11Y-001, VAL-A11Y-002, VAL-A11Y-003), 1 failed (VAL-A11Y-004). The button text contrast on the login form fails WCAG AA requirements with only 2.13:1 ratio instead of required 4.5:1. Form labels and keyboard accessibility all work correctly."
+}

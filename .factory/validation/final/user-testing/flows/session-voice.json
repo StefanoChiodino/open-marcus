@@ -1,0 +1,95 @@
+{
+  "groupId": "session-voice",
+  "testedAt": "2026-04-08T00:00:00.000Z",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "backendUrl": "http://localhost:3100",
+    "workingDirectory": "/Users/stefano/repos/open-marcus"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-SESSION-VOICE-001",
+      "title": "Voice controls visible in active session",
+      "status": "blocked",
+      "steps": [
+        { "action": "Register new user via UI", "expected": "User registered and logged in", "observed": "User registered successfully, logged in" },
+        { "action": "Navigate to session page", "expected": "Session page loads", "observed": "Not tested - blocked by disk space" },
+        { "action": "Start meditation session", "expected": "Active session with voice controls", "observed": "Not tested" }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "unknown",
+        "network": "none captured due to blocker"
+      },
+      "issues": "BLOCKED: Disk space exhausted (116MB available, 0 required for screenshots). Testing cannot proceed."
+    },
+    {
+      "id": "VAL-SESSION-VOICE-002",
+      "title": "TTS toggle button toggles TTS on/off",
+      "status": "blocked",
+      "steps": [
+        { "action": "Navigate to active session", "expected": "Session active with voice controls", "observed": "Not tested - blocked by disk space" }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "unknown",
+        "network": "none captured due to blocker"
+      },
+      "issues": "BLOCKED: Disk space exhausted (116MB available, 0 required for screenshots). Testing cannot proceed."
+    },
+    {
+      "id": "VAL-SESSION-VOICE-003",
+      "title": "TTS uses saved voice settings",
+      "status": "blocked",
+      "steps": [
+        { "action": "Navigate to active session with TTS enabled", "expected": "TTS uses configured voice settings", "observed": "Not tested - blocked by disk space" }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "unknown",
+        "network": "none captured due to blocker"
+      },
+      "issues": "BLOCKED: Disk space exhausted (116MB available, 0 required for screenshots). Testing cannot proceed."
+    },
+    {
+      "id": "VAL-SESSION-VOICE-004",
+      "title": "STT microphone shows error when server down",
+      "status": "blocked",
+      "steps": [
+        { "action": "Navigate to active session", "expected": "Session active with voice controls", "observed": "Not tested - blocked by disk space" },
+        { "action": "Click microphone button", "expected": "Error message displayed", "observed": "Not tested" }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "unknown",
+        "network": "none captured due to blocker"
+      },
+      "issues": "BLOCKED: Disk space exhausted (116MB available, 0 required for screenshots). Testing cannot proceed."
+    },
+    {
+      "id": "VAL-SESSION-VOICE-005",
+      "title": "Voice playback indicator visible",
+      "status": "blocked",
+      "steps": [
+        { "action": "Navigate to active session", "expected": "Session active with voice controls", "observed": "Not tested - blocked by disk space" },
+        { "action": "Send message and receive response", "expected": "Speaker animation visible", "observed": "Not tested" }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "unknown",
+        "network": "none captured due to blocker"
+      },
+      "issues": "BLOCKED: Disk space exhausted (116MB available, 0 required for screenshots). Testing cannot proceed."
+    }
+  ],
+  "frictions": [],
+  "blockers": [
+    {
+      "description": "Disk space exhausted: Only 116MB available on /System/Volumes/Data. Screenshots cannot be saved, which are required evidence for all UI assertions.",
+      "affectedAssertions": ["VAL-SESSION-VOICE-001", "VAL-SESSION-VOICE-002", "VAL-SESSION-VOICE-003", "VAL-SESSION-VOICE-004", "VAL-SESSION-VOICE-005"],
+      "quickFixAttempted": "Attempted to save screenshot - failed with ENOSPC. No fix possible without freeing disk space."
+    }
+  ],
+  "summary": "All 5 VAL-SESSION-VOICE-001-005 assertions are blocked due to disk space exhaustion. User registration and login were verified working, but no screenshots or UI testing could proceed beyond the home page."
+}

@@ -1,6 +1,6 @@
 {
   "milestone": "ui-flows",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "assertionsSummary": {
     "total": 15,
@@ -25,27 +25,20 @@
   "failedAssertions": [
     {
       "id": "VAL-ERROR-001",
-      "reason": "Error UI not displayed when API is unreachable - hasErrorUI() returns false. Other network error scenarios (session list API fails, network error during login) pass.",
-      "failedTests": ["Shows error UI when API is unreachable"]
+      "reason": "Error UI not displayed when API is unreachable. hasErrorUI() returns false because the app doesn't show error toasts when store API calls fail (profile load, session create, etc.)."
     },
     {
       "id": "VAL-ERROR-002",
-      "reason": "Error UI not displayed for 500 errors on session create, profile load, and chat API. 500 during data export passes. Root cause: hasErrorUI() check returns false in these specific scenarios.",
-      "failedTests": [
-        "Shows error UI when server returns 500 on session create",
-        "Shows error UI when server returns 500 on profile load",
-        "Shows error UI when chat API returns 500"
-      ]
+      "reason": "Error UI not displayed for 500 errors on session create, profile load, and chat API. The stores don't trigger error toasts for these specific 500 scenarios."
     },
     {
       "id": "VAL-ERROR-003",
-      "reason": "Timeout error UI not displayed for specific timeout scenario. Session API timeout and settings API timeout pass. Root cause: hasErrorUI() check returns false.",
-      "failedTests": ["Shows timeout error when request times out"]
+      "reason": "Timeout error UI not displayed for specific timeout scenarios. The stores don't show error toasts when requests timeout."
     }
   ],
   "blockedAssertions": [],
   "appliedUpdates": [],
-  "previousRound": null,
+  "previousRound": ".factory/validation/ui-flows/user-testing/synthesis.json",
   "flowReports": [
     {
       "group": "toast-notifications",
@@ -61,7 +54,7 @@
       "testsRun": 19,
       "testsPassed": 12,
       "testsFailed": 7,
-      "status": "partial"
+      "status": "fail"
     },
     {
       "group": "responsive-design",
@@ -75,14 +68,15 @@
   "systemicIssues": [
     {
       "severity": "blocking",
-      "description": "hasErrorUI() function returns false in certain error scenarios, causing error handling tests to fail",
-      "impact": "VAL-ERROR-001, VAL-ERROR-002, VAL-ERROR-003 - 5 specific test scenarios fail",
-      "rootCause": "The hasErrorUI() helper function used by error-handling tests does not detect error UI in these specific scenarios. The error UI may exist but not be detected by the helper, or the error UI is truly not being shown."
+      "description": "Stores don't show error toasts when API calls fail (500, network error, timeout). profileStore.loadProfile fails silently, sessionStore.beginSession sets error but MeditationChat doesn't display it, settings store doesn't show errors.",
+      "impact": "VAL-ERROR-001, VAL-ERROR-002, VAL-ERROR-003 - 5 specific test scenarios fail because error UI is not displayed when store API calls fail",
+      "rootCause": "The hasErrorUI() helper checks for .toast--error, .error-boundary, .meditation-chat__error[role=alert], .session-history__error[role=alert], [role=alert]. These elements are not rendered because stores don't call toast.showError() when API calls fail"
     }
   ],
   "services": {
     "backend": "localhost:3100 - running",
     "frontend": "localhost:3101 - running",
     "ollama": "localhost:11434 - running"
-  }
+  },
+  "reRunNotes": "Re-run after fix 'add-error-toasts-to-stores' was created. The fix attempted to add error toasts to stores but the bug persists - same 5 test scenarios fail. The issue is that profileStore.loadProfile, sessionStore.beginSession, and similar store methods don't show error toasts when their API calls fail."
 }

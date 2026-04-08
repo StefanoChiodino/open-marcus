@@ -1,0 +1,88 @@
+{
+  "groupId": "home-flows",
+  "testedAt": "2026-04-08T12:00:00.000Z",
+  "isolation": {
+    "frontendUrl": "http://localhost:3101",
+    "backendUrl": "http://localhost:3100",
+    "note": "App already running with services started"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-HOME-001",
+      "title": "Home page shows personalized greeting",
+      "status": "pass",
+      "steps": [
+        { "action": "Registered new user via UI", "expected": "User created and redirected", "observed": "User created and redirected to home" },
+        { "action": "On home page, inspect profile-name element", "expected": "Greeting shows user's name", "observed": "Greeting shows 'Welcome, homeflow_validator_test'" }
+      ],
+      "evidence": {
+        "screenshots": ["home-flows/user-testing/VAL-HOME-001-home-greeting.png"],
+        "consoleErrors": "none",
+        "elementData": { "profileNameExists": true, "profileNameText": "Welcome, homeflow_validator_test" }
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-HOME-002",
+      "title": "Begin Meditation button navigates to /session",
+      "status": "pass",
+      "steps": [
+        { "action": "Click 'Begin meditation session' button", "expected": "Navigation to /session URL", "observed": "URL changed to http://localhost:3101/session" }
+      ],
+      "evidence": {
+        "screenshots": ["home-flows/user-testing/VAL-HOME-002-session-navigation.png"],
+        "consoleErrors": "none",
+        "network": "No API call needed - client-side navigation"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-HOME-003",
+      "title": "Begin Meditation starts session directly",
+      "status": "pass",
+      "steps": [
+        { "action": "Click 'Begin meditation session' button from home", "expected": "Session starts immediately with Marcus greeting, not just navigation to idle session page", "observed": "Session active immediately - Marcus greeting visible: 'I'm Marcus. Hey there, homeflow_validator_test. What's on your mind?'" },
+        { "action": "Verify session is in active state (not idle)", "expected": "Active session UI with End Session button", "observed": "End meditation session button visible, textbox for typing shown" }
+      ],
+      "evidence": {
+        "screenshots": ["home-flows/user-testing/VAL-HOME-003-session-active.png"],
+        "consoleErrors": "none",
+        "sessionState": "active with Marcus greeting"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-HOME-004",
+      "title": "Bio is displayed on home page if present",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to Profile page", "expected": "Profile page displayed", "observed": "Profile page shown" },
+        { "action": "Edit profile and add bio text", "expected": "Bio saved", "observed": "Bio 'This is my test bio for home page display.' saved successfully" },
+        { "action": "Navigate back to home page", "expected": "Bio displayed on home page", "observed": "Bio visible on home page with text 'This is my test bio for home page display.'" }
+      ],
+      "evidence": {
+        "screenshots": ["home-flows/user-testing/VAL-HOME-004-bio-display.png", "home-flows/user-testing/VAL-HOME-004-profile-edit-bio.png"],
+        "consoleErrors": "none",
+        "elementData": { "profileBioExists": true, "profileBioText": "This is my test bio for home page display.", "bioVisible": true }
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Initial localStorage set approach didn't persist auth token between commands - workaround was to use JavaScript eval to set token directly",
+      "resolved": true,
+      "resolution": "Used agent-browser eval --stdin with localStorage.setItem to properly set the auth token",
+      "affectedAssertions": ["VAL-HOME-001"]
+    },
+    {
+      "description": "End Session button required before beginning a new session test - session persisted in browser state",
+      "resolved": true,
+      "resolution": "Clicked 'End meditation session' before testing new session starts",
+      "affectedAssertions": ["VAL-HOME-003"]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 4 assertions for home-flows: all 4 passed. VAL-HOME-001: Personalized greeting shows correctly. VAL-HOME-002: Begin Meditation button navigates to /session. VAL-HOME-003: Session starts directly with Marcus greeting (not idle state). VAL-HOME-004: Bio displayed on home page when present."
+}

@@ -1,13 +1,13 @@
 {
   "milestone": "settings-flows",
-  "round": 2,
-  "status": "fail",
+  "round": 3,
+  "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
       "command": "npm run test:e2e -- settings-data-comprehensive.spec.ts settings-tts-comprehensive.spec.ts settings-stt-comprehensive.spec.ts settings-model-comprehensive.spec.ts",
       "exitCode": 0,
-      "note": "Tests passed (79+ passed, some skipped) with services running"
+      "note": "All settings tests passed: data (19), tts (21), stt (19+2skipped), model (16+4skipped). Skipped tests require optional services (Ollama, STT, TTS servers)."
     },
     "typecheck": {
       "passed": true,
@@ -22,19 +22,14 @@
   },
   "reviewsSummary": {
     "total": 1,
-    "passed": 0,
-    "failed": 1,
-    "failedFeatures": ["fix-settings-test-assertions"]
+    "passed": 1,
+    "failed": 0,
+    "failedFeatures": [],
+    "note": "Round 3 focused on re-review of fix-val-settings-004-import which addresses the round 2 blocking issue with fix-settings-test-assertions"
   },
-  "blockingIssues": [
-    {
-      "featureId": "fix-settings-test-assertions",
-      "severity": "blocking",
-      "description": "VAL-SETTINGS-004 fix is incomplete: The new test 'Importing valid export with profile data restores data to UI' verifies a success toast appears but does NOT verify that the actual data appears in the UI after import. Should add assertion like `await expect(page.getByTestId('profile-name')).toContainText('Import Data Restore User')` after import to confirm data restoration."
-    }
-  ],
+  "blockingIssues": [],
   "appliedUpdates": [],
   "suggestedGuidanceUpdates": [],
   "rejectedObservations": [],
-  "previousRound": ".factory/validation/settings-flows/scrutiny/synthesis.json (round 1)"
+  "previousRound": ".factory/validation/settings-flows/scrutiny/synthesis.json (round 2)"
 }

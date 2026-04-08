@@ -1,0 +1,22 @@
+{
+  "milestone": "navigation-flows",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-NAV-001",
+    "VAL-NAV-002",
+    "VAL-NAV-003",
+    "VAL-NAV-004",
+    "VAL-NAV-005"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null
+}

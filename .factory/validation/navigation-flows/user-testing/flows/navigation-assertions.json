@@ -1,0 +1,20 @@
+{
+  "flowId": "navigation-assertions",
+  "assertions": [
+    "VAL-NAV-001",
+    "VAL-NAV-002",
+    "VAL-NAV-003",
+    "VAL-NAV-004",
+    "VAL-NAV-005"
+  ],
+  "status": "pass",
+  "summary": "All 27 navigation tests pass covering all 5 VAL-NAV assertions",
+  "testsRun": 27,
+  "testsPassed": 27,
+  "testsFailed": 0,
+  "blockers": [],
+  "frictions": [],
+  "toolsUsed": ["playwright", "agent-browser"],
+  "isolation": "Single user account, single browser instance, sequential test execution",
+  "testFile": "e2e/navigation-comprehensive.spec.ts"
+}

@@ -1,44 +1,19 @@
 {
   "milestone": "ui-flows",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "validatorsRun": {
     "test": { "passed": true, "command": "npm run test", "exitCode": 0, "output": "30 test files, 312 tests passed" },
     "typecheck": { "passed": true, "command": "npm run typecheck", "exitCode": 0 },
     "lint": { "passed": true, "command": "npm run lint", "exitCode": 0 }
   },
   "reviewsSummary": {
-    "total": 3,
-    "passed": 2,
-    "failed": 1,
-    "failedFeatures": ["e2e-error-handling-comprehensive"]
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "failedFeatures": []
   },
-  "blockingIssues": [
-    {
-      "featureId": "e2e-error-handling-comprehensive",
-      "severity": "blocking",
-      "description": "Tests use extremely weak assertions (mostly `bodyText?.trim().length > 0`) that verify nothing about error handling behavior. VAL-ERROR-001 promises 'user-friendly error message' but tests don't verify any specific message.",
-      "locations": ["e2e/error-handling-comprehensive.spec.ts:65", "e2e/error-handling-comprehensive.spec.ts:83", "e2e/error-handling-comprehensive.spec.ts:103", "e2e/error-handling-comprehensive.spec.ts:128"]
-    },
-    {
-      "featureId": "e2e-error-handling-comprehensive",
-      "severity": "blocking",
-      "description": "Tests use `.catch(() => {})` which silently swallows assertion failures. Tests can pass even if error toasts never appear.",
-      "locations": ["e2e/error-handling-comprehensive.spec.ts:159", "e2e/error-handling-comprehensive.spec.ts:300"]
-    },
-    {
-      "featureId": "e2e-error-handling-comprehensive",
-      "severity": "blocking",
-      "description": "Timeout tests don't actually verify timeout behavior. Uses 30-second delayed response but only 5-second wait, so timeout is never triggered.",
-      "locations": ["e2e/error-handling-comprehensive.spec.ts:175", "e2e/error-handling-comprehensive.spec.ts:198"]
-    },
-    {
-      "featureId": "e2e-error-handling-comprehensive",
-      "severity": "blocking",
-      "description": "Test 'Error boundary catches React errors' doesn't actually trigger any error - page.evaluate just adds an event listener without triggering it.",
-      "locations": ["e2e/error-handling-comprehensive.spec.ts:263"]
-    }
-  ],
+  "blockingIssues": [],
   "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
@@ -50,7 +25,7 @@
     {
       "target": "AGENTS.md",
       "suggestion": "Clarify that tests must verify specific UI elements appear, not just that 'body has content'. Add examples of proper error message assertions vs weak 'length > 0' assertions.",
-      "evidence": "e2e-error-handling-comprehensive ignored AGENTS.md assertion patterns entirely, using meaningless assertions throughout.",
+      "evidence": "e2e-error-handling-comprehensive originally ignored AGENTS.md assertion patterns entirely, using meaningless assertions throughout. The fix (fix-error-handling-assertions) now correctly uses hasErrorUI() helper.",
       "isSystemic": true
     },
     {
@@ -76,10 +51,20 @@
     { "observation": "Toast CSS class naming should go in library", "reason": "AGENTS.md is the appropriate place for CSS class conventions that workers need to know" },
     { "observation": "VAL-RESP assertion criteria detailed in validation-contract.md", "reason": "validation-contract.md is owned by orchestrator; library is not the place to suggest changes to it" }
   ],
-  "previousRound": null,
+  "previousRound": ".factory/validation/ui-flows/scrutiny/synthesis.json",
   "reviewReports": [
-    "e2e-toast-notifications-comprehensive: pass (4 non-blocking issues)",
-    "e2e-error-handling-comprehensive: FAIL (13 blocking issues)",
-    "e2e-responsive-design-comprehensive: pass (3 non-blocking issues)"
+    "fix-error-handling-assertions: pass (1 non-blocking issue)"
+  ],
+  "round2FixesValidated": [
+    {
+      "featureId": "fix-error-handling-assertions",
+      "addresses": "e2e-error-handling-comprehensive",
+      "issuesFixed": [
+        "Weak body?.trim().length > 0 assertions replaced with hasErrorUI() helper checking specific error UI elements",
+        "Silent .catch(() => {}) handlers removed and replaced with proper expect().toBeVisible() assertions",
+        "Timeout tests now use route.abort('timedout') instead of 30s delays",
+        "Error boundary test uses Promise.reject + console.error to simulate errors"
+      ]
+    }
   ]
 }

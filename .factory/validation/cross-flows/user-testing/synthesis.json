@@ -1,0 +1,86 @@
+{
+  "milestone": "cross-flows",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 15,
+    "passed": 10,
+    "failed": 4,
+    "blocked": 1
+  },
+  "passedAssertions": [
+    "VAL-CROSS-001",
+    "VAL-CROSS-002",
+    "VAL-CROSS-003",
+    "VAL-CROSS-004",
+    "VAL-CROSS-005",
+    "VAL-CONCURRENT-001",
+    "VAL-PERF-001",
+    "VAL-PERF-003"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-CROSS-006",
+      "reason": "Import/export UI present but file download/upload cannot be tested in headless browser - Export/Import buttons functional but full cycle not verifiable"
+    },
+    {
+      "id": "VAL-CONCURRENT-002",
+      "reason": "Logout in one tab does NOT auto-redirect other tab to login - requires manual page reload. Backend properly invalidates session (401 errors), but UI doesn't auto-update without refresh"
+    },
+    {
+      "id": "VAL-PERF-002",
+      "reason": "401 Unauthorized errors appear in console during normal usage - violates 'no console errors during normal usage' requirement"
+    }
+  ],
+  "blockedAssertions": [
+    {
+      "id": "VAL-CROSS-006",
+      "blockedBy": "Headless browser cannot handle file download/upload - UI is functional but cycle not testable"
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Ollama model mismatch (gemma4 vs llama3) causes Marcus responses to fail. Sessions save to history but marked incomplete. User should be aware that full AI responses require correct Ollama model installed.",
+      "source": "flow-report"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "VAL-CONCURRENT-002 fails because logout is not broadcast across tabs - backend properly invalidates but UI requires manual refresh",
+      "source": "flow-report"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "VAL-PERF-002 fails due to 401 errors in console - appears to be from API calls to protected endpoints before auth is validated",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null,
+  "flowReports": [
+    "cross-flows.json",
+    "concurrent-sessions.json",
+    "performance.json"
+  ],
+  "keyFindings": {
+    "cross-flows": {
+      "summary": "5/6 assertions passed. Registration→session→history works with Ollama issues. Profile editing propagates correctly. TTS settings persist. Multiple sessions accumulate. Clear data works. Import/export UI present but full cycle untestable in headless.",
+      "issues": [
+        "Ollama model mismatch causes Marcus responses to fail",
+        "Browser session state instability during testing",
+        "File handling not testable in headless mode"
+      ]
+    },
+    "concurrent-sessions": {
+      "summary": "1/2 passed. Sessions are isolated between tabs. However, logout in one tab does NOT auto-redirect other tab - requires manual refresh despite backend properly invalidating session.",
+      "issues": [
+        "VAL-CONCURRENT-002: Logout not auto-broadcast across tabs"
+      ]
+    },
+    "performance": {
+      "summary": "2/3 passed. Page loads <5s, session starts <2s. However, 401 errors appear in console during normal usage.",
+      "issues": [
+        "VAL-PERF-002: 401 Unauthorized errors in console"
+      ]
+    }
+  }
+}

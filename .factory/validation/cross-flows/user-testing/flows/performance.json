@@ -1,0 +1,73 @@
+{
+  "groupId": "performance",
+  "testedAt": "2026-04-08T00:00:00.000Z",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "backend": "http://localhost:3100",
+    "session": "default"
+  },
+  "toolsUsed": ["agent-browser", "curl"],
+  "assertions": [
+    {
+      "id": "VAL-PERF-001",
+      "title": "Page loads within reasonable time",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to http://localhost:3101", "expected": "Page loads within 5 seconds", "observed": "Page loaded successfully via curl in 1.5ms TTFB, browser wait --load networkidle completed" },
+        { "action": "Wait for networkidle", "expected": "All resources load", "observed": "Networkidle reached successfully" }
+      ],
+      "evidence": {
+        "screenshots": ["cross-flows/performance/VAL-PERF-001-initial-page.png"],
+        "consoleErrors": "401 errors present (see VAL-PERF-002)",
+        "network": "curl TTFB: 0.001525s, Total: 0.001562s"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-PERF-002",
+      "title": "No console errors during normal usage",
+      "status": "fail",
+      "steps": [
+        { "action": "Navigate to app", "expected": "No console errors", "observed": "Failed to load resource: the server responded with a status of 401 (Unauthorized)" },
+        { "action": "Login and use app", "expected": "No console errors", "observed": "401 errors persist after login" },
+        { "action": "Start meditation session", "expected": "No console errors", "observed": "401 errors persist during session" }
+      ],
+      "evidence": {
+        "screenshots": [
+          "cross-flows/performance/VAL-PERF-001-initial-page.png",
+          "cross-flows/performance/VAL-PERF-002-register-page.png",
+          "cross-flows/performance/VAL-PERF-002-session-active.png"
+        ],
+        "consoleErrors": "Failed to load resource: the server responded with a status of 401 (Unauthorized) - appears 4+ times per page load"
+      },
+      "issues": "401 errors appear in console during normal usage. These appear to be from API calls to protected endpoints (e.g., /api/profile) returning 401 when checked before auth token is validated. The errors are non-blocking but violate the 'no console errors' requirement."
+    },
+    {
+      "id": "VAL-PERF-003",
+      "title": "Session start is responsive within 2 seconds",
+      "status": "pass",
+      "steps": [
+        { "action": "Login to app", "expected": "Authentication succeeds", "observed": "Login successful, redirected to home" },
+        { "action": "Click 'Begin meditation session'", "expected": "Session starts within 2 seconds", "observed": "Session started, UI shows 'End meditation session' button and message input" },
+        { "action": "Measure time from click to active session", "expected": "< 2000ms", "observed": "~349ms elapsed time from click to session active state" }
+      ],
+      "evidence": {
+        "screenshots": [
+          "cross-flows/performance/VAL-PERF-003-session-idle.png",
+          "cross-flows/performance/VAL-PERF-003-session-active.png",
+          "cross-flows/performance/VAL-PERF-003-session-started.png"
+        ],
+        "consoleErrors": "401 errors present (see VAL-PERF-002)",
+        "timing": {
+          "method": "JavaScript Date.now() before/after click",
+          "elapsedMs": 349,
+          "threshold": 2000
+        }
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 3 performance assertions: 2 passed (VAL-PERF-001, VAL-PERF-003), 1 failed (VAL-PERF-002). Page loads quickly (< 5 seconds) and session starts responsively (< 2 seconds). However, 401 Unauthorized errors appear in the console during normal usage, which violates the 'no console errors' requirement."
+}

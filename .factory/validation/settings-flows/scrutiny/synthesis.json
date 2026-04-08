@@ -1,0 +1,70 @@
+{
+  "milestone": "settings-flows",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "npm run test:e2e -- settings-data-comprehensive.spec.ts settings-tts-comprehensive.spec.ts settings-stt-comprehensive.spec.ts settings-model-comprehensive.spec.ts",
+      "exitCode": 0,
+      "note": "73 passed, 6 skipped - services were started before test run"
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "npm run lint",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 5,
+    "passed": 2,
+    "failed": 2,
+    "missing": 1,
+    "failedFeatures": [
+      "e2e-settings-data-comprehensive",
+      "e2e-settings-stt-comprehensive"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "e2e-settings-data-comprehensive",
+      "severity": "blocking",
+      "description": "VAL-SETTINGS-004: Import test only checks page stability after import, does NOT verify data was actually restored. Should check that data appears in UI or via API.",
+      "location": "e2e/settings-data-comprehensive.spec.ts:265"
+    },
+    {
+      "featureId": "e2e-settings-data-comprehensive",
+      "severity": "blocking",
+      "description": "VAL-SETTINGS-005: Invalid import tests only check page stability, not that error message is displayed. Should use expect(page.getByText(/error/i)).toBeVisible() or similar.",
+      "location": "e2e/settings-data-comprehensive.spec.ts:298"
+    },
+    {
+      "featureId": "e2e-settings-stt-comprehensive",
+      "severity": "blocking",
+      "description": "VAL-SETTINGS-STT-005: 'error message on failed reload' is not tested - no test simulates failed reload to verify error message display.",
+      "location": "e2e/settings-stt-comprehensive.spec.ts:291"
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Update validation contract for VAL-SETTINGS-STT-003 to reflect current implementation: no manual 'Reload Model' button exists - model auto-reloads on selection change",
+      "evidence": "e2e-settings-stt-comprehensive review flagged behavior mismatch between contract and implementation",
+      "isSystemic": false
+    },
+    {
+      "target": "validation-contract.md",
+      "suggestion": "Add explicit testable steps for VAL-SETTINGS-004 data restoration verification and VAL-SETTINGS-005 error message display verification",
+      "evidence": "Tests cover page stability but not functional outcomes described in contract",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null
+}

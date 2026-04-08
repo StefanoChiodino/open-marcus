@@ -1,6 +1,6 @@
 {
   "milestone": "ui-flows",
-  "round": 6,
+  "round": 7,
   "status": "fail",
   "assertionsSummary": {
     "total": 15,
@@ -26,37 +26,37 @@
   "failedAssertions": [
     {
       "id": "VAL-ERROR-001",
-      "reason": "Network error during chat (send message) doesn't show error UI. Network error during session list API (history page) DOES show error UI. Pattern: errors during 'secondary' operations show error UI, errors during 'primary' session operations (beginSession, sendMessage) don't."
+      "reason": "MeditationChat shows idle view (Begin Meditation button) instead of error view when network error occurs during chat. The component should display error UI but doesn't. Error toast IS added to store by sendMessage() catch block, but MeditationChat doesn't render the error view."
     },
     {
       "id": "VAL-ERROR-002",
-      "reason": "500 on session create (POST /api/sessions) and 500 on chat API don't show error UI. 500 on profile load and 500 on data export DO show error toast. Same pattern as VAL-ERROR-001: MeditationChat component doesn't properly render error view for session/chat operations."
+      "reason": "MeditationChat shows idle view instead of error view when 500 error occurs on session create (POST /api/sessions) or chat API. The error state IS set in sessionStore (status='error', error=message) but MeditationChat renders the idle view. Same issue persists after fix-meditation-chat-error-state (commit 657c8ed)."
     }
   ],
   "blockedAssertions": [],
   "previousRound": ".factory/validation/ui-flows/user-testing/synthesis.json",
   "flowReports": [
     {
-      "group": "error-handling-retest-round-6",
+      "group": "error-handling-retest-round-7",
       "testFile": "e2e/error-handling-comprehensive.spec.ts",
       "testsRun": 18,
       "testsPassed": 14,
       "testsFailed": 4,
       "status": "fail",
-      "notes": "Round 6 re-test after fix-meditation-chat-error-state (commit 657c8ed). Pattern confirmed: (1) Toast IS added in sessionStore catch blocks, (2) Toast works for profile load, data export, session list errors (History component catches these), (3) Toast does NOT work for session create and chat API failures - MeditationChat component doesn't show error view, (4) Tests confirm 'Network error during settings load' PASSES because settings component catches the error. The issue is SPECIFIC to MeditationChat not rendering error state for beginSession/sendMessage failures."
+      "notes": "Round 7 re-test after fix-meditation-chat-error-state (commit 657c8ed). Same 4 tests still failing: (1) Network error during chat, (2) 500 on session create, (3) 500 on chat API, (4) Page remains usable after errors. All 4 involve MeditationChat not showing error UI for session/chat operation failures. Tests that pass: profile load 500, data export 500, history session list 500 (network), all timeout tests, all offline tests, and integration tests except the one involving MeditationChat."
     }
   ],
   "systemicIssues": [
     {
       "severity": "blocking",
-      "description": "MeditationChat component has conditional logic that causes it to fall through to idle view when beginSession() fails. The error view condition check runs BEFORE the component falls through to the idle view, but when status is 'starting' and error is first set (async state update), the component may re-render before the error state propagates properly, causing it to show the welcome view instead of error view.",
+      "description": "MeditationChat component does not render error view when beginSession() or sendMessage() fails. The error view condition in MeditationChat.tsx (line ~140): `if (displayError && (status === 'error' || status === 'active' || status === 'streaming' || status === 'starting'))` should show error view, but the component renders idle view instead. This indicates the error state is not being properly detected OR the condition is not evaluating correctly.",
       "impact": "VAL-ERROR-001 (network error during chat) and VAL-ERROR-002 (500 on session create, 500 on chat API) cannot pass.",
-      "rootCause": "React/Zustand timing issue: when beginSession() fails, set() is called with {status: 'error', error: message}. But in the MeditationChat component, when the useSessionStore hook returns with status='starting' and error=null on first render, the error view condition is FALSE (due to displayError = error || ... short-circuit). Then when the store updates to status='error', the component re-renders but may not properly detect the state change before showing the fallback idle view."
+      "rootCause": "Unclear. The store's beginSession() catch block DOES call set({status: 'error', error: message}) and addToast(). The MeditationChat fix (657c8ed) added explicit check for status==='error'. Yet the component still renders idle view. Possible causes: (1) Zustand selector causing component not to re-render on error state change, (2) Error view condition short-circuits before error state is properly propagated, (3) Mock setup timing - session creation mock may not be intercepting properly causing session to stay in 'idle' rather than transition to error state."
     }
   ],
   "services": {
     "backend": "localhost:3100 - running",
     "frontend": "localhost:3101 - running"
   },
-  "reRunNotes": "Round 6 re-test after fix-meditation-chat-error-state. The fix (commit 657c8ed) added error view with explicit check for status==='error'. But the issue persists because: (1) When beginSession() is called, status becomes 'starting', (2) API call fails and catch block calls set({status: 'error', error: message}), (3) useSessionStore() returns new state with error non-null, (4) But the component's displayError calculation might be short-circuiting before the store update fully propagates. OR the real issue is that the error view condition requires status to be one of ['error', 'active', 'streaming', 'starting'] - but when session creation fails, the component stays in 'starting' state which DOES pass the condition, yet the error is still not showing. This suggests the issue is in how React re-renders on Zustand state change - the component might be re-rendering with stale error value from the previous render cycle."
+  "reRunNotes": "Round 7 re-test after fix-meditation-chat-error-state. The same 4 tests that failed in round 6 are still failing. The fix commit (657c8ed) attempted to ensure error view renders for status==='error', but the issue persists. Test screenshots show MeditationChat renders idle view with 'Begin Meditation' button visible even when session/chat API is mocked to fail. This indicates the error state is either not being set in the store OR the component is not detecting/rendering it properly."
 }

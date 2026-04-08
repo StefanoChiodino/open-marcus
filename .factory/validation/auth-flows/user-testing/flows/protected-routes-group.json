@@ -1,0 +1,106 @@
+{
+  "groupId": "protected-routes-group",
+  "testedAt": "2026-04-08T00:00:00.000Z",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "backendUrl": "http://localhost:3100",
+    "browserSession": "default"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-PROTECT-001",
+      "title": "/session redirects unauthenticated to /login",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to /session without auth", "expected": "Redirect to /login", "observed": "Redirected to /login" }
+      ],
+      "evidence": {
+        "screenshots": ["auth-flows/protected-routes-group/VAL-PROTECT-001-session-no-auth-retest.png"],
+        "consoleErrors": "none",
+        "network": "N/A - tested via browser navigation"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-PROTECT-002",
+      "title": "/history redirects unauthenticated to /login",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to /history without auth", "expected": "Redirect to /login", "observed": "Redirected to /login" }
+      ],
+      "evidence": {
+        "screenshots": ["auth-flows/protected-routes-group/VAL-PROTECT-002-history-no-auth.png"],
+        "consoleErrors": "none",
+        "network": "N/A - tested via browser navigation"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-PROTECT-003",
+      "title": "/profile redirects unauthenticated to /login",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to /profile without auth", "expected": "Redirect to /login", "observed": "Redirected to /login" }
+      ],
+      "evidence": {
+        "screenshots": ["auth-flows/protected-routes-group/VAL-PROTECT-003-profile-no-auth.png"],
+        "consoleErrors": "none",
+        "network": "N/A - tested via browser navigation"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-PROTECT-004",
+      "title": "/settings redirects unauthenticated to /login",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to /settings without auth", "expected": "Redirect to /login", "observed": "Redirected to /login" }
+      ],
+      "evidence": {
+        "screenshots": ["auth-flows/protected-routes-group/VAL-PROTECT-004-settings-no-auth.png"],
+        "consoleErrors": "none",
+        "network": "N/A - tested via browser navigation"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-PROTECT-005",
+      "title": "Authenticated /login redirects to home",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to /login while authenticated", "expected": "Redirect to home (/)", "observed": "Redirected to /" }
+      ],
+      "evidence": {
+        "screenshots": ["auth-flows/protected-routes-group/VAL-PROTECT-005-auth-login-redirect.png"],
+        "consoleErrors": "none",
+        "network": "N/A - tested via browser navigation"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-PROTECT-006",
+      "title": "Authenticated /register redirects to home",
+      "status": "pass",
+      "steps": [
+        { "action": "Navigate to /register while authenticated", "expected": "Redirect to home (/)", "observed": "Redirected to /" }
+      ],
+      "evidence": {
+        "screenshots": ["auth-flows/protected-routes-group/VAL-PROTECT-006-auth-register-redirect.png"],
+        "consoleErrors": "none",
+        "network": "N/A - tested via browser navigation"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Initial test of VAL-PROTECT-001 showed /session redirecting to / instead of /login - this was a timing issue where URL was checked before redirect completed. Re-test confirmed correct behavior.",
+      "resolved": true,
+      "resolution": "Re-tested after ensuring page fully loaded - confirmed /login redirect",
+      "affectedAssertions": ["VAL-PROTECT-001"]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 6 assertions: 6 passed (VAL-PROTECT-001 to VAL-PROTECT-006 all pass). All protected route redirects work correctly: unauthenticated users are redirected to /login when accessing /session, /history, /profile, or /settings. Authenticated users are redirected to home (/) when accessing /login or /register."
+}

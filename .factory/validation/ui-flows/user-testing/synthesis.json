@@ -1,6 +1,6 @@
 {
   "milestone": "ui-flows",
-  "round": 4,
+  "round": 5,
   "status": "fail",
   "assertionsSummary": {
     "total": 15,
@@ -20,46 +20,43 @@
     "VAL-RESP-005",
     "VAL-RESP-006",
     "VAL-RESP-007",
+    "VAL-ERROR-003",
     "VAL-ERROR-004"
   ],
   "failedAssertions": [
     {
       "id": "VAL-ERROR-001",
-      "reason": "Tests that mock ALL API calls cause app to redirect to login page instead of showing error UI. The 'API is unreachable' test shows login page after reload because auth token validation fails. Error toast implementation exists in stores but test approach doesn't trigger it correctly."
+      "reason": "Chat and settings network errors don't show error UI. The session list API unreachable scenario passes, but network errors during chat and settings load fail - no error toast appears when hasErrorUI() is checked."
     },
     {
       "id": "VAL-ERROR-002",
-      "reason": "Tests that mock session create/profile load/chat API to return 500 still fail to show error UI. Stores call addToast correctly, but hasErrorUI() returns false. The 500 export test passes because the button click is properly wired to trigger the API call. Other tests may have timing or mock interception issues."
-    },
-    {
-      "id": "VAL-ERROR-003",
-      "reason": "Tests that mock ALL API calls to timeout show login page instead of error UI. Similar issue to VAL-ERROR-001 - when all APIs fail, app redirects to login. Individual API timeout tests (session, settings) pass but specific timeout scenario fails."
+      "reason": "500 errors during session create and chat API don't show error UI. 500 on profile load and data export DO show error toasts correctly. The issue is specific to session/chat failures - MeditationChat component doesn't properly render error state when beginSession() or sendMessage() fails."
     }
   ],
   "blockedAssertions": [],
   "previousRound": ".factory/validation/ui-flows/user-testing/synthesis.json",
   "flowReports": [
     {
-      "group": "error-handling-retest",
+      "group": "error-handling-retest-round-5",
       "testFile": "e2e/error-handling-comprehensive.spec.ts",
-      "testsRun": 19,
-      "testsPassed": 13,
-      "testsFailed": 6,
+      "testsRun": 18,
+      "testsPassed": 15,
+      "testsFailed": 3,
       "status": "fail",
-      "notes": "Re-test after add-error-toasts-to-stores implementation. Error toast calls exist in stores but tests still fail due to test design issues: (1) mocking all APIs causes auth redirect to login, (2) individual API mocks may not properly trigger toast display"
+      "notes": "Round 5 re-test after add-error-toasts-to-stores. Tests confirm: (1) Toast implementation exists in sessionStore and is called in catch blocks, (2) Toast works for profile load and data export 500s, (3) Toast does NOT work for session create and chat API failures, (4) MeditationChat doesn't properly render error state when status becomes 'error' - UI stays in idle view showing 'Begin Meditation' button."
     }
   ],
   "systemicIssues": [
     {
       "severity": "blocking",
-      "description": "E2E error handling tests have design flaws. Tests that mock all API calls (route.abort('failed') for **/api/**) cause the app to lose auth state and redirect to login, so error UI is never shown. Tests that mock individual APIs may have timing or mock interception issues.",
-      "impact": "VAL-ERROR-001, VAL-ERROR-002, VAL-ERROR-003 cannot be validated with current test approach. Tests expect error UI but app redirects to login when APIs fail during initial load.",
-      "rootCause": "Test design issue - hasErrorUI() checks for .toast--error but these never appear when auth validation fails. The store implementations (addToast calls) are correct but tests don't properly exercise them."
+      "description": "MeditationChat component doesn't handle error status properly. When sessionStore.beginSession() fails with 500 and sets status='error', MeditationChat falls through to active chat view but the error is not visible because the component renders the idle view (if/else logic issue or state not updating).",
+      "impact": "VAL-ERROR-001 (network error during chat) and VAL-ERROR-002 (500 on session create, 500 on chat API) cannot pass - error UI never appears.",
+      "rootCause": "Component logic issue in MeditationChat.tsx - the error display div only renders in the 'active chat view' but status='error' may cause incorrect view rendering. Or the toast is added to store but component doesn't re-render."
     }
   ],
   "services": {
     "backend": "localhost:3100 - running",
     "frontend": "localhost:3101 - running"
   },
-  "reRunNotes": "Round 4 re-test after add-error-toasts-to-stores (status: completed). Implementation verified: stores now call addToast in catch blocks. But e2e tests still fail due to test design flaws - mocking all APIs causes login redirect instead of error UI. Test approach needs revision: individual API mocking with proper timing waits."
+  "reRunNotes": "Round 5 re-test after add-error-toasts-to-stores (status: completed). Implementation partially works: toast IS added in sessionStore catch blocks, but MeditationChat doesn't render error state properly for session/chat failures. Settings/profile errors work fine. This is a frontend component bug, not a store bug."
 }

@@ -548,6 +548,55 @@ test.describe('Comprehensive STT Settings Tests', () => {
 				await expect(select).toBeEnabled({ timeout: 5000 });
 			}
 		});
+
+		test('Error message appears when model reload fails', async ({ page }) => {
+			// Create profile first
+			await createProfile(page, 'STT Reload Error User', 'Testing reload error');
+
+			// Navigate to settings page
+			await goToSettingsPage(page);
+
+			// Wait for models to load
+			await page.waitForTimeout(2000);
+
+			const select = page.locator('#stt-model-select');
+			await expect(select).toBeVisible({ timeout: 10000 });
+
+			// Get available models
+			const options = page.locator('#stt-model-select option');
+			const count = await options.count();
+
+			// Skip test if no models available
+			if (count <= 1) {
+				test.skip(true, 'No STT models available to test');
+				return;
+			}
+
+			// Select a model to trigger the save/reload
+			const modelValue = await options.nth(1).getAttribute('value');
+			await select.selectOption(modelValue!);
+
+			// Simulate a failed reload by intercepting the API call and failing it
+			// This tests that error handling works when the STT model fails to reload
+			await page.route('**/api/settings**', async (route) => {
+				// Fail the request to simulate STT server being down
+				await route.abort('failed');
+			});
+
+			// Try to select a different model - this should trigger an error
+			if (count >= 3) {
+				const secondModelValue = await options.nth(2).getAttribute('value');
+				await select.selectOption(secondModelValue!);
+			} else {
+				await select.selectOption(modelValue!);
+			}
+
+			// Wait for error handling
+			await page.waitForTimeout(2000);
+
+			// Error message should appear (using first() since there may be multiple error-related elements)
+			await expect(page.getByText(/error|failed/i).first()).toBeVisible({ timeout: 5000 });
+		});
 	});
 
 	test.describe('VAL-SETTINGS-STT-006: Warning for large models', () => {

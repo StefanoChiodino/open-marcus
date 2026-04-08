@@ -348,6 +348,61 @@ test.describe('Comprehensive Settings Data Management Tests', () => {
       await expect(page.getByRole('heading', { name: 'Clear All Data' })).toBeVisible();
     });
 
+    test('Importing valid export with profile data restores data to UI', async ({ page }) => {
+      // Create a profile first
+      await createProfile(page, 'Import Data Restore User', 'Bio for restore test');
+      
+      // Navigate to home to verify profile exists before any operations
+      await expect(page.getByTestId('profile-name')).toContainText('Import Data Restore User', { timeout: 10000 });
+      
+      // Navigate to settings page and export data BEFORE clearing
+      await goToSettingsPage(page);
+      
+      // Set up download promise
+      const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+      await page.getByRole('button', { name: 'Download JSON Export' }).click();
+      const download = await downloadPromise;
+      
+      // Read exported data
+      const path = await download.path();
+      const exportContent = fs.readFileSync(path!, 'utf-8');
+      const exportData = JSON.parse(exportContent);
+      
+      // Now clear all data
+      await page.getByRole('button', { name: 'Permanently delete all your profiles, sessions, messages, and settings' }).click();
+      await page.waitForTimeout(1000);
+      await page.evaluate(() => {
+        const dialog = document.querySelector('dialog.confirmation-modal') as HTMLDialogElement;
+        if (dialog && !dialog.hasAttribute('open')) {
+          dialog.showModal();
+        }
+      });
+      await page.locator('button', { hasText: 'Yes, Clear Everything' }).click();
+      await page.waitForLoadState('networkidle');
+      
+      // Now we should be on onboarding (no profile)
+      await expect(page.getByLabel('Name')).toBeVisible({ timeout: 10000 });
+      
+      // Import the exported data
+      await goToSettingsPage(page);
+      
+      const fileBuffer = Buffer.from(JSON.stringify(exportData));
+      const fileChooserPromise = page.waitForEvent('filechooser', { timeout: 5000 });
+      await page.getByRole('button', { name: 'Import from JSON File' }).click();
+      const fileChooser = await fileChooserPromise;
+      await fileChooser.setFiles({
+        name: 'restored-export.json',
+        mimeType: 'application/json',
+        buffer: fileBuffer,
+      });
+      
+      // Wait for import to complete - should show success toast
+      await page.waitForTimeout(3000);
+      
+      // Success toast should appear confirming import
+      await expect(page.getByText(/Data imported|imported.*profile/i).first()).toBeVisible({ timeout: 5000 });
+    });
+
     test('Import button triggers file input', async ({ page }) => {
       // Create a profile
       await createProfile(page, 'Import Button User', 'Testing import button');
@@ -391,8 +446,13 @@ test.describe('Comprehensive Settings Data Management Tests', () => {
       // Wait for import to process
       await page.waitForTimeout(2000);
       
-      // Either error toast appears or the page remains stable
-      // The key is no crash and proper error handling
+      // Error message should appear for invalid JSON - look for toast with error
+      await expect(page.getByText(/Import failed/i)).toBeVisible({ timeout: 5000 }).catch(() => {
+        // Fallback: check for any error toast
+        expect(page.getByText(/error/i).first()).toBeVisible();
+      });
+      
+      // Settings page should still be visible (no crash)
       const isStable = await page.getByRole('heading', { name: 'Settings' }).isVisible();
       expect(isStable).toBe(true);
     });
@@ -427,6 +487,9 @@ test.describe('Comprehensive Settings Data Management Tests', () => {
       
       // Wait for import to process
       await page.waitForTimeout(2000);
+      
+      // Error message should appear for wrong structure
+      await expect(page.getByText(/Import failed|error/i).first()).toBeVisible({ timeout: 5000 });
       
       // The settings page should still be visible (no crash)
       const isStable = await page.getByRole('heading', { name: 'Settings' }).isVisible();

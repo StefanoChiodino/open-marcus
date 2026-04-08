@@ -1,6 +1,6 @@
 {
   "milestone": "auth-flows",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "assertionsSummary": {
     "total": 22,
@@ -24,13 +24,7 @@
     }
   ],
   "blockedAssertions": [],
-  "frictions": [
-    {
-      "description": "agent-browser fill command does not reliably clear existing value before filling",
-      "resolution": "Used agent-browser eval with JavaScript to clear input fields before testing empty validation",
-      "affectedAssertions": ["VAL-ONBOARD-002"]
-    }
-  ],
+  "frictions": [],
   "blockers": [
     {
       "description": "Registration flow (backend/routes/auth.ts) auto-creates profile using profileService.createProfileForUser(user.id, username.trim()) - this creates a profile with name=username",
@@ -39,11 +33,24 @@
     }
   ],
   "appliedUpdates": [],
-  "previousRound": null,
+  "previousRound": ".factory/validation/auth-flows/user-testing/synthesis.json",
   "toolsUsed": ["agent-browser"],
   "flowReports": [
     "flows/auth-group.json",
     "flows/onboarding-group.json",
-    "flows/protected-routes-group.json"
-  ]
+    "flows/protected-routes-group.json",
+    "flows/onboarding-retest.json"
+  ],
+  "reTestResults": {
+    "assertion": "VAL-ONBOARD-001",
+    "status": "blocked",
+    "behaviorUnchanged": true,
+    "evidenceFiles": [
+      "auth-flows/onboarding-retest/VAL-ONBOARD-001-registration-form.png",
+      "auth-flows/onboarding-retest/VAL-ONBOARD-001-after-registration.png",
+      "auth-flows/onboarding-retest/VAL-ONBOARD-001-profile-page.png",
+      "auth-flows/onboarding-retest/VAL-ONBOARD-001-auto-created-profile.png"
+    ],
+    "conclusion": "Behavior has NOT changed since round 1. Registration auto-creates profile with username as name, preventing access to onboarding form with 'Begin Journey' button."
+  }
 }

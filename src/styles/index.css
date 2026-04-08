@@ -441,7 +441,7 @@ img, svg {
 
 .button--primary {
   background: var(--color-gold-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-text-primary);
   border-color: var(--color-gold-primary);
 }
 

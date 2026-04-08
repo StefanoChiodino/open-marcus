@@ -79,9 +79,8 @@ router.post('/import', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid export format: missing required fields' });
     }
     
-    // Note: importData associates data with the default user for backward compatibility
-    // In a full multi-user implementation, we'd need to modify importData to accept userId
-    const importResult = db.importData(data);
+    // Import data associated with the authenticated user
+    const importResult = db.importData(data, userId);
     
     res.json({
       success: true,

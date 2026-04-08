@@ -401,6 +401,17 @@ test.describe('Comprehensive Settings Data Management Tests', () => {
       
       // Success toast should appear confirming import
       await expect(page.getByText(/Data imported|imported.*profile/i).first()).toBeVisible({ timeout: 5000 });
+      
+      // Navigate to home page to verify data was actually restored
+      await page.getByRole('link', { name: 'Home' }).click();
+      await page.waitForLoadState('networkidle');
+      
+      // Verify the profile name appears in UI after import (confirms data restoration)
+      // The profile name is displayed as "Welcome, {name}" on the home page
+      // NOTE: This assertion requires backend fix - currently importData() in database.ts
+      // always uses default_user.id instead of the authenticated user's userId,
+      // so imported data is associated with the wrong user.
+      await expect(page.getByText('Welcome, Import Data Restore User')).toBeVisible({ timeout: 10000 });
     });
 
     test('Import button triggers file input', async ({ page }) => {

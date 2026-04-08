@@ -24,12 +24,12 @@ export class DatabaseService {
     this.db = new Database(dbPath);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
-    
+
     // Use environment variable or generate a default for development
     this.encryptionPassword = encryptionPassword || process.env.ENCRYPTION_KEY || 'development-key-change-in-production';
-    
+
     this.migrationRunner = new MigrationRunner(this.db);
-    
+
     // Run migrations on startup
     this.migrationRunner.run();
   }
@@ -50,27 +50,27 @@ export class DatabaseService {
   createProfile(name: string, bio: string | null = null, data: object = {}): Profile {
     // Get or create the default user for single-user mode
     const defaultUser = this.getOrCreateDefaultUser();
-    
+
     const id = randomUUID();
     const encryptedData = encryptObject({ ...data, name, bio }, this.encryptionPassword);
-    
+
     const sql = `
       INSERT INTO profiles (id, user_id, name, bio, encrypted_data)
       VALUES (?, ?, ?, ?, ?)
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     // Bio is stored ONLY in encrypted_data, not in plaintext bio column
     stmt.run(id, defaultUser.id, name, null, JSON.stringify(encryptedData));
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
       table: extractTableName(sql),
       durationMs: getDuration(),
     });
-    
+
     return this.getProfileWithDecryptedBio(id)!;
   }
 
@@ -81,24 +81,24 @@ export class DatabaseService {
   createProfileForUser(userId: string, name: string, bio: string | null = null, data: object = {}): Profile {
     const id = randomUUID();
     const encryptedData = encryptObject({ ...data, name, bio }, this.encryptionPassword);
-    
+
     const sql = `
       INSERT INTO profiles (id, user_id, name, bio, encrypted_data)
       VALUES (?, ?, ?, ?, ?)
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     // Bio is stored ONLY in encrypted_data, not in plaintext bio column
     stmt.run(id, userId, name, null, JSON.stringify(encryptedData));
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
       table: extractTableName(sql),
       durationMs: getDuration(),
     });
-    
+
     return this.getProfileWithDecryptedBio(id)!;
   }
 
@@ -110,10 +110,10 @@ export class DatabaseService {
   getProfile(id: string): Profile | null {
     const sql = 'SELECT * FROM profiles WHERE id = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.get(id) as Profile | null;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -121,7 +121,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result ? 1 : 0,
     });
-    
+
     return result;
   }
 
@@ -132,7 +132,7 @@ export class DatabaseService {
   getProfileWithDecryptedBio(id: string): (Omit<Profile, 'bio'> & { bio: string | null }) | null {
     const profile = this.getProfile(id);
     if (!profile) return null;
-    
+
     try {
       const encrypted: EncryptedData = JSON.parse(profile.encrypted_data);
       const decrypted = decryptObject<{ name: string; bio: string | null }>(encrypted, this.encryptionPassword);
@@ -154,18 +154,18 @@ export class DatabaseService {
    */
   updateProfile(id: string, name: string, bio: string | null = null, data: object = {}): Profile | null {
     const encryptedData = encryptObject({ ...data, name, bio }, this.encryptionPassword);
-    
+
     const sql = `
       UPDATE profiles
       SET name = ?, bio = ?, encrypted_data = ?, updated_at = datetime('now')
       WHERE id = ?
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     // Bio is stored ONLY in encrypted_data, not in plaintext bio column
     const result = stmt.run(name, null, JSON.stringify(encryptedData), id);
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -173,11 +173,11 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result.changes,
     });
-    
+
     if (result.changes === 0) {
       return null;
     }
-    
+
     return this.getProfileWithDecryptedBio(id);
   }
 
@@ -187,10 +187,10 @@ export class DatabaseService {
   deleteProfile(id: string): boolean {
     const sql = 'DELETE FROM profiles WHERE id = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.run(id);
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -198,7 +198,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result.changes,
     });
-    
+
     return result.changes > 0;
   }
 
@@ -208,10 +208,10 @@ export class DatabaseService {
   listProfiles(): Profile[] {
     const sql = 'SELECT * FROM profiles ORDER BY created_at DESC';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const results = stmt.all() as Profile[];
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -219,7 +219,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: results.length,
     });
-    
+
     return results;
   }
 
@@ -229,10 +229,10 @@ export class DatabaseService {
   listProfilesByUserId(userId: string): Profile[] {
     const sql = 'SELECT * FROM profiles WHERE user_id = ? ORDER BY created_at DESC';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const results = stmt.all(userId) as Profile[];
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -240,7 +240,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: results.length,
     });
-    
+
     return results;
   }
 
@@ -286,10 +286,10 @@ export class DatabaseService {
   getRawProfileData(id: string): string | null {
     const sql = 'SELECT encrypted_data FROM profiles WHERE id = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const row = stmt.get(id) as { encrypted_data: string } | undefined;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -297,7 +297,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: row ? 1 : 0,
     });
-    
+
     return row?.encrypted_data || null;
   }
 
@@ -307,7 +307,7 @@ export class DatabaseService {
   verifyProfileData(id: string): boolean {
     const profile = this.getProfile(id);
     if (!profile) return false;
-    
+
     try {
       const encrypted: EncryptedData = JSON.parse(profile.encrypted_data);
       decryptObject<{ name: string; bio: string | null }>(encrypted, this.encryptionPassword);
@@ -329,25 +329,25 @@ export class DatabaseService {
     if (!profile) {
       throw new Error('Profile not found');
     }
-    
+
     const id = randomUUID();
-    
+
     const sql = `
       INSERT INTO sessions (id, user_id, profile_id, status, started_at)
       VALUES (?, ?, ?, 'intro', datetime('now'))
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     stmt.run(id, profile.user_id, profileId);
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
       table: extractTableName(sql),
       durationMs: getDuration(),
     });
-    
+
     return this.getSession(id)!;
   }
 
@@ -358,10 +358,10 @@ export class DatabaseService {
   getSession(id: string): Session | null {
     const sql = 'SELECT * FROM sessions WHERE id = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.get(id) as Session | null;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -369,11 +369,11 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result ? 1 : 0,
     });
-    
+
     if (result) {
       this.decryptSessionFields(result);
     }
-    
+
     return result;
   }
 
@@ -393,7 +393,7 @@ export class DatabaseService {
         // If decryption fails, leave as-is (might be legacy plaintext)
       }
     }
-    
+
     // Decrypt action_items if present and encrypted
     if (session.action_items) {
       try {
@@ -418,10 +418,10 @@ export class DatabaseService {
       WHERE id = ?
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.run(status, id);
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -429,11 +429,11 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result.changes,
     });
-    
+
     if (result.changes === 0) {
       return null;
     }
-    
+
     return this.getSession(id);
   }
 
@@ -445,7 +445,7 @@ export class DatabaseService {
     // Encrypt the summary and action items
     const encryptedSummary = encryptObject({ summary }, this.encryptionPassword);
     const encryptedActionItems = encryptObject({ actionItems }, this.encryptionPassword);
-    
+
     const sql = `
       UPDATE sessions
       SET status = 'summary', summary = ?, action_items = ?,
@@ -453,14 +453,14 @@ export class DatabaseService {
       WHERE id = ?
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.run(
       JSON.stringify(encryptedSummary),
       JSON.stringify(encryptedActionItems),
       id
     );
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -468,11 +468,11 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result.changes,
     });
-    
+
     if (result.changes === 0) {
       return null;
     }
-    
+
     return this.getSession(id);
   }
 
@@ -487,10 +487,10 @@ export class DatabaseService {
       ORDER BY started_at DESC
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const results = stmt.all(profileId) as Session[];
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -498,12 +498,12 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: results.length,
     });
-    
+
     // Decrypt session data
     for (const session of results) {
       this.decryptSessionFields(session);
     }
-    
+
     return results;
   }
 
@@ -514,10 +514,10 @@ export class DatabaseService {
   listAllSessions(): Session[] {
     const sql = 'SELECT * FROM sessions ORDER BY started_at DESC';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const results = stmt.all() as Session[];
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -525,12 +525,12 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: results.length,
     });
-    
+
     // Decrypt session data
     for (const session of results) {
       this.decryptSessionFields(session);
     }
-    
+
     return results;
   }
 
@@ -545,10 +545,10 @@ export class DatabaseService {
       ORDER BY started_at DESC
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const results = stmt.all(userId) as Session[];
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -556,12 +556,12 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: results.length,
     });
-    
+
     // Decrypt session data
     for (const session of results) {
       this.decryptSessionFields(session);
     }
-    
+
     return results;
   }
 
@@ -571,10 +571,10 @@ export class DatabaseService {
   deleteSession(id: string): boolean {
     const sql = 'DELETE FROM sessions WHERE id = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.run(id);
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -582,7 +582,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result.changes,
     });
-    
+
     return result.changes > 0;
   }
 
@@ -601,21 +601,21 @@ export class DatabaseService {
     if (!session) {
       throw new Error('Session not found');
     }
-    
+
     const id = randomUUID();
-    
+
     // Encrypt the message content
     const encryptedContent = encryptObject({ content }, this.encryptionPassword);
-    
+
     const sql = `
       INSERT INTO messages (id, user_id, session_id, role, content)
       VALUES (?, ?, ?, ?, ?)
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     stmt.run(id, session.user_id, sessionId, role, JSON.stringify(encryptedContent));
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -623,7 +623,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       // Note: content is NOT logged - it's user data
     });
-    
+
     return this.getMessage(id)!;
   }
 
@@ -634,10 +634,10 @@ export class DatabaseService {
   getMessage(id: string): Message | null {
     const sql = 'SELECT * FROM messages WHERE id = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.get(id) as Message | null;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -645,7 +645,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result ? 1 : 0,
     });
-    
+
     if (result && result.content) {
       try {
         const encryptedContent: EncryptedData = JSON.parse(result.content);
@@ -657,7 +657,7 @@ export class DatabaseService {
         // If decryption fails, leave as-is (might be legacy plaintext)
       }
     }
-    
+
     return result;
   }
 
@@ -672,10 +672,10 @@ export class DatabaseService {
       ORDER BY created_at ASC
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const results = stmt.all(sessionId) as Message[];
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -684,7 +684,7 @@ export class DatabaseService {
       rowsReturned: results.length,
       // Note: message content is NOT logged
     });
-    
+
     // Decrypt content for each message
     for (const message of results) {
       if (message.content) {
@@ -699,7 +699,7 @@ export class DatabaseService {
         }
       }
     }
-    
+
     return results;
   }
 
@@ -709,10 +709,10 @@ export class DatabaseService {
   deleteMessages(sessionId: string): number {
     const sql = 'DELETE FROM messages WHERE session_id = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.run(sessionId);
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -720,8 +720,46 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result.changes,
     });
-    
+
     return result.changes;
+  }
+
+  /**
+   * Get message counts for multiple sessions efficiently.
+   * Returns a Map of sessionId -> count for O(1) lookups.
+   * Uses a single SQL query with IN clause instead of N queries.
+   */
+  getMessageCountsForSessions(sessionIds: string[]): Map<string, number> {
+    if (sessionIds.length === 0) {
+      return new Map();
+    }
+
+    const placeholders = sessionIds.map(() => '?').join(',');
+    const sql = `
+      SELECT session_id, COUNT(*) as count
+      FROM messages
+      WHERE session_id IN (${placeholders})
+      GROUP BY session_id
+    `;
+    const getDuration = startQueryTimer();
+
+    const stmt = this.db.prepare(sql);
+    const rows = stmt.all(...sessionIds) as Array<{ session_id: string; count: number }>;
+
+    logQuery({
+      sql,
+      queryType: parseQueryType(sql),
+      table: extractTableName(sql),
+      durationMs: getDuration(),
+      rowsReturned: rows.length,
+    });
+
+    const result = new Map<string, number>();
+    for (const row of rows) {
+      result.set(row.session_id, row.count);
+    }
+    // Sessions with 0 messages won't appear in results - they get 0 from Map.get()
+    return result;
   }
 
   // ==================== Action Item Operations ====================
@@ -739,19 +777,19 @@ export class DatabaseService {
     if (!session) {
       throw new Error('Session not found');
     }
-    
+
     const id = randomUUID();
-    
+
     // Encrypt the action item content
     const encryptedContent = encryptObject({ content }, this.encryptionPassword);
-    
+
     const stmt = this.db.prepare(`
       INSERT INTO action_items (id, user_id, session_id, content, completed)
       VALUES (?, ?, ?, ?, 0)
     `);
-    
+
     stmt.run(id, session.user_id, sessionId, JSON.stringify(encryptedContent));
-    
+
     return this.getActionItem(id)!;
   }
 
@@ -762,7 +800,7 @@ export class DatabaseService {
   getActionItem(id: string): ActionItem | null {
     const stmt = this.db.prepare('SELECT * FROM action_items WHERE id = ?');
     const result = stmt.get(id) as ActionItem | null;
-    
+
     if (result && result.content) {
       try {
         const encryptedContent: EncryptedData = JSON.parse(result.content);
@@ -774,7 +812,7 @@ export class DatabaseService {
         // If decryption fails, leave as-is (might be legacy plaintext)
       }
     }
-    
+
     return result;
   }
 
@@ -789,7 +827,7 @@ export class DatabaseService {
       ORDER BY created_at ASC
     `);
     const results = stmt.all(sessionId) as ActionItem[];
-    
+
     // Decrypt content for each action item
     for (const item of results) {
       if (item.content) {
@@ -804,7 +842,7 @@ export class DatabaseService {
         }
       }
     }
-    
+
     return results;
   }
 
@@ -817,13 +855,13 @@ export class DatabaseService {
       SET completed = NOT completed, updated_at = datetime('now')
       WHERE id = ?
     `);
-    
+
     const result = stmt.run(id);
-    
+
     if (result.changes === 0) {
       return null;
     }
-    
+
     return this.getActionItem(id);
   }
 
@@ -833,10 +871,10 @@ export class DatabaseService {
   deleteActionItem(id: string): boolean {
     const sql = 'DELETE FROM action_items WHERE id = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.run(id);
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -844,7 +882,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result.changes,
     });
-    
+
     return result.changes > 0;
   }
 
@@ -856,15 +894,15 @@ export class DatabaseService {
   seedContent(items: ContentItem[]): number {
     logTransaction({ action: 'begin' });
     const getDuration = startQueryTimer();
-    
+
     const insertMany = this.db.transaction((contentItems: ContentItem[]) => {
       let inserted = 0;
       const insertStmt = this.db.prepare(`
-        INSERT OR REPLACE INTO stoic_content 
+        INSERT OR REPLACE INTO stoic_content
           (id, author, source, book, section, letter, type, content, tags)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      
+
       for (const item of contentItems) {
         const result = insertStmt.run(
           item.id,
@@ -883,11 +921,11 @@ export class DatabaseService {
       }
       return inserted;
     });
-    
+
     const result = insertMany(items);
-    
+
     logTransaction({ action: 'commit', durationMs: getDuration() });
-    
+
     return result;
   }
 
@@ -901,10 +939,10 @@ export class DatabaseService {
       LIMIT ?
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const rows = stmt.all(count) as Array<Record<string, unknown>>;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -912,7 +950,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: rows.length,
     });
-    
+
     return rows.map(row => this.rowToContentItem(row));
   }
 
@@ -943,10 +981,10 @@ export class DatabaseService {
     params.push(limit);
 
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const rows = stmt.all(...params) as Array<Record<string, unknown>>;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -954,7 +992,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: rows.length,
     });
-    
+
     return rows.map(row => this.rowToContentItem(row));
   }
 
@@ -978,7 +1016,7 @@ export class DatabaseService {
 
     const stmt = this.db.prepare(sql);
     const rows = stmt.all(...tagPatterns, limit) as Array<Record<string, unknown>>;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -986,7 +1024,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: rows.length,
     });
-    
+
     return rows.map(row => this.rowToContentItem(row));
   }
 
@@ -995,7 +1033,7 @@ export class DatabaseService {
    */
   getContextForAI(tags: string[], limit: number = 5): string {
     const items = this.getContentByTags(tags, limit);
-    
+
     if (items.length === 0) {
       return '';
     }
@@ -1004,7 +1042,7 @@ export class DatabaseService {
       const source = [item.source, item.book, item.letter, item.section]
         .filter(Boolean)
         .join(', ');
-      return `"${item.content}" — ${item.author}, ${source}`;
+      return `"${item.content}" - ${item.author}, ${source}`;
     });
 
     return `Relevant stoic wisdom to draw from:\n${contextLines.join('\n')}`;
@@ -1016,10 +1054,10 @@ export class DatabaseService {
   getContentCount(): number {
     const sql = 'SELECT COUNT(*) as count FROM stoic_content';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.get() as { count: number };
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -1027,7 +1065,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: 1,
     });
-    
+
     return result.count;
   }
 
@@ -1037,11 +1075,11 @@ export class DatabaseService {
   getAllTags(): string[] {
     const sql = 'SELECT DISTINCT tags FROM stoic_content';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const rows = stmt.all() as Array<{ tags: string }>;
     const tagSet = new Set<string>();
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -1049,14 +1087,14 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: rows.length,
     });
-    
+
     for (const row of rows) {
       const tags = JSON.parse(row.tags) as string[];
       for (const tag of tags) {
         tagSet.add(tag);
       }
     }
-    
+
     return Array.from(tagSet).sort();
   }
 
@@ -1090,7 +1128,7 @@ export class DatabaseService {
       const messageResult = this.db.prepare('DELETE FROM messages').run();
       const sessionResult = this.db.prepare('DELETE FROM sessions').run();
       const profileResult = this.db.prepare('DELETE FROM profiles').run();
-      
+
       return {
         profiles: profileResult.changes,
         sessions: sessionResult.changes,
@@ -1098,13 +1136,14 @@ export class DatabaseService {
         actionItems: actionItemResult.changes,
       };
     });
-    
+
     return clearTransaction();
   }
 
   /**
    * Import all user data from exported JSON.
-   * For single-user mode, associates all imported data with the default user.
+   * Associates all imported data with the specified userId.
+   * Falls back to default user for backward compatibility if no userId provided.
    */
   importData(data: {
     version: string;
@@ -1113,31 +1152,32 @@ export class DatabaseService {
     messages: Message[];
     actionItems: ActionItem[];
     content?: ContentItem[];
-  }): { profiles: number; sessions: number; messages: number; actionItems: number; content?: number } {
-    // Get or create the default user for single-user mode
-    const defaultUser = this.getOrCreateDefaultUser();
-    
+  }, userId?: string): { profiles: number; sessions: number; messages: number; actionItems: number; content?: number } {
+    // Use the provided userId, or fall back to default user for backward compatibility
+    const targetUser = userId ? this.getUserById(userId) : this.getOrCreateDefaultUser();
+    const targetUserId = targetUser ? targetUser.id : this.getOrCreateDefaultUser().id;
+
     const importTransaction = this.db.transaction(() => {
       const insertProfile = this.db.prepare(`
         INSERT OR REPLACE INTO profiles (id, user_id, name, bio, encrypted_data, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
-      
+
       const insertSession = this.db.prepare(`
         INSERT OR REPLACE INTO sessions (id, user_id, profile_id, status, summary, action_items, started_at, ended_at, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      
+
       const insertMessage = this.db.prepare(`
         INSERT OR REPLACE INTO messages (id, user_id, session_id, role, content, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
       `);
-      
+
       const insertActionItem = this.db.prepare(`
         INSERT OR REPLACE INTO action_items (id, user_id, session_id, content, completed, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
-      
+
       const insertContent = this.db.prepare(`
         INSERT OR REPLACE INTO stoic_content (id, author, source, book, section, letter, type, content, tags)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1154,7 +1194,7 @@ export class DatabaseService {
         for (const profile of data.profiles) {
           insertProfile.run(
             profile.id,
-            defaultUser.id,
+            targetUserId,
             profile.name,
             null, // bio stored ONLY in encrypted_data
             profile.encrypted_data || null,
@@ -1170,7 +1210,7 @@ export class DatabaseService {
         for (const session of data.sessions) {
           insertSession.run(
             session.id,
-            defaultUser.id,
+            targetUserId,
             session.profile_id,
             session.status,
             session.summary || null,
@@ -1189,7 +1229,7 @@ export class DatabaseService {
         for (const message of data.messages) {
           insertMessage.run(
             message.id,
-            defaultUser.id,
+            targetUserId,
             message.session_id,
             message.role,
             message.content,
@@ -1204,7 +1244,7 @@ export class DatabaseService {
         for (const actionItem of data.actionItems) {
           insertActionItem.run(
             actionItem.id,
-            defaultUser.id,
+            targetUserId,
             actionItem.session_id,
             actionItem.content,
             actionItem.completed ? 1 : 0,
@@ -1253,10 +1293,10 @@ export class DatabaseService {
   getSetting(key: string): string | null {
     const sql = 'SELECT value FROM settings WHERE key = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const row = stmt.get(key) as { value: string } | undefined;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -1264,7 +1304,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: row ? 1 : 0,
     });
-    
+
     return row?.value || null;
   }
 
@@ -1274,10 +1314,10 @@ export class DatabaseService {
   setSetting(key: string, value: string): void {
     const sql = 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     stmt.run(key, value, value);
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -1292,10 +1332,10 @@ export class DatabaseService {
   deleteSetting(key: string): void {
     const sql = 'DELETE FROM settings WHERE key = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.run(key);
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -1312,23 +1352,23 @@ export class DatabaseService {
    */
   createUser(username: string, passwordHash: string): User {
     const id = randomUUID();
-    
+
     const sql = `
       INSERT INTO users (id, username, password_hash)
       VALUES (?, ?, ?)
     `;
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     stmt.run(id, username, passwordHash);
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
       table: extractTableName(sql),
       durationMs: getDuration(),
     });
-    
+
     return this.getUserById(id)!;
   }
 
@@ -1340,11 +1380,11 @@ export class DatabaseService {
     // Check if a default user already exists
     const defaultUsername = 'default_user';
     const existingUser = this.getUserByUsername(defaultUsername);
-    
+
     if (existingUser) {
       return existingUser;
     }
-    
+
     // Create a default user with a placeholder password hash
     // Note: In single-user mode without auth, this is a placeholder
     // The actual auth system will set a proper password when implemented
@@ -1358,10 +1398,10 @@ export class DatabaseService {
   getUserById(id: string): User | null {
     const sql = 'SELECT * FROM users WHERE id = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.get(id) as User | null;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -1369,7 +1409,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result ? 1 : 0,
     });
-    
+
     return result;
   }
 
@@ -1379,10 +1419,10 @@ export class DatabaseService {
   getUserByUsername(username: string): User | null {
     const sql = 'SELECT * FROM users WHERE username = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.get(username) as User | null;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -1390,7 +1430,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result ? 1 : 0,
     });
-    
+
     return result;
   }
 
@@ -1400,10 +1440,10 @@ export class DatabaseService {
   usernameExists(username: string): boolean {
     const sql = 'SELECT 1 FROM users WHERE username = ?';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.get(username) !== undefined;
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -1411,7 +1451,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: result ? 1 : 0,
     });
-    
+
     return result;
   }
 
@@ -1421,10 +1461,10 @@ export class DatabaseService {
   deleteAllUsers(): void {
     const sql = 'DELETE FROM users';
     const getDuration = startQueryTimer();
-    
+
     const stmt = this.db.prepare(sql);
     const result = stmt.run();
-    
+
     logQuery({
       sql,
       queryType: parseQueryType(sql),
@@ -1441,12 +1481,12 @@ export class DatabaseService {
    */
   getStats(): { profiles: number; sessions: number; messages: number; actionItems: number } {
     const getDuration = startQueryTimer();
-    
+
     const profiles = (this.db.prepare('SELECT COUNT(*) as count FROM profiles').get() as { count: number }).count;
     const sessions = (this.db.prepare('SELECT COUNT(*) as count FROM sessions').get() as { count: number }).count;
     const messages = (this.db.prepare('SELECT COUNT(*) as count FROM messages').get() as { count: number }).count;
     const actionItems = (this.db.prepare('SELECT COUNT(*) as count FROM action_items').get() as { count: number }).count;
-    
+
     logQuery({
       sql: 'SELECT COUNT(*) FROM ... (batch stats query)',
       queryType: 'SELECT',
@@ -1454,7 +1494,7 @@ export class DatabaseService {
       durationMs: getDuration(),
       rowsReturned: 4,
     });
-    
+
     return { profiles, sessions, messages, actionItems };
   }
 }

@@ -1,0 +1,69 @@
+{
+  "featureId": "e2e-toast-notifications-comprehensive",
+  "reviewedAt": "2026-04-08T06:42:00.000Z",
+  "commitId": "db27498343f3ff03a2d934f1d4b8bab460528a8f",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The test file is comprehensive and well-structured, covering all 4 VAL assertions (VAL-TOAST-001 through VAL-TOAST-004) with additional integration scenarios. Tests use proper Playwright patterns, appropriate selectors, and helper functions from test-db-helpers.ts.",
+    "issues": [
+      {
+        "file": "e2e/toast-notifications-comprehensive.spec.ts",
+        "line": 85-95,
+        "severity": "non_blocking",
+        "description": "Rate slider test uses evaluate() to programmatically set value and dispatch events. The onMouseUp handler (handleRateChangeCommit) may not be properly triggered via synthetic events, potentially making this test flaky. Consider using page.mouse.up() after clicking on the slider instead."
+      },
+      {
+        "file": "e2e/toast-notifications-comprehensive.spec.ts",
+        "line": 217-230,
+        "severity": "suggestion",
+        "description": "The 'Multiple toasts each have their own auto-dismiss timer' test lacks explicit assertions at the end. The comment says 'The first toast should be gone but second may still be there' but there's no actual expect() to verify this. Add explicit assertions to make the test intent clear."
+      },
+      {
+        "file": "e2e/toast-notifications-comprehensive.spec.ts",
+        "line": 133,
+        "severity": "suggestion",
+        "description": "The data export toast test waits for 'Data exported' text but doesn't verify the full message content (e.g., 'Your data has been downloaded as a JSON file.'). Consider adding a check for the .toast__message element to ensure the toast content matches expected behavior."
+      },
+      {
+        "file": "e2e/toast-notifications-comprehensive.spec.ts",
+        "line": 163,
+        "severity": "non_blocking",
+        "description": "Toast structure test verifies role='alert' and aria-live='assertive' but doesn't check aria-atomic='true' which is set in the Toast component (Toast.tsx line ~130). This is a minor gap in accessibility testing."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "Toast CSS class naming convention (.toast--success, .toast--error, .toast-container, .toast__title, .toast__close, etc.) is used consistently in tests but not documented in AGENTS.md",
+      "evidence": "Tests use .toast--success, .toast--error, .toast-container, .toast__title, .toast__message, .toast__close but AGENTS.md only mentions 'toast notifications' without detailing the CSS class structure",
+      "target": "AGENTS.md",
+      "reason": "Future workers writing e2e tests for toast functionality will need to know the exact CSS selectors to use. Documenting the toast component class structure would prevent guesswork."
+    },
+    {
+      "area": "conventions",
+      "observation": "Toast trigger points and expected messages are not documented anywhere",
+      "evidence": "Tests rely on knowing that voice update shows 'Voice updated', rate update shows 'Rate updated', export shows 'Data exported', import failure shows 'Import failed'. This knowledge comes from reading source code, not documentation.",
+      "target": "AGENTS.md",
+      "reason": "Workers creating toast tests need to know what actions trigger toasts and what messages appear. This could be documented in the 'Key Routes to Test' section or a new 'Toast Notifications' section."
+    },
+    {
+      "area": "skills",
+      "observation": "The e2e-worker skill procedure doesn't include guidance on testing toast notifications specifically",
+      "evidence": "Skill SKILL.md exists at /Users/stefano/.factory/skills/e2e-worker/SKILL.md but followProcedure=true with no deviations suggests the worker followed existing patterns. However, no skill-specific guidance for toast testing was needed because the worker derived tests from reading source code.",
+      "target": "skill",
+      "reason": "The e2e-worker skill could benefit from a section on testing toast notifications, including common selectors and the 5-second auto-dismiss behavior that workers should account for in test timing."
+    },
+    {
+      "area": "services",
+      "observation": "Backend and frontend services are properly documented in services.yaml with healthcheck endpoints",
+      "evidence": "services.yaml correctly documents backend on port 3100 with /health endpoint and frontend on port 3101. Tests use these correctly.",
+      "target": "services.yaml",
+      "reason": "No changes needed - services are properly documented."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "The e2e toast notification tests are comprehensive and well-structured, covering all required VAL assertions. Tests are maintainable, use proper Playwright patterns, and follow project conventions. Minor issues include potential flakiness in the rate slider test due to synthetic event dispatching, and some tests lacking explicit final assertions. No blocking issues found. The test file successfully validates toast notification behavior for success/error toasts, auto-dismiss timing, and manual dismissal."
+}

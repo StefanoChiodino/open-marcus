@@ -1,0 +1,85 @@
+{
+  "milestone": "ui-flows",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": { "passed": true, "command": "npm run test", "exitCode": 0, "output": "30 test files, 312 tests passed" },
+    "typecheck": { "passed": true, "command": "npm run typecheck", "exitCode": 0 },
+    "lint": { "passed": true, "command": "npm run lint", "exitCode": 0 }
+  },
+  "reviewsSummary": {
+    "total": 3,
+    "passed": 2,
+    "failed": 1,
+    "failedFeatures": ["e2e-error-handling-comprehensive"]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "e2e-error-handling-comprehensive",
+      "severity": "blocking",
+      "description": "Tests use extremely weak assertions (mostly `bodyText?.trim().length > 0`) that verify nothing about error handling behavior. VAL-ERROR-001 promises 'user-friendly error message' but tests don't verify any specific message.",
+      "locations": ["e2e/error-handling-comprehensive.spec.ts:65", "e2e/error-handling-comprehensive.spec.ts:83", "e2e/error-handling-comprehensive.spec.ts:103", "e2e/error-handling-comprehensive.spec.ts:128"]
+    },
+    {
+      "featureId": "e2e-error-handling-comprehensive",
+      "severity": "blocking",
+      "description": "Tests use `.catch(() => {})` which silently swallows assertion failures. Tests can pass even if error toasts never appear.",
+      "locations": ["e2e/error-handling-comprehensive.spec.ts:159", "e2e/error-handling-comprehensive.spec.ts:300"]
+    },
+    {
+      "featureId": "e2e-error-handling-comprehensive",
+      "severity": "blocking",
+      "description": "Timeout tests don't actually verify timeout behavior. Uses 30-second delayed response but only 5-second wait, so timeout is never triggered.",
+      "locations": ["e2e/error-handling-comprehensive.spec.ts:175", "e2e/error-handling-comprehensive.spec.ts:198"]
+    },
+    {
+      "featureId": "e2e-error-handling-comprehensive",
+      "severity": "blocking",
+      "description": "Test 'Error boundary catches React errors' doesn't actually trigger any error - page.evaluate just adds an event listener without triggering it.",
+      "locations": ["e2e/error-handling-comprehensive.spec.ts:263"]
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Add section documenting Toast CSS class naming convention (.toast--success, .toast--error, .toast-container, .toast__title, .toast__message, .toast__close) and known toast trigger points with expected messages.",
+      "evidence": "e2e-toast-notifications-comprehensive review found these are used in tests but not documented. Workers need to know exact selectors and trigger points.",
+      "isSystemic": false
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Clarify that tests must verify specific UI elements appear, not just that 'body has content'. Add examples of proper error message assertions vs weak 'length > 0' assertions.",
+      "evidence": "e2e-error-handling-comprehensive ignored AGENTS.md assertion patterns entirely, using meaningless assertions throughout.",
+      "isSystemic": true
+    },
+    {
+      "target": "skill",
+      "suggestion": "Add guidance on testing toast notifications, including common selectors, the 5-second auto-dismiss behavior for timing, and proper patterns for verifying toast content.",
+      "evidence": "e2e-worker skill lacks toast-specific guidance. e2e-toast-notifications-comprehensive derived tests from reading source code rather than skill guidance.",
+      "isSystemic": false
+    },
+    {
+      "target": "library",
+      "suggestion": "Document the 300ms wait after viewport changes for React to re-render as a convention for responsive testing.",
+      "evidence": "e2e-responsive-design-comprehensive uses this pattern but it's not documented for other workers.",
+      "isSystemic": false
+    },
+    {
+      "target": "library",
+      "suggestion": "Document that helper functions should be imported from 'e2e/test-db-helpers' (not 'e2e/helpers.ts' as the skill document incorrectly states).",
+      "evidence": "Skill documentation says 'e2e/helpers.ts' but actual project uses 'e2e/test-db-helpers.ts'. Naming inconsistency causes confusion.",
+      "isSystemic": true
+    }
+  ],
+  "rejectedObservations": [
+    { "observation": "Toast CSS class naming should go in library", "reason": "AGENTS.md is the appropriate place for CSS class conventions that workers need to know" },
+    { "observation": "VAL-RESP assertion criteria detailed in validation-contract.md", "reason": "validation-contract.md is owned by orchestrator; library is not the place to suggest changes to it" }
+  ],
+  "previousRound": null,
+  "reviewReports": [
+    "e2e-toast-notifications-comprehensive: pass (4 non-blocking issues)",
+    "e2e-error-handling-comprehensive: FAIL (13 blocking issues)",
+    "e2e-responsive-design-comprehensive: pass (3 non-blocking issues)"
+  ]
+}

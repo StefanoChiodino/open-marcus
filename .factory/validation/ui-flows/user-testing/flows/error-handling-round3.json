@@ -1,0 +1,67 @@
+{
+  "group": "error-handling",
+  "testFile": "e2e/error-handling-comprehensive.spec.ts",
+  "testsRun": 19,
+  "testsPassed": 12,
+  "testsFailed": 7,
+  "status": "fail",
+  "failedTests": [
+    {
+      "name": "Shows error UI when API is unreachable",
+      "assertion": "VAL-ERROR-001",
+      "reason": "hasErrorUI() returns false - no toast--error, error-boundary, or [role=alert] elements displayed when all APIs fail on reload"
+    },
+    {
+      "name": "Shows error UI when server returns 500 on session create",
+      "assertion": "VAL-ERROR-002",
+      "reason": "hasErrorUI() returns false - sessionStore.beginSession sets error but MeditationChat doesn't display it"
+    },
+    {
+      "name": "Shows error UI when server returns 500 on profile load",
+      "assertion": "VAL-ERROR-002",
+      "reason": "hasErrorUI() returns false - profileStore.loadProfile fails silently without showing toast"
+    },
+    {
+      "name": "Shows error UI when chat API returns 500",
+      "assertion": "VAL-ERROR-002",
+      "reason": "hasErrorUI() returns false - chat API 500 doesn't trigger error toast"
+    },
+    {
+      "name": "Shows timeout error when request times out",
+      "assertion": "VAL-ERROR-003",
+      "reason": "hasErrorUI() returns false - timeout doesn't trigger error toast"
+    },
+    {
+      "name": "Multiple rapid API failures show error UI",
+      "assertion": "VAL-ERROR-001",
+      "reason": "hasErrorUI() returns false - multiple API failures don't show error UI"
+    },
+    {
+      "name": "Page remains usable after encountering errors",
+      "assertion": "VAL-ERROR-002",
+      "reason": "hasErrorUI() returns false - error UI not displayed after errors"
+    }
+  ],
+  "rootCause": "Stores don't show error toasts when API calls fail. profileStore.loadProfile fails silently, sessionStore.beginSession sets error but MeditationChat doesn't display it, chat API errors don't show toast. The hasErrorUI() helper checks for .toast--error, .error-boundary, .meditation-chat__error[role=alert], .session-history__error[role=alert], [role=alert] - none of these are rendered because stores don't call toast.showError() when API calls fail.",
+  "frictions": [],
+  "blockers": [
+    {
+      "assertion": "VAL-ERROR-001",
+      "issue": "Stores don't show error toasts when API calls fail (500, network error, timeout)"
+    },
+    {
+      "assertion": "VAL-ERROR-002",
+      "issue": "profileStore.loadProfile fails silently, sessionStore.beginSession sets error but MeditationChat doesn't display it"
+    },
+    {
+      "assertion": "VAL-ERROR-003",
+      "issue": "Timeout errors don't trigger error toasts"
+    }
+  ],
+  "toolsUsed": ["playwright", "agent-browser"],
+  "validationState": {
+    "VAL-ERROR-001": "failed",
+    "VAL-ERROR-002": "failed",
+    "VAL-ERROR-003": "failed"
+  }
+}

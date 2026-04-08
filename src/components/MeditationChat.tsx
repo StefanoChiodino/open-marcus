@@ -146,6 +146,48 @@ function MeditationChat() {
 		[autoResizeTextarea],
 	);
 
+	// ---- Error View ----
+	// Show dedicated error view when status is 'error' OR when error is set during active/streaming/starting.
+	// This ensures error UI is always prominent, never hidden in a chat view.
+	// Special case: if status === "error" but error is empty, show a generic message.
+	const displayError = error || (status === "error" ? "An error occurred. Please try again." : "");
+	if (displayError && (status === "error" || status === "active" || status === "streaming" || status === "starting")) {
+		return (
+			<div
+				className="meditation-chat"
+				role="main"
+				aria-label="Meditation Session Error"
+			>
+				<div className="meditation-chat__error-view">
+					<div className="meditation-chat__error-icon" aria-hidden="true">
+						<svg
+							width="48"
+							height="48"
+							viewBox="0 0 24 24"
+							fill="currentColor"
+						>
+							<path
+								fillRule="evenodd"
+								d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+								clipRule="evenodd"
+							/>
+						</svg>
+					</div>
+					<h2 className="meditation-chat__error-title">Session Error</h2>
+					<p className="meditation-chat__error-message" role="alert" aria-live="polite">
+						{displayError}
+					</p>
+					<button
+						onClick={handleReset}
+						className="button button--primary button--lg"
+					>
+						Try Again
+					</button>
+				</div>
+			</div>
+		);
+	}
+
 	// ---- Begin Session View ----
 	if (status === "idle" || status === "starting") {
 		return (

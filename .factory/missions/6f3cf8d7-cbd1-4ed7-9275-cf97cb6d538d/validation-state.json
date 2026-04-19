@@ -1,13 +1,90 @@
 {
   "assertions": {
-    "VAL-AUTH-001": { "status": "passed", "validatedAt": "2026-04-19T00:00:00Z", "evidence": "User registered successfully, user created in database with argon2id hash" },
-    "VAL-AUTH-002": { "status": "passed", "validatedAt": "2026-04-19T00:00:00Z", "evidence": "Login returned JWT bearer token" },
-    "VAL-AUTH-003": { "status": "passed", "validatedAt": "2026-04-19T00:00:00Z", "evidence": "Invalid password returned 401 error" },
-    "VAL-AUTH-004": { "status": "passed", "validatedAt": "2026-04-19T00:00:00Z", "evidence": "Protected route /api/auth/me returned 401 without token, 200 with valid token" },
-    "VAL-AUTH-005": { "status": "passed", "validatedAt": "2026-04-19T00:00:00Z", "evidence": "Database query confirmed password_hash contains argon2id hash, not plain text" },
-    "VAL-AUTH-006": { "status": "failed", "validatedAt": "2026-04-19T00:00:00Z", "blockingReason": "Flet app cannot launch due to AttributeError: module 'flet' has no attribute 'icons'. Code uses ft.icons.X but Flet 0.28.3 uses ft.Icons.X (capital I). App crashes before lock screen can display." },
-    "VAL-UI-001": { "status": "failed", "validatedAt": "2026-04-19T00:00:00Z", "blockingReason": "Flet app cannot launch due to AttributeError: module 'flet' has no attribute 'icons'. Code uses ft.icons.X but Flet 0.28.3 uses ft.Icons.X (capital I). App crashes on startup." },
-    "VAL-UI-002": { "status": "failed", "validatedAt": "2026-04-19T00:00:00Z", "blockingReason": "Flet app cannot launch due to AttributeError: module 'flet' has no attribute 'icons'. Code uses ft.icons.X but Flet 0.28.3 uses ft.Icons.X (capital I). Navigation cannot be tested." }
+    "VAL-AUTH-001": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T00:00:00Z",
+      "evidence": "User registered successfully, user created in database with argon2id hash"
+    },
+    "VAL-AUTH-002": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T00:00:00Z",
+      "evidence": "Login returned JWT bearer token"
+    },
+    "VAL-AUTH-003": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T00:00:00Z",
+      "evidence": "Invalid password returned 401 error"
+    },
+    "VAL-AUTH-004": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T00:00:00Z",
+      "evidence": "Protected route /api/auth/me returned 401 without token, 200 with valid token"
+    },
+    "VAL-AUTH-005": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T00:00:00Z",
+      "evidence": "Database query confirmed password_hash contains argon2id hash, not plain text"
+    },
+    "VAL-AUTH-006": {
+      "status": "failed",
+      "validatedAt": "2026-04-19T00:00:00Z",
+      "blockingReason": "Flet app cannot launch due to AttributeError: module 'flet' has no attribute 'icons'. Code uses ft.icons.X but Flet 0.28.3 uses ft.Icons.X (capital I). App crashes before lock screen can display."
+    },
+    "VAL-UI-001": {
+      "status": "failed",
+      "validatedAt": "2026-04-19T00:00:00Z",
+      "blockingReason": "Flet app cannot launch due to AttributeError: module 'flet' has no attribute 'icons'. Code uses ft.icons.X but Flet 0.28.3 uses ft.Icons.X (capital I). App crashes on startup."
+    },
+    "VAL-UI-002": {
+      "status": "failed",
+      "validatedAt": "2026-04-19T00:00:00Z",
+      "blockingReason": "Flet app cannot launch due to AttributeError: module 'flet' has no attribute 'icons'. Code uses ft.icons.X but Flet 0.28.3 uses ft.Icons.X (capital I). Navigation cannot be tested."
+    },
+    "VAL-AI-001": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T20:19:05Z",
+      "evidence": "Network monitoring confirmed 0 external calls. All LLM inference uses local llama-cpp-python or MockLLMService."
+    },
+    "VAL-AI-002": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T19:18:00Z",
+      "evidence": "RAM detection correctly identifies 64GB RAM and suggests Qwen2.5-14B model (min 16GB)."
+    },
+    "VAL-AI-003": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T19:18:00Z",
+      "evidence": "Model selection via POST /api/models/active works. Selected model persists in settings."
+    },
+    "VAL-AI-004": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T19:17:24Z",
+      "evidence": "Streaming endpoint returns SSE with 23 incremental token events. Format verified: data: prefix, final complete event."
+    },
+    "VAL-AI-005": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T19:18:50Z",
+      "evidence": "PersonaService builds Marcus Aurelius system prompt. AI responses maintain stoic philosopher character."
+    },
+    "VAL-AI-006": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T19:18:50Z",
+      "evidence": "MARCUS_BASE_PROMPT references Amor Fati, Memento Mori, Dichotomy of Control, Virtue. AI responses apply these principles."
+    },
+    "VAL-AI-007": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T20:19:05Z",
+      "evidence": "Network monitoring confirmed zero telemetry/analytics calls. All network activity is localhost only."
+    },
+    "VAL-MODEL-001": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T19:18:00Z",
+      "evidence": "RAM detected, model recommendations returned via /api/settings/system. Model selection works."
+    },
+    "VAL-MODEL-002": {
+      "status": "passed",
+      "validatedAt": "2026-04-19T19:18:00Z",
+      "evidence": "Model switching via POST /api/models/active successful. Previous model deactivated, new model activated."
+    }
   },
-  "updatedAt": "2026-04-19T00:00:00Z"
+  "updatedAt": "2026-04-19T20:20:00Z"
 }

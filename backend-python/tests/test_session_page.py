@@ -512,3 +512,190 @@ class TestSessionPageEndSession:
         # Note: end_session is async and calls navigate_to after sleep
         # For unit test, we just verify the method exists and can be called
         assert callable(session_page.end_session)
+
+
+class TestSessionPageTTS:
+    """Tests for SessionPage TTS playback functionality (VAL-SPEECH-002)."""
+
+    @patch('asyncio.create_task')
+    def test_tts_audio_player_initialized(self, mock_create_task):
+        """Test that audio player is initialized."""
+        from src.screens.session_page import SessionPage
+        
+        mock_app = MagicMock()
+        mock_app.page = MagicMock()
+        
+        session_page = SessionPage(mock_app)
+        
+        # Audio player should be None initially (lazy init)
+        assert session_page.audio_player is None
+        assert session_page.is_playing is False
+        assert session_page.currently_playing_message_index is None
+
+    @patch('asyncio.create_task')
+    def test_init_audio_player_creates_audio_control(self, mock_create_task):
+        """Test that _init_audio_player creates an Audio control."""
+        from src.screens.session_page import SessionPage
+        
+        mock_app = MagicMock()
+        mock_app.page = MagicMock()
+        
+        session_page = SessionPage(mock_app)
+        session_page._init_audio_player()
+        
+        assert session_page.audio_player is not None
+        # Check it's an Audio control by checking attributes
+        assert hasattr(session_page.audio_player, 'src_base64')
+        assert hasattr(session_page.audio_player, 'autoplay')
+        assert session_page.audio_player.autoplay is False
+
+    def test_get_play_button_returns_icon_button(self):
+        """Test that _get_play_button returns an IconButton."""
+        from src.screens.session_page import SessionPage
+        
+        mock_app = MagicMock()
+        mock_app.page = MagicMock()
+        
+        session_page = SessionPage(mock_app)
+        button = session_page._get_play_button(0, "Test message")
+        
+        assert isinstance(button, ft.IconButton)
+        assert button.icon == ft.Icons.VOLUME_UP
+        assert button.icon_size == 18
+
+    @patch('asyncio.create_task')
+    def test_marcus_message_has_play_button(self, mock_create_task):
+        """Test that Marcus (AI) messages have a TTS play button."""
+        from src.screens.session_page import SessionPage
+        
+        mock_app = MagicMock()
+        mock_app.page = MagicMock()
+        
+        session_page = SessionPage(mock_app)
+        session_page.messages = [
+            {"role": "assistant", "content": "This is a test message from Marcus"}
+        ]
+        
+        controls = session_page.build_message_controls()
+        
+        assert len(controls) == 1
+        # Find the play button within the message
+        found_play_button = False
+        
+        def search_for_play_button(controls):
+            nonlocal found_play_button
+            for control in controls:
+                if isinstance(control, ft.IconButton) and control.icon == ft.Icons.VOLUME_UP:
+                    found_play_button = True
+                    return
+                if hasattr(control, 'content') and control.content:
+                    if isinstance(control.content, list):
+                        search_for_play_button(control.content)
+                    else:
+                        search_for_play_button([control.content])
+                if hasattr(control, 'controls'):
+                    search_for_play_button(control.controls)
+        
+        search_for_play_button([controls[0]])
+        assert found_play_button, "Play button not found in Marcus message"
+
+    @patch('asyncio.create_task')
+    def test_user_message_has_no_play_button(self, mock_create_task):
+        """Test that user messages do NOT have a TTS play button."""
+        from src.screens.session_page import SessionPage
+        
+        mock_app = MagicMock()
+        mock_app.page = MagicMock()
+        
+        session_page = SessionPage(mock_app)
+        session_page.messages = [
+            {"role": "user", "content": "This is a user message"}
+        ]
+        
+        controls = session_page.build_message_controls()
+        
+        assert len(controls) == 1
+        # User messages should not have a play button (only Marcus messages have TTS)
+        # The message is right-aligned (user bubble)
+        assert controls[0].alignment == ft.alignment.center_right
+
+    @patch('asyncio.create_task')
+    def test_audio_state_changed_handler(self, mock_create_task):
+        """Test that audio state change updates playing state."""
+        from src.screens.session_page import SessionPage
+        
+        mock_app = MagicMock()
+        mock_app.page = MagicMock()
+        
+        session_page = SessionPage(mock_app)
+        session_page._init_audio_player()
+        
+        # Simulate playing state
+        mock_event = MagicMock()
+        mock_event.state = ft.AudioState.PLAYING
+        session_page._on_audio_state_changed(mock_event)
+        
+        assert session_page.is_playing is True
+        
+        # Simulate stopped state
+        mock_event.state = ft.AudioState.STOPPED
+        session_page._on_audio_state_changed(mock_event)
+        
+        assert session_page.is_playing is False
+        assert session_page.currently_playing_message_index is None
+
+
+class TestSessionPageValidation:
+    """Tests validating SessionPage meets VAL-SPEECH requirements."""
+
+    @patch('asyncio.create_task')
+    def test_val_speech_002_tts_play_button_on_ai_response(self, mock_create_task):
+        """VAL-SPEECH-002: TTS play button appears on AI responses."""
+        from src.screens.session_page import SessionPage
+        
+        mock_app = MagicMock()
+        mock_app.page = MagicMock()
+        
+        session_page = SessionPage(mock_app)
+        session_page.messages = [
+            {"role": "assistant", "content": "How can I help you today?"}
+        ]
+        
+        controls = session_page.build_message_controls()
+        
+        # Find play button
+        found = False
+        def search(controls):
+            nonlocal found
+            for c in controls:
+                if isinstance(c, ft.IconButton) and c.icon == ft.Icons.VOLUME_UP:
+                    found = True
+                    return
+                if hasattr(c, 'content') and c.content:
+                    if isinstance(c.content, list):
+                        search(c.content)
+                    else:
+                        search([c.content])
+                if hasattr(c, 'controls'):
+                    search(c.controls)
+        
+        search([controls[0]])
+        assert found, "TTS play button should appear on AI responses"
+
+    @patch('asyncio.create_task')
+    def test_val_speech_002_user_message_no_tts(self, mock_create_task):
+        """VAL-SPEECH-002: User messages do not have TTS play button."""
+        from src.screens.session_page import SessionPage
+        
+        mock_app = MagicMock()
+        mock_app.page = MagicMock()
+        
+        session_page = SessionPage(mock_app)
+        session_page.messages = [
+            {"role": "user", "content": "Hello Marcus"}
+        ]
+        
+        controls = session_page.build_message_controls()
+        
+        # User messages should be right-aligned without play button
+        assert controls[0].alignment == ft.alignment.center_right

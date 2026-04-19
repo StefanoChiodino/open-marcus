@@ -574,6 +574,66 @@ class APIClient:
             return None, "Cannot connect to server. Please ensure the backend is running."
         except Exception as e:
             return None, f"Network error: {str(e)}"
+    
+    async def synthesize_speech(
+        self,
+        text: str,
+        voice_id: Optional[str] = None,
+    ) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Synthesize text to speech audio.
+
+        Args:
+            text: Text to synthesize (max 5000 characters)
+            voice_id: Optional voice ID to use
+
+        Returns:
+            Tuple of (audio_dict_with_base64, error_message)
+            The audio_dict contains 'audio_base64' and 'mime_type' for playing in UI
+        """
+        import base64
+        
+        url = f"{self.BASE_URL}/api/tts/synthesize"
+        
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                # Build query params
+                params = {"text": text}
+                if voice_id:
+                    params["voice_id"] = voice_id
+                
+                response = await client.post(
+                    url,
+                    params=params,
+                    headers={"Authorization": f"Bearer {self._token}"} if self._token else {},
+                )
+                
+                if response.status_code == 200:
+                    # Response is WAV audio bytes
+                    audio_bytes = response.content
+                    # Encode to base64 for transferring to UI Audio player
+                    audio_b64 = base64.b64encode(audio_bytes).decode('utf-8')
+                    return {
+                        "audio_base64": audio_b64,
+                        "mime_type": "audio/wav",
+                        "text": text,
+                    }, None
+                elif response.status_code == 401:
+                    return None, "Invalid or expired token"
+                elif response.status_code == 400:
+                    error_detail = response.json().get("detail", "Bad request")
+                    return None, error_detail
+                elif response.status_code == 404:
+                    return None, "Voice not found"
+                else:
+                    return None, f"Server error (status {response.status_code})"
+                    
+        except httpx.TimeoutException:
+            return None, "Request timed out. Please try again."
+        except httpx.ConnectError:
+            return None, "Cannot connect to server. Please ensure the backend is running."
+        except Exception as e:
+            return None, f"Network error: {str(e)}"
 
 
 # Global API client instance

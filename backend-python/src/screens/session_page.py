@@ -56,6 +56,11 @@ class SessionPage:
         self.recording_indicator: Optional[ft.Container] = None
         self.temp_audio_path: Optional[str] = None
         
+        # TTS playback state
+        self.audio_player: Optional[ft.Audio] = None
+        self.is_playing = False
+        self.currently_playing_message_index: Optional[int] = None
+        
         # Main content container
         self.content_container: Optional[ft.Container] = None
         self.messages_list: Optional[ft.ListView] = None
@@ -72,6 +77,75 @@ class SessionPage:
         
         # Initialize audio recorder
         self._init_audio_recorder()
+    
+    def _init_audio_player(self) -> None:
+        """Initialize the audio player control for TTS playback."""
+        self.audio_player = ft.Audio(
+            src_base64=None,
+            autoplay=False,
+            on_state_changed=self._on_audio_state_changed,
+        )
+    
+    def _on_audio_state_changed(self, e: ft.AudioStateChangeEvent) -> None:
+        """Handle audio player state changes."""
+        if e.state == ft.AudioState.PLAYING:
+            self.is_playing = True
+        elif e.state == ft.AudioState.STOPPED or e.state == ft.AudioState.IDLE:
+            self.is_playing = False
+            self.currently_playing_message_index = None
+        self.app.page.update()
+    
+    async def _play_tts(self, message_index: int, text: str) -> None:
+        """Play TTS for a message."""
+        # If already playing this message, stop it
+        if self.is_playing and self.currently_playing_message_index == message_index:
+            if self.audio_player:
+                self.audio_player.pause()
+                self.audio_player.src_base64 = None
+            self.is_playing = False
+            self.currently_playing_message_index = None
+            return
+        
+        # Stop any currently playing audio
+        if self.audio_player and self.is_playing:
+            self.audio_player.pause()
+            self.audio_player.src_base64 = None
+        
+        # Initialize audio player if needed
+        if not self.audio_player:
+            self._init_audio_player()
+        
+        try:
+            # Synthesize speech from backend
+            result, error = await api_client.synthesize_speech(text)
+            
+            if error:
+                self.show_error(f"TTS failed: {error}")
+                return
+            
+            if result and result.get("audio_base64"):
+                # Set the audio source and play
+                self.audio_player.src_base64 = result["audio_base64"]
+                self.currently_playing_message_index = message_index
+                self.is_playing = True
+                
+                # Add to page overlay if not already there
+                if self.audio_player not in self.app.page.overlay:
+                    self.app.page.overlay.append(self.audio_player)
+                
+                self.app.page.update()
+        except Exception as ex:
+            self.show_error(f"TTS playback error: {str(ex)}")
+    
+    def _get_play_button(self, message_index: int, text: str) -> ft.IconButton:
+        """Get a play button for TTS playback of a message."""
+        return ft.IconButton(
+            icon=ft.Icons.VOLUME_UP,
+            icon_size=18,
+            icon_color=ft.Colors.DEEP_PURPLE,
+            tooltip="Play speech",
+            on_click=lambda _: self._play_tts(message_index, text),
+        )
 
     def _init_audio_recorder(self) -> None:
         """Initialize the audio recorder control."""
@@ -503,12 +577,12 @@ class SessionPage:
             ]
 
         controls = []
-        for msg in self.messages:
+        for i, msg in enumerate(self.messages):
             is_user = msg.get("role") == "user"
-            controls.append(self._build_message_bubble(msg.get("content", ""), is_user))
+            controls.append(self._build_message_bubble(msg.get("content", ""), is_user, message_index=i))
         return controls
 
-    def _build_message_bubble(self, text: str, is_user: bool) -> ft.Container:
+    def _build_message_bubble(self, text: str, is_user: bool, message_index: Optional[int] = None) -> ft.Container:
         """Build a single message bubble."""
         if is_user:
             # User message - right aligned
@@ -527,7 +601,31 @@ class SessionPage:
                 margin=ft.margin.only(left=60, right=0),
             )
         else:
-            # Marcus message - left aligned with avatar
+            # Marcus message - left aligned with avatar and play button
+            # Build the message content
+            message_content = ft.Column(
+                controls=[
+                    ft.Text(
+                        text,
+                        size=14,
+                        color=ft.Colors.ON_PRIMARY_CONTAINER,
+                    ),
+                ],
+                spacing=4,
+            )
+            
+            # Add play button if message_index is provided and text is not empty
+            if message_index is not None and text and text.strip():
+                # Add TTS play button row
+                play_button = self._get_play_button(message_index, text)
+                message_content.controls.append(
+                    ft.Container(
+                        content=play_button,
+                        padding=ft.padding.only(top=4),
+                    )
+                )
+            
+            # Build Marcus message row with avatar and content
             return ft.Container(
                 content=ft.Row(
                     controls=[
@@ -542,11 +640,7 @@ class SessionPage:
                         ),
                         ft.Container(width=8),
                         ft.Container(
-                            content=ft.Text(
-                                text,
-                                size=14,
-                                color=ft.Colors.ON_PRIMARY_CONTAINER,
-                            ),
+                            content=message_content,
                             padding=12,
                             border_radius=16,
                             bgcolor=ft.Colors.PRIMARY_CONTAINER,

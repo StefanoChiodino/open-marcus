@@ -31,12 +31,12 @@ class SessionPage:
                     title=ft.Text("Meditation Session"),
                     center_title=True,
                     leading=ft.IconButton(
-                        icon=ft.icons.ARROW_BACK,
+                        icon=ft.Icons.ARROW_BACK,
                         on_click=lambda _: self.app.navigate_to("/home"),
                     ),
                     actions=[
                         ft.IconButton(
-                            icon=ft.icons.INFO_OUTLINE,
+                            icon=ft.Icons.INFO_OUTLINE,
                             on_click=self.show_session_info,
                         ),
                     ],
@@ -105,7 +105,7 @@ class SessionPage:
                                         self.message_input,
                                         ft.Container(width=12),
                                         ft.IconButton(
-                                            icon=ft.icons.SEND,
+                                            icon=ft.Icons.SEND,
                                             icon_size=28,
                                             bgcolor=ft.Colors.DEEP_PURPLE,
                                             color=ft.Colors.WHITE,

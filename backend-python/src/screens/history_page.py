@@ -37,7 +37,7 @@ class HistoryPage:
                     title=ft.Text("Session History"),
                     center_title=True,
                     leading=ft.IconButton(
-                        icon=ft.icons.ARROW_BACK,
+                        icon=ft.Icons.ARROW_BACK,
                         on_click=lambda _: self.app.navigate_to("/home"),
                     ),
                 ),
@@ -106,7 +106,7 @@ class HistoryPage:
                                                 ft.Row(
                                                     controls=[
                                                         ft.Icon(
-                                                            ft.icons.SCHEDULE,
+                                                            ft.Icons.SCHEDULE,
                                                             size=14,
                                                             color=ft.Colors.GREY_600,
                                                         ),
@@ -118,7 +118,7 @@ class HistoryPage:
                                                         ),
                                                         ft.Container(width=16),
                                                         ft.Icon(
-                                                            ft.icons.CALENDAR_TODAY,
+                                                            ft.Icons.CALENDAR_TODAY,
                                                             size=14,
                                                             color=ft.Colors.GREY_600,
                                                         ),
@@ -134,7 +134,7 @@ class HistoryPage:
                                         ),
                                         ft.Container(expand=True),
                                         ft.Icon(
-                                            ft.icons.CHEVRON_RIGHT,
+                                            ft.Icons.CHEVRON_RIGHT,
                                             color=ft.Colors.GREY_400,
                                         ),
                                     ],

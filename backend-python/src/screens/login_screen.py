@@ -45,7 +45,7 @@ class LoginScreen:
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
                             ft.Icon(
-                                name=ft.icons.MOOD,
+                                name=ft.Icons.MOOD,
                                 size=64,
                                 color=ft.Colors.DEEP_PURPLE,
                             ),

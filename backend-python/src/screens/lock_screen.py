@@ -63,7 +63,7 @@ class PasswordLockScreen:
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
                             ft.Icon(
-                                name=ft.icons.LOCK,
+                                name=ft.Icons.LOCK,
                                 size=64,
                                 color=ft.Colors.DEEP_PURPLE,
                             ),

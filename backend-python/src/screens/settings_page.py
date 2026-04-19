@@ -45,7 +45,7 @@ class SettingsPage:
                     title=ft.Text("Settings"),
                     center_title=True,
                     leading=ft.IconButton(
-                        icon=ft.icons.ARROW_BACK,
+                        icon=ft.Icons.ARROW_BACK,
                         on_click=lambda _: self.app.navigate_to("/home"),
                     ),
                 ),
@@ -64,7 +64,7 @@ class SettingsPage:
                             # TTS Section
                             self.build_section(
                                 title="Text-to-Speech",
-                                icon=ft.icons.VOLUME_UP,
+                                icon=ft.Icons.VOLUME_UP,
                                 controls=[
                                     self.tts_voice,
                                 ],
@@ -73,7 +73,7 @@ class SettingsPage:
                             # STT Section
                             self.build_section(
                                 title="Speech-to-Text",
-                                icon=ft.icons.MIC,
+                                icon=ft.Icons.MIC,
                                 controls=[
                                     self.stt_enabled,
                                     ft.Container(height=8),
@@ -88,7 +88,7 @@ class SettingsPage:
                             # AI Model Section
                             self.build_section(
                                 title="AI Model",
-                                icon=ft.icons.PSYCHOLOGY,
+                                icon=ft.Icons.PSYCHOLOGY,
                                 controls=[
                                     self.ai_model,
                                     ft.Container(height=8),
@@ -102,7 +102,7 @@ class SettingsPage:
                                         content=ft.Row(
                                             controls=[
                                                 ft.Icon(
-                                                    ft.icons.INFO_OUTLINE,
+                                                    ft.Icons.INFO_OUTLINE,
                                                     size=16,
                                                     color=ft.Colors.BLUE,
                                                 ),
@@ -121,19 +121,19 @@ class SettingsPage:
                             # Data Management Section
                             self.build_section(
                                 title="Data Management",
-                                icon=ft.icons.FOLDER,
+                                icon=ft.Icons.FOLDER,
                                 controls=[
                                     ft.Row(
                                         controls=[
                                             ft.ElevatedButton(
                                                 "Export Data",
-                                                icon=ft.icons.DOWNLOAD,
+                                                icon=ft.Icons.DOWNLOAD,
                                                 on_click=self.handle_export,
                                             ),
                                             ft.Container(width=12),
                                             ft.OutlinedButton(
                                                 "Clear All Data",
-                                                icon=ft.icons.DELETE,
+                                                icon=ft.Icons.DELETE,
                                                 icon_color=ft.Colors.ERROR,
                                                 on_click=self.handle_clear_data,
                                             ),

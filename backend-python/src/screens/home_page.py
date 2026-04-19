@@ -24,8 +24,8 @@ class HomePage:
                     title=ft.Text("OpenMarcus"),
                     center_title=True,
                     actions=[
-                        ft.IconButton(icon=ft.icons.HISTORY, on_click=lambda _: self.app.navigate_to("/history")),
-                        ft.IconButton(icon=ft.icons.SETTINGS, on_click=lambda _: self.app.navigate_to("/settings")),
+                        ft.IconButton(icon=ft.Icons.HISTORY, on_click=lambda _: self.app.navigate_to("/history")),
+                        ft.IconButton(icon=ft.Icons.SETTINGS, on_click=lambda _: self.app.navigate_to("/settings")),
                     ],
                 ),
                 ft.Container(
@@ -64,7 +64,7 @@ class HomePage:
                                             ft.Row(
                                                 controls=[
                                                     ft.Icon(
-                                                        ft.icons.PERSON,
+                                                        ft.Icons.PERSON,
                                                         size=24,
                                                         color=ft.Colors.DEEP_PURPLE,
                                                     ),
@@ -120,7 +120,7 @@ class HomePage:
                                 alignment=ft.alignment.center,
                                 content=ft.ElevatedButton(
                                     "Begin Meditation",
-                                    icon=ft.icons.PLAY_ARROW,
+                                    icon=ft.Icons.PLAY_ARROW,
                                     icon_color=ft.Colors.WHITE,
                                     bgcolor=ft.Colors.DEEP_PURPLE,
                                     color=ft.Colors.WHITE,
@@ -138,12 +138,12 @@ class HomePage:
                                 controls=[
                                     ft.OutlinedButton(
                                         "View History",
-                                        icon=ft.icons.HISTORY,
+                                        icon=ft.Icons.HISTORY,
                                         on_click=lambda _: self.app.navigate_to("/history"),
                                     ),
                                     ft.OutlinedButton(
                                         "Settings",
-                                        icon=ft.icons.SETTINGS,
+                                        icon=ft.Icons.SETTINGS,
                                         on_click=lambda _: self.app.navigate_to("/settings"),
                                     ),
                                 ],

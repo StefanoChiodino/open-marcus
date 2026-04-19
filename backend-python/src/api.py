@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import auth_router
+from .routers.profile import router as profile_router
 from .services.database import init_database
 
 
@@ -39,6 +40,7 @@ def create_app() -> FastAPI:
     
     # Include routers
     app.include_router(auth_router)
+    app.include_router(profile_router)
     
     @app.get("/health")
     async def health_check():

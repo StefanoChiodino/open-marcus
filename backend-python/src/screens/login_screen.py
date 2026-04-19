@@ -137,7 +137,14 @@ class LoginScreen:
             if result and "access_token" in result:
                 api_client.token = result["access_token"]
                 self.set_loading(False)
-                self.app.navigate_to("/home")
+                # Check if user has a profile
+                profile_result, profile_error = await api_client.get_profile()
+                if profile_error and "Not found" in profile_error:
+                    # No profile - go to onboarding
+                    self.app.navigate_to("/onboarding")
+                else:
+                    # Has profile - go to home
+                    self.app.navigate_to("/home")
             else:
                 self.show_error("Invalid response from server")
                 self.set_loading(False)

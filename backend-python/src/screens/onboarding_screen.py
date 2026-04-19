@@ -5,6 +5,8 @@ Profile creation for new users.
 
 import flet as ft
 
+from src.services.api_client import api_client
+
 
 class OnboardingScreen:
     """Onboarding screen for profile creation."""
@@ -36,6 +38,8 @@ class OnboardingScreen:
             color=ft.Colors.ERROR,
             visible=False,
         )
+        self.loading = False
+        self.loading_indicator = ft.ProgressRing(visible=False)
 
     def build(self) -> ft.View:
         """Build the onboarding view."""
@@ -73,28 +77,61 @@ class OnboardingScreen:
                                 width=300,
                                 height=50,
                                 on_click=self.handle_continue,
+                                disabled=self.loading,
                             ),
+                            ft.Container(height=16),
+                            self.loading_indicator,
                         ],
                     ),
                 ),
             ],
         )
 
-    def handle_continue(self, e):
+    def set_loading(self, is_loading: bool) -> None:
+        """Set loading state for the form."""
+        self.loading = is_loading
+        self.loading_indicator.visible = is_loading
+        self.name_field.disabled = is_loading
+        self.goals_field.disabled = is_loading
+        self.experience_dropdown.disabled = is_loading
+        self.app.page.update()
+
+    def show_error(self, message: str) -> None:
+        """Show error message."""
+        self.error_text.value = message
+        self.error_text.visible = True
+        self.app.page.update()
+
+    def clear_error(self) -> None:
+        """Clear error message."""
+        self.error_text.value = ""
+        self.error_text.visible = False
+
+    async def handle_continue(self, e=None) -> None:
         """Handle continue button click."""
         name = self.name_field.value
-        goals = self.goals_field.value
+        goals = self.goals_field.value or ""
         experience = self.experience_dropdown.value
 
         if not name:
-            self.error_text.value = "Please enter your name"
-            self.error_text.visible = True
-            self.app.page.update()
+            self.show_error("Please enter your name")
             return
 
-        # TODO: Implement actual profile creation with backend API
-        # goals and experience will be used when backend is connected
-        print(f"Creating profile: name={name}, goals={goals}, experience={experience}")
-        self.error_text.value = ""
-        self.error_text.visible = False
-        self.app.navigate_to("/home")
+        self.clear_error()
+        self.set_loading(True)
+
+        try:
+            result, error = await api_client.create_profile(name, goals, experience)
+
+            if error:
+                self.show_error(error)
+                self.set_loading(False)
+                return
+
+            # Profile created successfully - navigate to home
+            self.set_loading(False)
+            self.app.navigate_to("/home")
+
+        except Exception as e:
+            self.show_error(f"Failed to create profile: {str(e)}")
+            self.set_loading(False)

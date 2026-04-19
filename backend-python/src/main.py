@@ -11,6 +11,7 @@ from src.screens.login_screen import LoginScreen
 from src.screens.register_screen import RegisterScreen
 from src.screens.onboarding_screen import OnboardingScreen
 from src.screens.home_page import HomePage
+from src.screens.profile_page import ProfilePage
 from src.screens.session_page import SessionPage
 from src.screens.history_page import HistoryPage
 from src.screens.settings_page import SettingsPage
@@ -27,6 +28,7 @@ class OpenMarcusApp:
         self.register_screen = RegisterScreen(self)
         self.onboarding_screen = OnboardingScreen(self)
         self.home_page = HomePage(self)
+        self.profile_page = ProfilePage(self)
         self.session_page = SessionPage(self)
         self.history_page = HistoryPage(self)
         self.settings_page = SettingsPage(self)
@@ -81,6 +83,8 @@ class OpenMarcusApp:
             self.page.views.append(self.onboarding_screen.build())
         elif self.page.route == "/home":
             self.page.views.append(self.home_page.build())
+        elif self.page.route == "/profile":
+            self.page.views.append(self.profile_page.build())
         elif self.page.route == "/session":
             self.page.views.append(self.session_page.build())
         elif self.page.route == "/history":

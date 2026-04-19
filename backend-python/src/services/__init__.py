@@ -22,6 +22,10 @@ from .persona import (
     get_persona_service,
     MARCUS_BASE_PROMPT,
 )
+from .psych_update import (
+    PsychUpdateService,
+    get_psych_update_service,
+)
 
 __all__ = [
     "LLMService",
@@ -40,4 +44,6 @@ __all__ = [
     "PersonaService",
     "get_persona_service",
     "MARCUS_BASE_PROMPT",
+    "PsychUpdateService",
+    "get_psych_update_service",
 ]

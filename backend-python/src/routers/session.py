@@ -25,6 +25,7 @@ from ..services.summary import SummaryService
 from ..services.jwt import jwt_service
 from ..services.llm import LLMService, get_llm_service as get_llm_svc
 from ..services.persona import PersonaService, get_persona_service
+from ..services.psych_update import PsychUpdateService, get_psych_update_service
 
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
@@ -70,6 +71,11 @@ def get_llm_service_dep() -> LLMService:
 def get_persona_service_dep() -> PersonaService:
     """Dependency to get persona service."""
     return get_persona_service()
+
+
+def get_psych_update_service_dep() -> PsychUpdateService:
+    """Dependency to get psych update service."""
+    return get_psych_update_service()
 
 
 def session_to_response(session) -> SessionResponse:
@@ -213,7 +219,8 @@ async def add_message(
     user_id: str = Depends(get_current_user_id),
     session_service: SessionService = Depends(get_session_service),
     llm_service: LLMService = Depends(get_llm_service_dep),
-    persona_service: PersonaService = Depends(get_persona_service_dep)
+    persona_service: PersonaService = Depends(get_persona_service_dep),
+    psych_update_service: PsychUpdateService = Depends(get_psych_update_service_dep)
 ) -> MessageAddResponse:
     """
     Add a message to a session.
@@ -221,6 +228,7 @@ async def add_message(
     This transitions the session from 'intro' to 'active' state if it's the first message.
     Generates and stores an AI response from Marcus Aurelius using local LLM.
     Uses PersonaService to build the system prompt incorporating user profile and history.
+    After the AI response, generates a PsychUpdate with psychological analysis.
     """
     # First, store the user's message
     user_message = session_service.add_message(
@@ -268,6 +276,16 @@ async def add_message(
             detail="Session not found"
         )
     
+    # Generate PsychUpdate with psychological analysis
+    psych_update_service.generate_psych_update(
+        db=db,
+        user_id=user_id,
+        message_id=user_message.id,
+        user_message=data.content,
+        ai_response=ai_content,
+    )
+    db.commit()
+    
     # Get updated session state
     session = session_service.get_session(db, session_id, user_id)
     
@@ -290,6 +308,7 @@ async def _stream_llm_response(
     session_service: SessionService,
     llm_service: LLMService,
     persona_service: PersonaService,
+    psych_update_service: PsychUpdateService,
 ) -> AsyncIterator[str]:
     """
     Internal generator that streams LLM response tokens as SSE events.
@@ -297,6 +316,7 @@ async def _stream_llm_response(
     Stores the user's message first, then streams AI response tokens.
     Finally stores the full AI response.
     Uses PersonaService to build the system prompt with user context.
+    After the AI response is stored, generates a PsychUpdate with psychological analysis.
     """
     # Store the user's message
     user_message = session_service.add_message(
@@ -345,6 +365,17 @@ async def _stream_llm_response(
             db, session_id, user_id, ai_content=full_response
         )
         
+        # Generate PsychUpdate with psychological analysis
+        if user_message and ai_message:
+            psych_update_service.generate_psych_update(
+                db=db,
+                user_id=user_id,
+                message_id=user_message.id,
+                user_message=user_message_content,
+                ai_response=full_response,
+            )
+            db.commit()
+        
         # Get updated session state
         updated_session = session_service.get_session(db, session_id, user_id)
         
@@ -368,7 +399,8 @@ async def stream_message(
     user_id: str = Depends(get_current_user_id),
     session_service: SessionService = Depends(get_session_service),
     llm_service: LLMService = Depends(get_llm_service_dep),
-    persona_service: PersonaService = Depends(get_persona_service_dep)
+    persona_service: PersonaService = Depends(get_persona_service_dep),
+    psych_update_service: PsychUpdateService = Depends(get_psych_update_service_dep)
 ) -> StreamingResponse:
     """
     Add a message to a session with streaming response.
@@ -378,6 +410,7 @@ async def stream_message(
     Once complete, the full AI response is stored.
     
     Uses PersonaService to build the system prompt with user profile and history.
+    After the AI response, generates a PsychUpdate with psychological analysis.
     
     SSE Events:
     - {'type': 'session_state', 'state': 'intro|active'} - Session state info
@@ -394,6 +427,7 @@ async def stream_message(
             session_service=session_service,
             llm_service=llm_service,
             persona_service=persona_service,
+            psych_update_service=psych_update_service,
         ),
         media_type="text/event-stream",
         headers={

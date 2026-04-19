@@ -17,6 +17,11 @@ from .ram_detection import (
     get_recommended_models,
     get_best_model_name,
 )
+from .persona import (
+    PersonaService,
+    get_persona_service,
+    MARCUS_BASE_PROMPT,
+)
 
 __all__ = [
     "LLMService",
@@ -32,4 +37,7 @@ __all__ = [
     "get_available_ram_gb",
     "get_recommended_models",
     "get_best_model_name",
+    "PersonaService",
+    "get_persona_service",
+    "MARCUS_BASE_PROMPT",
 ]

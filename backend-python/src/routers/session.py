@@ -23,7 +23,8 @@ from ..services.database import get_database_service
 from ..services.session import SessionService
 from ..services.summary import SummaryService
 from ..services.jwt import jwt_service
-from ..services.llm import LLMService, ChatMessage, get_llm_service as get_llm_svc
+from ..services.llm import LLMService, get_llm_service as get_llm_svc
+from ..services.persona import PersonaService, get_persona_service
 
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
@@ -64,6 +65,11 @@ def get_summary_service() -> SummaryService:
 def get_llm_service_dep() -> LLMService:
     """Dependency to get LLM service."""
     return get_llm_svc()
+
+
+def get_persona_service_dep() -> PersonaService:
+    """Dependency to get persona service."""
+    return get_persona_service()
 
 
 def session_to_response(session) -> SessionResponse:
@@ -206,13 +212,15 @@ async def add_message(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
     session_service: SessionService = Depends(get_session_service),
-    llm_service: LLMService = Depends(get_llm_service_dep)
+    llm_service: LLMService = Depends(get_llm_service_dep),
+    persona_service: PersonaService = Depends(get_persona_service_dep)
 ) -> MessageAddResponse:
     """
     Add a message to a session.
     
     This transitions the session from 'intro' to 'active' state if it's the first message.
     Generates and stores an AI response from Marcus Aurelius using local LLM.
+    Uses PersonaService to build the system prompt incorporating user profile and history.
     """
     # First, store the user's message
     user_message = session_service.add_message(
@@ -234,15 +242,13 @@ async def add_message(
             detail="Session not found"
         )
     
-    # Build conversation messages for LLM
-    messages_for_llm = [ChatMessage(role="system", content=LLMService.MARCUS_SYSTEM_PROMPT)]
-    
-    # Add previous messages to context
-    for msg in session.messages:
-        messages_for_llm.append(ChatMessage(role=msg.role, content=msg.content))
-    
-    # Add the new user message (already stored but needed for context)
-    messages_for_llm.append(ChatMessage(role="user", content=data.content))
+    # Build conversation messages using PersonaService
+    messages_for_llm = persona_service.build_chat_messages_with_persona(
+        db=db,
+        user_id=user_id,
+        conversation_history=session.messages,
+        new_user_message=data.content,
+    )
     
     # Generate AI response using LLM service
     ai_content = llm_service.create_chat_completion(
@@ -283,12 +289,14 @@ async def _stream_llm_response(
     db: Session,
     session_service: SessionService,
     llm_service: LLMService,
+    persona_service: PersonaService,
 ) -> AsyncIterator[str]:
     """
     Internal generator that streams LLM response tokens as SSE events.
     
     Stores the user's message first, then streams AI response tokens.
-    Finally stores the complete AI response.
+    Finally stores the full AI response.
+    Uses PersonaService to build the system prompt with user context.
     """
     # Store the user's message
     user_message = session_service.add_message(
@@ -306,15 +314,13 @@ async def _stream_llm_response(
         yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
         return
     
-    # Build conversation messages for LLM
-    messages_for_llm = [ChatMessage(role="system", content=LLMService.MARCUS_SYSTEM_PROMPT)]
-    
-    # Add previous messages to context
-    for msg in session.messages:
-        messages_for_llm.append(ChatMessage(role=msg.role, content=msg.content))
-    
-    # Add the new user message
-    messages_for_llm.append(ChatMessage(role="user", content=user_message_content))
+    # Build conversation messages using PersonaService
+    messages_for_llm = persona_service.build_chat_messages_with_persona(
+        db=db,
+        user_id=user_id,
+        conversation_history=session.messages,
+        new_user_message=user_message_content,
+    )
     
     # Send session state update (transition from intro to active if first message)
     session_state = session.state
@@ -361,7 +367,8 @@ async def stream_message(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
     session_service: SessionService = Depends(get_session_service),
-    llm_service: LLMService = Depends(get_llm_service_dep)
+    llm_service: LLMService = Depends(get_llm_service_dep),
+    persona_service: PersonaService = Depends(get_persona_service_dep)
 ) -> StreamingResponse:
     """
     Add a message to a session with streaming response.
@@ -369,6 +376,8 @@ async def stream_message(
     This endpoint streams AI response tokens back to the client using Server-Sent Events (SSE).
     The user's message is stored immediately, then AI tokens are streamed as they are generated.
     Once complete, the full AI response is stored.
+    
+    Uses PersonaService to build the system prompt with user profile and history.
     
     SSE Events:
     - {'type': 'session_state', 'state': 'intro|active'} - Session state info
@@ -384,6 +393,7 @@ async def stream_message(
             db=db,
             session_service=session_service,
             llm_service=llm_service,
+            persona_service=persona_service,
         ),
         media_type="text/event-stream",
         headers={

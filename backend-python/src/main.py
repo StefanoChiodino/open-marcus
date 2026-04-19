@@ -14,6 +14,7 @@ from src.screens.home_page import HomePage
 from src.screens.profile_page import ProfilePage
 from src.screens.session_page import SessionPage
 from src.screens.history_page import HistoryPage
+from src.screens.session_detail_page import SessionDetailPage
 from src.screens.settings_page import SettingsPage
 from src.screens.lock_screen import PasswordLockScreen
 
@@ -23,6 +24,7 @@ class OpenMarcusApp:
 
     def __init__(self, page: ft.Page):
         self.page = page
+        self.current_session_id = None  # For session detail navigation
         self.lock_screen = PasswordLockScreen(self)
         self.login_screen = LoginScreen(self)
         self.register_screen = RegisterScreen(self)
@@ -31,6 +33,7 @@ class OpenMarcusApp:
         self.profile_page = ProfilePage(self)
         self.session_page = SessionPage(self)
         self.history_page = HistoryPage(self)
+        self.session_detail_page = SessionDetailPage(self)
         self.settings_page = SettingsPage(self)
         self.setup_theme()
         self.setup_routes()
@@ -72,6 +75,15 @@ class OpenMarcusApp:
     def route_change(self, route: ft.RouteChangeEvent) -> None:
         """Handle route changes and display appropriate view."""
         self.page.views.clear()
+
+        # Handle session detail route with ID pattern /session/{id}
+        if self.page.route.startswith("/session/") and self.page.route != "/session":
+            # Extract session ID from route
+            session_id = self.page.route.split("/session/")[1]
+            if session_id:
+                self.current_session_id = session_id
+                self.page.views.append(self.session_detail_page.build())
+                return
 
         if self.page.route == "/lock":
             self.page.views.append(self.lock_screen.build())

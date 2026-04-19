@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "<string>", line 1, in <module>
-  File "/Users/stefano/repos/open-marcus/backend-python/src/screens/login_screen.py", line 8, in <module>
-    from ..services.api_client import api_client
-ImportError: attempted relative import beyond top-level package

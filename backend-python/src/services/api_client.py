@@ -3,7 +3,33 @@ API Client for OpenMarcus backend communication.
 """
 
 import httpx
-from typing import Optional
+import json
+from typing import Optional, Callable, Awaitable, Any
+
+
+class StreamHandler:
+    """Handler for streaming responses from the API."""
+    
+    def __init__(
+        self,
+        on_token: Optional[Callable[[str], Awaitable[Any]]] = None,
+        on_session_state: Optional[Callable[[str], Awaitable[Any]]] = None,
+        on_complete: Optional[Callable[[dict], Awaitable[Any]]] = None,
+        on_error: Optional[Callable[[str], Awaitable[Any]]] = None,
+    ):
+        """
+        Initialize stream handler with callbacks.
+        
+        Args:
+            on_token: Called for each token received
+            on_session_state: Called when session state is received
+            on_complete: Called when stream is complete with final message data
+            on_error: Called when an error occurs
+        """
+        self.on_token = on_token
+        self.on_session_state = on_session_state
+        self.on_complete = on_complete
+        self.on_error = on_error
 
 
 class APIClient:
@@ -228,6 +254,87 @@ class APIClient:
             Tuple of (message_data, error_message)
         """
         return await self.post(f"/api/sessions/{session_id}/messages", {"content": content})
+    
+    async def stream_message(
+        self,
+        session_id: str,
+        content: str,
+        handler: StreamHandler,
+    ) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Add a message to a session with streaming AI response.
+        
+        Uses Server-Sent Events (SSE) to receive tokens incrementally.
+        
+        Args:
+            session_id: ID of the session
+            content: Message content
+            handler: StreamHandler with callbacks for tokens, session_state, complete, error
+            
+        Returns:
+            Tuple of (final_message_data, error_message) - only the complete data is returned
+        """
+        url = f"{self.BASE_URL}/api/sessions/{session_id}/messages/stream"
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                async with client.stream(
+                    "POST",
+                    url,
+                    json={"content": content},
+                    headers=self.get_headers()
+                ) as response:
+                    if response.status_code == 200:
+                        full_content = ""
+                        complete_data = None
+                        
+                        async for line in response.aiter_lines():
+                            if line.startswith("data: "):
+                                data_str = line[6:]  # Remove "data: " prefix
+                                try:
+                                    data = json.loads(data_str)
+                                    
+                                    if data.get("type") == "token":
+                                        token = data.get("content", "")
+                                        full_content += token
+                                        if handler.on_token:
+                                            await handler.on_token(token)
+                                    
+                                    elif data.get("type") == "session_state":
+                                        if handler.on_session_state:
+                                            await handler.on_session_state(data.get("state", ""))
+                                    
+                                    elif data.get("type") == "complete":
+                                        complete_data = {
+                                            "id": data.get("message_id"),
+                                            "session_id": session_id,
+                                            "role": "assistant",
+                                            "content": data.get("content", ""),
+                                            "session_state": data.get("session_state", ""),
+                                        }
+                                        if handler.on_complete:
+                                            await handler.on_complete(complete_data)
+                                    
+                                    elif data.get("type") == "error":
+                                        error_msg = data.get("error", "Unknown error")
+                                        if handler.on_error:
+                                            await handler.on_error(error_msg)
+                                        return None, error_msg
+                                        
+                                except json.JSONDecodeError:
+                                    continue
+                        
+                        return complete_data, None
+                    elif response.status_code == 401:
+                        return None, "Invalid or expired token"
+                    else:
+                        return None, f"Server error (status {response.status_code})"
+                        
+        except httpx.TimeoutException:
+            return None, "Request timed out. Please try again."
+        except httpx.ConnectError:
+            return None, "Cannot connect to server. Please ensure the backend is running."
+        except Exception as e:
+            return None, f"Network error: {str(e)}"
     
     async def end_session(self, session_id: str, summary: Optional[str] = None) -> tuple[Optional[dict], Optional[str]]:
         """

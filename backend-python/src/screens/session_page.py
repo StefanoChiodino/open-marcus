@@ -8,7 +8,7 @@ import flet as ft
 import asyncio
 from typing import Optional
 
-from src.services.api_client import api_client
+from src.services.api_client import api_client, StreamHandler
 from src.screens.navigation import NavigationSidebar
 
 
@@ -410,7 +410,7 @@ class SessionPage:
             )
 
     async def send_message(self, e=None) -> None:
-        """Handle sending a message."""
+        """Handle sending a message with streaming response."""
         text = self.message_input.value
         if not text:
             return
@@ -436,34 +436,84 @@ class SessionPage:
         self._update_messages_list()
         self.app.page.update()
 
-        # Send to API
+        # Create pending AI message for streaming
+        pending_ai_message = {
+            "role": "assistant",
+            "content": "",
+        }
+        pending_index = len(self.messages)
+        self.messages.append(pending_ai_message)
+        self._update_messages_list()
+        self.app.page.update()
+
+        # Create stream handler for callbacks
+        streaming_complete = False
+        
+        async def on_token(token: str) -> None:
+            """Called for each token received from streaming."""
+            nonlocal pending_ai_message
+            pending_ai_message["content"] += token
+            # Update the pending message in the list
+            if pending_index < len(self.messages):
+                self.messages[pending_index] = pending_ai_message
+                self._update_messages_list()
+                self.app.page.update()
+        
+        async def on_session_state(state: str) -> None:
+            """Called when session state is received."""
+            nonlocal pending_ai_message
+            if state == "active" and self.session_state == "intro":
+                self.session_state = "active"
+        
+        async def on_complete(data: dict) -> None:
+            """Called when stream is complete."""
+            nonlocal pending_ai_message, streaming_complete
+            streaming_complete = True
+            if data.get("content"):
+                pending_ai_message["content"] = data["content"]
+            if data.get("session_state"):
+                self.session_state = data["session_state"]
+        
+        async def on_error(error: str) -> None:
+            """Called when an error occurs."""
+            pass  # Error will be returned from the main call
+        
+        handler = StreamHandler(
+            on_token=on_token,
+            on_session_state=on_session_state,
+            on_complete=on_complete,
+            on_error=on_error,
+        )
+
+        # Send to API with streaming
         try:
-            result, error = await api_client.add_message(self.current_session["id"], text)
+            result, error = await api_client.stream_message(
+                self.current_session["id"], text, handler
+            )
             
             if error:
                 self.show_error(f"Failed to send message: {error}")
-                # Remove the message from UI on error
-                self.messages.pop()
+                # Remove the messages from UI on error
+                if pending_index < len(self.messages):
+                    self.messages.pop()
+                if self.messages and self.messages[-1].get("role") == "user":
+                    self.messages.pop()
                 self._update_messages_list()
                 self.app.page.update()
                 return
             
-            if result:
-                # Update session state
-                self.session_state = result.get("session_state", self.session_state)
-                
-                # Extract and add AI response to messages
-                ai_message = {
-                    "role": result.get("role", "assistant"),
-                    "content": result.get("content", ""),
-                }
-                if ai_message["content"]:
-                    self.messages.append(ai_message)
-                    self._update_messages_list()
-                    self.app.page.update()
-                
+            # Final update to ensure content is correct
+            if result and result.get("content"):
+                pending_ai_message["content"] = result["content"]
+                self.messages[pending_index] = pending_ai_message
+                self._update_messages_list()
+                self.app.page.update()
+            
         except Exception as e:
             self.show_error(f"Error sending message: {str(e)}")
+            # Clean up pending message on exception
+            if pending_index < len(self.messages):
+                self.messages.pop()
 
     def _update_messages_list(self) -> None:
         """Update the messages list in the UI."""

@@ -2,9 +2,11 @@
 Session router for FastAPI.
 """
 
-from typing import Optional
+import json
+from typing import Optional, AsyncIterator
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from ..schemas.session import (
@@ -271,6 +273,124 @@ async def add_message(
         content=ai_message.content,
         created_at=ai_message.created_at.isoformat() if ai_message.created_at else "",
         session_state=session.state if session else "unknown"
+    )
+
+
+async def _stream_llm_response(
+    session_id: str,
+    user_id: str,
+    user_message_content: str,
+    db: Session,
+    session_service: SessionService,
+    llm_service: LLMService,
+) -> AsyncIterator[str]:
+    """
+    Internal generator that streams LLM response tokens as SSE events.
+    
+    Stores the user's message first, then streams AI response tokens.
+    Finally stores the complete AI response.
+    """
+    # Store the user's message
+    user_message = session_service.add_message(
+        db, session_id, user_id, role="user", content=user_message_content
+    )
+    
+    if user_message is None:
+        yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
+        return
+    
+    # Get session with messages to build conversation context
+    session = session_service.get_session_with_messages(db, session_id, user_id)
+    
+    if session is None:
+        yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
+        return
+    
+    # Build conversation messages for LLM
+    messages_for_llm = [ChatMessage(role="system", content=LLMService.MARCUS_SYSTEM_PROMPT)]
+    
+    # Add previous messages to context
+    for msg in session.messages:
+        messages_for_llm.append(ChatMessage(role=msg.role, content=msg.content))
+    
+    # Add the new user message
+    messages_for_llm.append(ChatMessage(role="user", content=user_message_content))
+    
+    # Send session state update (transition from intro to active if first message)
+    session_state = session.state
+    yield f"data: {json.dumps({'type': 'session_state', 'state': session_state})}\n\n"
+    
+    # Stream the LLM response tokens
+    full_response = ""
+    async for chunk in llm_service.stream_chat_completion(
+        messages=messages_for_llm,
+        max_tokens=256,
+        temperature=0.7,
+    ):
+        if chunk.is_final:
+            break
+        if chunk.content:
+            full_response += chunk.content
+            yield f"data: {json.dumps({'type': 'token', 'content': chunk.content})}\n\n"
+    
+    # Store the complete AI response
+    if full_response:
+        ai_message = session_service.add_ai_response(
+            db, session_id, user_id, ai_content=full_response
+        )
+        
+        # Get updated session state
+        updated_session = session_service.get_session(db, session_id, user_id)
+        
+        # Send completion event with message details
+        complete_data = {
+            'type': 'complete',
+            'message_id': ai_message.id if ai_message else None,
+            'content': full_response,
+            'session_state': updated_session.state if updated_session else 'unknown'
+        }
+        yield f"data: {json.dumps(complete_data)}\n\n"
+    else:
+        yield f"data: {json.dumps({'type': 'complete', 'message_id': None, 'content': '', 'session_state': session.state})}\n\n"
+
+
+@router.post("/{session_id}/messages/stream")
+async def stream_message(
+    session_id: str,
+    data: MessageCreate,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+    session_service: SessionService = Depends(get_session_service),
+    llm_service: LLMService = Depends(get_llm_service_dep)
+) -> StreamingResponse:
+    """
+    Add a message to a session with streaming response.
+    
+    This endpoint streams AI response tokens back to the client using Server-Sent Events (SSE).
+    The user's message is stored immediately, then AI tokens are streamed as they are generated.
+    Once complete, the full AI response is stored.
+    
+    SSE Events:
+    - {'type': 'session_state', 'state': 'intro|active'} - Session state info
+    - {'type': 'token', 'content': '...'} - Individual tokens
+    - {'type': 'complete', 'message_id': '...', 'content': '...', 'session_state': '...'} - Final message
+    - {'type': 'error', 'error': '...'} - Error message
+    """
+    return StreamingResponse(
+        _stream_llm_response(
+            session_id=session_id,
+            user_id=user_id,
+            user_message_content=data.content,
+            db=db,
+            session_service=session_service,
+            llm_service=llm_service,
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
     )
 
 

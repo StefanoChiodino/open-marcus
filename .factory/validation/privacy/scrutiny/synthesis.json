@@ -1,13 +1,13 @@
 {
   "milestone": "privacy",
-  "round": 2,
+  "round": 3,
   "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
       "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && pytest tests/ -v",
       "exitCode": 0,
-      "output": "362 passed, 58 warnings in 15.10s"
+      "output": "369 passed, 56 warnings in 16.21s"
     },
     "typecheck": {
       "passed": true,
@@ -26,7 +26,8 @@
     "total": 3,
     "passed": 3,
     "failed": 0,
-    "failedFeatures": []
+    "failedFeatures": [],
+    "note": "All features reviewed in prior rounds. Current uncommitted changes are trivial import cleanups (unused imports removed from encryption.py and key_derivation.py) that do not affect privacy functionality. No new reviews required."
   },
   "blockingIssues": [],
   "appliedUpdates": [],
@@ -45,5 +46,6 @@
     }
   ],
   "rejectedObservations": [],
-  "previousRound": ".factory/validation/privacy/scrutiny/synthesis.json"
+  "previousRound": ".factory/validation/privacy/scrutiny/synthesis.json",
+  "notes": "Re-run after round 2 passed. Uncommitted changes in working tree: removal of unused imports in encryption.py and key_derivation.py. These are lint fixes and do not affect functionality. Validators confirm all still passes."
 }

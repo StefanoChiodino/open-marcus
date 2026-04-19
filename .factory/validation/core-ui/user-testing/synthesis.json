@@ -1,0 +1,23 @@
+{
+  "milestone": "core-ui",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-PROFILE-001",
+    "VAL-PROFILE-002",
+    "VAL-PROFILE-003",
+    "VAL-SETTINGS-001",
+    "VAL-SETTINGS-005",
+    "VAL-UI-005"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null
+}

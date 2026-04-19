@@ -3,6 +3,8 @@ Error Banner Component for OpenMarcus.
 A reusable error display with dismiss and retry functionality.
 """
 
+from typing import Optional
+
 import flet as ft
 
 
@@ -156,7 +158,7 @@ class NetworkErrorBanner(ErrorBanner):
             is_retryable=True,
         )
 
-    def show_network_error(self, error_type: str = "unknown", custom_message: str = None) -> None:
+    def show_network_error(self, error_type: str = "unknown", custom_message: Optional[str] = None) -> None:
         """Show a network error with appropriate message."""
         if custom_message:
             message = custom_message
@@ -200,7 +202,7 @@ class ErrorDialog:
         self.dialog.open = False
         self.app.page.update()
 
-    def show(self, title: str = None, content: str = None) -> None:
+    def show(self, title: Optional[str] = None, content: Optional[str] = None) -> None:
         """Show the error dialog."""
         if title:
             self.dialog.title = ft.Text(title)

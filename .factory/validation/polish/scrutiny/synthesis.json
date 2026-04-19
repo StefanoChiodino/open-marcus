@@ -1,32 +1,33 @@
 {
   "milestone": "polish",
-  "round": 3,
+  "round": 4,
   "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
-      "command": "npm run test",
+      "command": "pytest tests/ -v",
       "exitCode": 0,
-      "observation": "318 tests passed in 30 test files. All unit tests pass."
+      "observation": "369 tests passed with 57 warnings (deprecation warnings for ft.Audio). All unit tests pass."
     },
     "typecheck": {
       "passed": true,
-      "command": "npx tsc --noEmit",
+      "command": "mypy src/",
       "exitCode": 0,
-      "observation": "TypeScript compilation clean with no errors."
+      "observation": "TypeScript compilation clean with no errors. Notes about untyped functions in ram_detection.py, api_client.py, session_detail_page.py, session_page.py, and history_page.py are not errors."
     },
     "lint": {
       "passed": true,
-      "command": "npx eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+      "command": "ruff check src/",
       "exitCode": 0,
-      "observation": "ESLint clean with no warnings or errors."
+      "observation": "Ruff linter clean with no warnings or errors."
     }
   },
   "reviewsSummary": {
     "total": 10,
     "passed": 10,
     "failed": 0,
-    "failedFeatures": []
+    "failedFeatures": [],
+    "note": "All 10 features were reviewed in previous rounds (rounds 1-3). No new implementation features were added since round 3. This round was a validation re-run to confirm validators pass after type annotation fixes."
   },
   "reviewHistory": [
     {
@@ -56,6 +57,10 @@
         "commitId": "78875cc",
         "status": "pass"
       }
+    },
+    {
+      "round": 4,
+      "note": "Re-validation after type annotation fixes in error_components.py. Fixed 3 mypy errors: added Optional import and corrected type hints for custom_message, title, and content parameters."
     }
   ],
   "blockingIssues": [],
@@ -63,10 +68,19 @@
     {
       "featureId": "ui-error-handling",
       "source": "round 3 review",
-      "description": "Network error classification logic (_is_network_error_message, _classify_network_error) is duplicated verbatim in 3 screens (login_screen.py, register_screen.py, session_page.py). Should be refactored into a shared utility in error_components.py."
+      "description": "Network error classification logic (_is_network_error_message, _classify_network_error) is duplicated verbatim in 3 screens (login_screen.py, register_screen.py, session_page.py). Should be refactored into a shared utility in error_components.py.",
+      "status": "open",
+      "note": "Non-blocking suggestion from round 3. Remains unaddressed but does not block validation."
     }
   ],
-  "appliedUpdates": [],
+  "appliedUpdates": [
+    {
+      "target": "error_components.py",
+      "description": "Fixed type annotations: added 'from typing import Optional' import and changed 'custom_message: str = None' to 'custom_message: Optional[str] = None', 'title: str = None' to 'title: Optional[str] = None', and 'content: str = None' to 'content: Optional[str] = None'",
+      "sourceFeature": "typecheck fix",
+      "commitId": "pending"
+    }
+  ],
   "suggestedGuidanceUpdates": [
     {
       "target": "AGENTS.md",
@@ -76,5 +90,5 @@
     }
   ],
   "rejectedObservations": [],
-  "previousRound": ".factory/validation/polish/scrutiny/synthesis.json (round 2)"
+  "previousRound": ".factory/validation/polish/scrutiny/synthesis.json (round 3)"
 }

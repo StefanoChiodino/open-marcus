@@ -1,0 +1,83 @@
+"""
+OpenMarcus - Flet Application Entry Point
+
+A mental well-being companion with Marcus Aurelius persona.
+Local-first, privacy-focused meditation app.
+"""
+
+import flet as ft
+
+from screens.login_screen import LoginScreen
+from screens.register_screen import RegisterScreen
+from screens.onboarding_screen import OnboardingScreen
+from screens.home_page import HomePage
+from screens.session_page import SessionPage
+from screens.history_page import HistoryPage
+from screens.settings_page import SettingsPage
+
+
+class OpenMarcusApp:
+    """Main application class managing routes and navigation."""
+
+    def __init__(self, page: ft.Page):
+        self.page = page
+        self.login_screen = LoginScreen(self)
+        self.register_screen = RegisterScreen(self)
+        self.onboarding_screen = OnboardingScreen(self)
+        self.home_page = HomePage(self)
+        self.session_page = SessionPage(self)
+        self.history_page = HistoryPage(self)
+        self.settings_page = SettingsPage(self)
+        self.setup_theme()
+        self.setup_routes()
+
+    def setup_theme(self) -> None:
+        """Configure app theme with consistent styling."""
+        self.page.theme = ft.Theme(
+            color_scheme_seed=ft.colors.DEEP_PURPLE,
+            font_family="Helvetica",
+        )
+        self.page.theme_mode = ft.ThemeMode.LIGHT
+        self.page.title = "OpenMarcus"
+        self.page.window_width = 1200
+        self.page.window_height = 800
+        self.page.window_min_width = 800
+        self.page.window_min_height = 600
+
+    def setup_routes(self) -> None:
+        """Register all application routes with named views."""
+        self.page.on_route_change = self.route_change
+        self.page.go("/login")
+
+    def route_change(self, route: ft.RouteChangeEvent) -> None:
+        """Handle route changes and display appropriate view."""
+        self.page.views.clear()
+
+        if self.page.route == "/login":
+            self.page.views.append(self.login_screen.build())
+        elif self.page.route == "/register":
+            self.page.views.append(self.register_screen.build())
+        elif self.page.route == "/onboarding":
+            self.page.views.append(self.onboarding_screen.build())
+        elif self.page.route == "/home":
+            self.page.views.append(self.home_page.build())
+        elif self.page.route == "/session":
+            self.page.views.append(self.session_page.build())
+        elif self.page.route == "/history":
+            self.page.views.append(self.history_page.build())
+        elif self.page.route == "/settings":
+            self.page.views.append(self.settings_page.build())
+        else:
+            self.page.views.append(self.login_screen.build())
+
+    def navigate_to(self, route: str) -> None:
+        """Navigate to a specific route."""
+        self.page.go(route)
+
+
+def main(page: ft.Page) -> None:
+    """Application entry point."""
+    app = OpenMarcusApp(page)
+
+
+ft.app(target=main)

@@ -634,6 +634,71 @@ class APIClient:
             return None, "Cannot connect to server. Please ensure the backend is running."
         except Exception as e:
             return None, f"Network error: {str(e)}"
+    
+    async def export_data(self, format: str = "json") -> tuple[Optional[bytes], Optional[str]]:
+        """
+        Export user data as JSON or SQLite backup.
+        
+        Args:
+            format: Export format - 'json' or 'sqlite'
+            
+        Returns:
+            Tuple of (file_bytes, error_message)
+            file_bytes is the raw file content to be saved
+        """
+        url = f"{self.BASE_URL}/api/settings/export?format={format}"
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    url,
+                    headers=self.get_headers()
+                )
+                
+                if response.status_code == 200:
+                    return response.content, None
+                elif response.status_code == 401:
+                    return None, "Invalid or expired token"
+                elif response.status_code == 400:
+                    error_detail = response.json().get("detail", "Bad request")
+                    return None, error_detail
+                else:
+                    return None, f"Server error (status {response.status_code})"
+                    
+        except httpx.TimeoutException:
+            return None, "Request timed out. Please try again."
+        except httpx.ConnectError:
+            return None, "Cannot connect to server. Please ensure the backend is running."
+        except Exception as e:
+            return None, f"Network error: {str(e)}"
+    
+    async def clear_all_data(self) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Clear all user data from the database.
+        
+        Returns:
+            Tuple of (result_data, error_message)
+        """
+        url = f"{self.BASE_URL}/api/settings/clear-data"
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.delete(
+                    url,
+                    headers=self.get_headers()
+                )
+                
+                if response.status_code == 200:
+                    return response.json(), None
+                elif response.status_code == 401:
+                    return None, "Invalid or expired token"
+                else:
+                    return None, f"Server error (status {response.status_code})"
+                    
+        except httpx.TimeoutException:
+            return None, "Request timed out. Please try again."
+        except httpx.ConnectError:
+            return None, "Cannot connect to server. Please ensure the backend is running."
+        except Exception as e:
+            return None, f"Network error: {str(e)}"
 
 
 # Global API client instance

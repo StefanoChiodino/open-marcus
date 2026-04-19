@@ -379,10 +379,94 @@ class SettingsPage:
         if self.content_column:
             self.app.page.update()
 
-    def handle_export(self, e):
+    async def handle_export(self, e: ft.ControlEvent) -> None:
         """Handle data export."""
-        self.show_status("Export feature coming soon", is_error=False)
+        from flet import FilePicker, FilePickerResultEvent
+        import os
+        
+        # Show status that export is starting
+        self.show_status("Preparing export...", is_error=False)
+        
+        # First, export as JSON
+        result, error = await api_client.export_data("json")
+        
+        if error:
+            self.show_status(f"Export failed: {error}", is_error=True)
+            return
+        
+        if result:
+            # Save the file using FilePicker
+            try:
+                # Get the downloads directory
+                downloads_dir = os.path.expanduser("~/Downloads")
+                export_path = os.path.join(downloads_dir, "openMarcus_export.json")
+                
+                with open(export_path, "wb") as f:
+                    f.write(result)
+                
+                self.show_status(f"Data exported to Downloads folder", is_error=False)
+            except Exception as ex:
+                self.show_status(f"Export failed to save: {str(ex)}", is_error=True)
+        else:
+            self.show_status("Export failed: No data returned", is_error=True)
 
-    def handle_clear_data(self, e):
+    async def handle_clear_data(self, e: ft.ControlEvent) -> None:
         """Handle data clear."""
-        self.show_status("Clear data feature coming soon", is_error=False)
+        # Show confirmation dialog
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Clear All Data"),
+            content=ft.Text(
+                "Are you sure you want to clear all your data? This action cannot be undone.\n\n"
+                "All your sessions, profile, memories, and settings will be permanently deleted."
+            ),
+            actions=[
+                ft.TextButton("Cancel", on_click=self._cancel_clear_data),
+                ft.TextButton(
+                    "Clear All Data",
+                    on_click=self._confirm_clear_data,
+                    style=ft.ButtonStyle(color=ft.Colors.ERROR)
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        self.app.page.dialog = dialog
+        dialog.open = True
+        self.app.page.update()
+
+    async def _cancel_clear_data(self, e: ft.ControlEvent) -> None:
+        """Cancel data clear operation."""
+        if self.app.page.dialog:
+            self.app.page.dialog.open = False
+            self.app.page.update()
+
+    async def _confirm_clear_data(self, e: ft.ControlEvent) -> None:
+        """Confirm and execute data clear."""
+        if self.app.page.dialog:
+            self.app.page.dialog.open = False
+            self.app.page.update()
+        
+        self.show_status("Clearing all data...", is_error=False)
+        
+        result, error = await api_client.clear_all_data()
+        
+        if error:
+            self.show_status(f"Failed to clear data: {error}", is_error=True)
+            return
+        
+        if result and result.get("message"):
+            self.show_status("All data cleared successfully", is_error=False)
+            # Logout the user after clearing data
+            await self._logout_after_clear()
+        else:
+            self.show_status("Data cleared", is_error=False)
+
+    async def _logout_after_clear(self) -> None:
+        """Logout user after clearing data."""
+        api_client.clear_token()
+        # Navigate to login screen
+        self.app.remove_all_views()
+        from src.screens.login_screen import LoginScreen
+        login = LoginScreen(self.app)
+        self.app.add_view(login.build())

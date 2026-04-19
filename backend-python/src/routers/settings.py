@@ -2,11 +2,9 @@
 Settings router for FastAPI.
 """
 
-import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import FileResponse, JSONResponse
@@ -216,7 +214,6 @@ async def export_data(
         
         # Create a copy for export
         import tempfile
-        import os
         temp_dir = tempfile.mkdtemp()
         temp_db_path = Path(temp_dir) / "openMarcus_backup.db"
         shutil.copy2(db_path, temp_db_path)

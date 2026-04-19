@@ -381,7 +381,6 @@ class SettingsPage:
 
     async def handle_export(self, e: ft.ControlEvent) -> None:
         """Handle data export."""
-        from flet import FilePicker, FilePickerResultEvent
         import os
         
         # Show status that export is starting
@@ -404,7 +403,7 @@ class SettingsPage:
                 with open(export_path, "wb") as f:
                     f.write(result)
                 
-                self.show_status(f"Data exported to Downloads folder", is_error=False)
+                self.show_status("Data exported to Downloads folder", is_error=False)
             except Exception as ex:
                 self.show_status(f"Export failed to save: {str(ex)}", is_error=True)
         else:

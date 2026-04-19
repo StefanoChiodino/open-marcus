@@ -1,6 +1,6 @@
 {
   "milestone": "privacy",
-  "round": 1,
+  "round": 2,
   "status": "pass",
   "assertionsSummary": {
     "total": 4,
@@ -17,6 +17,6 @@
   "failedAssertions": [],
   "blockedAssertions": [],
   "appliedUpdates": [],
-  "previousRound": null,
-  "notes": "Privacy assertions are code-inspection based (no runtime app testing required). All assertions verified through code analysis and existing test suite."
+  "previousRound": ".factory/validation/privacy/user-testing/synthesis.json",
+  "notes": "Re-run validation. All privacy assertions already passed in round 1. No new assertions to test. No failed/blocked from prior round."
 }

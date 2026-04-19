@@ -6,6 +6,7 @@ New user account creation.
 import flet as ft
 
 from src.services.api_client import api_client
+from src.screens.error_components import ErrorBanner, NetworkErrorBanner
 
 
 class RegisterScreen:
@@ -39,6 +40,21 @@ class RegisterScreen:
             color=ft.Colors.GREEN,
             visible=False,
         )
+        
+        # Error banner for network/validation errors with retry capability
+        self.error_banner = ErrorBanner(
+            on_retry=self._handle_error_retry,
+            on_dismiss=self._handle_error_dismiss,
+        )
+        self.error_banner.container.visible = False
+        
+        # Network error banner with specialized messaging
+        self.network_error_banner = NetworkErrorBanner(
+            on_retry=self._handle_error_retry,
+            on_dismiss=self._handle_error_dismiss,
+        )
+        self.network_error_banner.container.visible = False
+        
         self.loading = False
         self.loading_indicator = ft.ProgressRing(visible=False)
 
@@ -65,6 +81,17 @@ class RegisterScreen:
                                 color=ft.Colors.GREY_600,
                             ),
                             ft.Container(height=32),
+                            # Error banners for network/validation errors
+                            ft.Container(
+                                padding=ft.padding.symmetric(horizontal=20),
+                                content=self.error_banner.container,
+                                visible=False,
+                            ),
+                            ft.Container(
+                                padding=ft.padding.symmetric(horizontal=20),
+                                content=self.network_error_banner.container,
+                                visible=False,
+                            ),
                             self.error_text,
                             self.success_text,
                             ft.Container(height=8),
@@ -110,18 +137,69 @@ class RegisterScreen:
         self.confirm_password_field.disabled = is_loading
         self.app.page.update()
 
-    def show_error(self, message: str) -> None:
+    def show_error(self, message: str, is_network_error: bool = False) -> None:
         """Show error message."""
         self.error_text.value = message
         self.error_text.visible = True
         self.success_text.visible = False
+        
+        # Also show appropriate error banner for prominent display
+        if is_network_error or self._is_network_error_message(message):
+            self.network_error_banner.show_network_error(
+                error_type=self._classify_network_error(message),
+                custom_message=message
+            )
+            self.network_error_banner.container.visible = True
+        else:
+            self.error_banner.show(message, is_retryable=True)
+            self.error_banner.container.visible = True
+        
         self.app.page.update()
+
+    def _is_network_error_message(self, message: str) -> bool:
+        """Check if the error message is a network-related error."""
+        network_keywords = [
+            "connect", "timeout", "network", "offline", "internet",
+            "server", "connection", "request timed out", "cannot connect"
+        ]
+        message_lower = message.lower()
+        return any(keyword in message_lower for keyword in network_keywords)
+
+    def _classify_network_error(self, message: str) -> str:
+        """Classify the type of network error."""
+        message_lower = message.lower()
+        if "timeout" in message_lower:
+            return "timeout"
+        elif "connect" in message_lower or "connection" in message_lower:
+            return "connection"
+        elif "offline" in message_lower or "internet" in message_lower:
+            return "offline"
+        elif "server" in message_lower:
+            return "server"
+        else:
+            return "unknown"
+
+    def _handle_error_retry(self, e: ft.ControlEvent) -> None:
+        """Handle retry button click on error banner."""
+        self.error_banner.hide()
+        self.network_error_banner.hide()
+        self.clear_messages()
+        import asyncio
+        asyncio.create_task(self.handle_register())
+
+    def _handle_error_dismiss(self, e: ft.ControlEvent) -> None:
+        """Handle dismiss button click on error banner."""
+        self.error_banner.hide()
+        self.network_error_banner.hide()
+        self.clear_messages()
 
     def show_success(self, message: str) -> None:
         """Show success message."""
         self.success_text.value = message
         self.success_text.visible = True
         self.error_text.visible = False
+        self.error_banner.hide()
+        self.network_error_banner.hide()
         self.app.page.update()
 
     def clear_messages(self) -> None:
@@ -130,6 +208,8 @@ class RegisterScreen:
         self.error_text.visible = False
         self.success_text.value = ""
         self.success_text.visible = False
+        self.error_banner.hide()
+        self.network_error_banner.hide()
 
     def validate_form(self, username: str, password: str, confirm: str) -> tuple[bool, str]:
         """
@@ -191,7 +271,9 @@ class RegisterScreen:
                 asyncio.create_task(self._delayed_navigate())
 
         except Exception as e:
-            self.show_error(f"Registration failed: {str(e)}")
+            error_str = str(e).lower()
+            is_network = any(kw in error_str for kw in ["connect", "timeout", "network", "http"])
+            self.show_error(f"Registration failed: {str(e)}", is_network_error=is_network)
             self.set_loading(False)
 
     async def _delayed_navigate(self) -> None:

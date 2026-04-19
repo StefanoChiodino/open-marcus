@@ -6,6 +6,7 @@ Profile creation for new users.
 import flet as ft
 
 from src.services.api_client import api_client
+from src.screens.error_components import ErrorBanner
 
 
 class OnboardingScreen:
@@ -38,6 +39,14 @@ class OnboardingScreen:
             color=ft.Colors.ERROR,
             visible=False,
         )
+        
+        # Error banner for network/validation errors with retry capability
+        self.error_banner = ErrorBanner(
+            on_retry=self._handle_error_retry,
+            on_dismiss=self._handle_error_dismiss,
+        )
+        self.error_banner.container.visible = False
+        
         self.loading = False
         self.loading_indicator = ft.ProgressRing(visible=False)
 
@@ -64,6 +73,12 @@ class OnboardingScreen:
                                 color=ft.Colors.GREY_600,
                             ),
                             ft.Container(height=40),
+                            # Error banner for network/validation errors
+                            ft.Container(
+                                padding=ft.padding.symmetric(horizontal=20),
+                                content=self.error_banner.container,
+                                visible=False,
+                            ),
                             self.error_text,
                             ft.Container(height=8),
                             self.name_field,
@@ -100,12 +115,30 @@ class OnboardingScreen:
         """Show error message."""
         self.error_text.value = message
         self.error_text.visible = True
+        
+        # Also show error banner for retry capability
+        self.error_banner.show(message, is_retryable=True)
+        self.error_banner.container.visible = True
+        
         self.app.page.update()
 
     def clear_error(self) -> None:
         """Clear error message."""
         self.error_text.value = ""
         self.error_text.visible = False
+        self.error_banner.hide()
+
+    def _handle_error_retry(self, e: ft.ControlEvent) -> None:
+        """Handle retry button click on error banner."""
+        self.error_banner.hide()
+        self.clear_error()
+        import asyncio
+        asyncio.create_task(self.handle_continue())
+
+    def _handle_error_dismiss(self, e: ft.ControlEvent) -> None:
+        """Handle dismiss button click on error banner."""
+        self.error_banner.hide()
+        self.clear_error()
 
     async def handle_continue(self, e=None) -> None:
         """Handle continue button click."""

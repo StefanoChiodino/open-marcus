@@ -7,6 +7,7 @@ import flet as ft
 
 from src.services.api_client import api_client
 from src.screens.navigation import NavigationSidebar
+from src.screens.error_components import ErrorBanner
 
 
 class ProfilePage:
@@ -45,6 +46,15 @@ class ProfilePage:
             color=ft.Colors.GREEN,
             visible=False,
         )
+        
+        # Error banner for network/errors with retry capability
+        self.error_banner = ErrorBanner(
+            on_retry=self._handle_error_retry,
+            on_dismiss=self._handle_error_dismiss,
+        )
+        self.error_banner.container.visible = False
+        self._last_error = None
+        
         self.loading = False
         self.loading_indicator = ft.ProgressRing(visible=False)
         self.content_column = None
@@ -83,6 +93,18 @@ class ProfilePage:
         asyncio.create_task(self.load_profile())
         
         return view
+    
+    def _handle_error_retry(self, e: ft.ControlEvent) -> None:
+        """Handle retry button click on error banner."""
+        self.error_banner.hide()
+        self.clear_messages()
+        import asyncio
+        asyncio.create_task(self.load_profile())
+    
+    def _handle_error_dismiss(self, e: ft.ControlEvent) -> None:
+        """Handle dismiss button click on error banner."""
+        self.error_banner.hide()
+        self.clear_messages()
 
     async def load_profile(self) -> None:
         """Load profile data from API."""
@@ -98,7 +120,8 @@ class ProfilePage:
                     # No profile exists - redirect to onboarding
                     self.app.navigate_to("/onboarding")
                     return
-                # Other error - show error message
+                # Other error - show error message with banner
+                self._last_error = error
                 self.show_error(error)
             elif result:
                 self.profile = result
@@ -108,6 +131,7 @@ class ProfilePage:
                 self.experience_dropdown.value = experience
 
         except Exception as e:
+            self._last_error = str(e)
             self.show_error(f"Failed to load profile: {str(e)}")
 
         self.loading = False
@@ -130,6 +154,12 @@ class ProfilePage:
                 ),
                 ft.Container(height=32),
                 self.error_text,
+                # Error banner for network/errors with retry
+                ft.Container(
+                    padding=ft.padding.symmetric(horizontal=16),
+                    content=self.error_banner.container,
+                    visible=False,
+                ),
                 self.success_text,
                 ft.Container(height=8),
                 self.name_field,
@@ -156,9 +186,13 @@ class ProfilePage:
 
     def show_error(self, message: str) -> None:
         """Show error message."""
+        self._last_error = message
         self.error_text.value = message
         self.error_text.visible = True
         self.success_text.visible = False
+        # Also show error banner with retry
+        self.error_banner.show(message, is_retryable=True)
+        self.error_banner.container.visible = True
         if self.content_column:
             self.app.page.update()
 
@@ -167,6 +201,7 @@ class ProfilePage:
         self.success_text.value = message
         self.success_text.visible = True
         self.error_text.visible = False
+        self.error_banner.hide()
         if self.content_column:
             self.app.page.update()
 
@@ -176,6 +211,7 @@ class ProfilePage:
         self.error_text.visible = False
         self.success_text.value = ""
         self.success_text.visible = False
+        self.error_banner.hide()
 
     def set_loading(self, is_loading: bool) -> None:
         """Set loading state for the form."""

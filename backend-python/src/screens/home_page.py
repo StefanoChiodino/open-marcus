@@ -7,6 +7,7 @@ import flet as ft
 
 from src.services.api_client import api_client
 from src.screens.navigation import NavigationSidebar
+from src.screens.error_components import ErrorBanner
 
 
 class HomePage:
@@ -22,6 +23,14 @@ class HomePage:
         self.loading_indicator = ft.ProgressRing(visible=True)
         self.content_column = None
         self.navigation = NavigationSidebar(app)
+        
+        # Error banner for displaying errors with retry capability
+        self.error_banner = ErrorBanner(
+            on_retry=self._handle_error_retry,
+            on_dismiss=self._handle_error_dismiss,
+        )
+        self.error_banner.container.visible = False
+        self._last_error = None
 
     def build(self) -> ft.View:
         """Build the home view."""
@@ -45,7 +54,18 @@ class HomePage:
                         ft.Container(
                             expand=True,
                             padding=ft.padding.all(24),
-                            content=self.content_column,
+                            content=ft.Column(
+                                controls=[
+                                    # Error banner
+                                    ft.Container(
+                                        padding=ft.padding.symmetric(horizontal=16),
+                                        content=self.error_banner.container,
+                                        visible=False,
+                                    ),
+                                    ft.Container(height=8),
+                                    self.content_column,
+                                ],
+                            ),
                         ),
                     ],
                     spacing=0,
@@ -59,6 +79,16 @@ class HomePage:
         asyncio.create_task(self.load_profile())
         
         return view
+    
+    def _handle_error_retry(self, e: ft.ControlEvent) -> None:
+        """Handle retry button click on error banner."""
+        self.error_banner.hide()
+        import asyncio
+        asyncio.create_task(self.load_profile())
+    
+    def _handle_error_dismiss(self, e: ft.ControlEvent) -> None:
+        """Handle dismiss button click on error banner."""
+        self.error_banner.hide()
 
     async def load_profile(self) -> None:
         """Load profile data from API."""
@@ -74,10 +104,14 @@ class HomePage:
                     # No profile exists - redirect to onboarding
                     self.app.navigate_to("/onboarding")
                     return
-                # Other error - show default values
+                # Other error - show friendly error and use defaults
+                self._last_error = error
                 self.user_name = "Guest User"
                 self.meditation_goals = "Not set"
                 self.experience_level = "Beginner"
+                # Show error banner
+                self.error_banner.show(error, is_retryable=True)
+                self.error_banner.container.visible = True
             elif result:
                 self.profile = result
                 self.user_name = result.get("name", "Guest User")
@@ -87,9 +121,13 @@ class HomePage:
 
         except Exception as e:
             print(f"Error loading profile: {e}")
+            self._last_error = str(e)
             self.user_name = "Guest User"
             self.meditation_goals = "Not set"
             self.experience_level = "Beginner"
+            # Show error banner
+            self.error_banner.show(f"Failed to load profile: {str(e)}", is_retryable=True)
+            self.error_banner.container.visible = True
 
         self.loading = False
         self.loading_indicator.visible = False

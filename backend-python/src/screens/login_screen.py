@@ -6,6 +6,7 @@ User authentication with username and password.
 import flet as ft
 
 from src.services.api_client import api_client
+from src.screens.error_components import ErrorBanner
 
 
 class LoginScreen:
@@ -29,8 +30,19 @@ class LoginScreen:
             color=ft.Colors.ERROR,
             visible=False,
         )
+        
+        # Error banner with retry capability
+        self.error_banner = ErrorBanner(
+            on_retry=self._handle_error_retry,
+            on_dismiss=self._handle_error_dismiss,
+        )
+        self.error_banner.container.visible = False
+        
         self.loading = False
         self.loading_indicator = ft.ProgressRing(visible=False)
+        
+        # Store last error for retry
+        self._last_error = None
 
     def build(self) -> ft.View:
         """Build the login view."""
@@ -61,6 +73,12 @@ class LoginScreen:
                                 color=ft.Colors.GREY_600,
                             ),
                             ft.Container(height=40),
+                            # Error banner with retry
+                            ft.Container(
+                                padding=ft.padding.symmetric(horizontal=20),
+                                content=self.error_banner.container,
+                                visible=False,
+                            ),
                             self.error_text,
                             ft.Container(height=8),
                             ft.Container(
@@ -104,14 +122,64 @@ class LoginScreen:
 
     def show_error(self, message: str) -> None:
         """Show error message."""
+        self._last_error = message
         self.error_text.value = message
         self.error_text.visible = True
+        
+        # Also show error banner for retry capability
+        is_network = self._is_network_error(message)
+        if is_network:
+            self.error_banner.show_network_error(
+                error_type=self._classify_network_error(message),
+                custom_message=message
+            )
+        else:
+            self.error_banner.show(message, is_retryable=True)
+        self.error_banner.container.visible = True
+        
         self.app.page.update()
+    
+    def _is_network_error(self, message: str) -> bool:
+        """Check if the error is a network-related error."""
+        network_keywords = [
+            "connect", "timeout", "network", "offline", "internet",
+            "server", "connection", "request timed out", "cannot connect"
+        ]
+        message_lower = message.lower()
+        return any(keyword in message_lower for keyword in network_keywords)
+    
+    def _classify_network_error(self, message: str) -> str:
+        """Classify the type of network error."""
+        message_lower = message.lower()
+        if "timeout" in message_lower:
+            return "timeout"
+        elif "connect" in message_lower or "connection" in message_lower:
+            return "connection"
+        elif "offline" in message_lower or "internet" in message_lower:
+            return "offline"
+        elif "server" in message_lower:
+            return "server"
+        else:
+            return "unknown"
+    
+    def _handle_error_retry(self, e: ft.ControlEvent) -> None:
+        """Handle retry button click."""
+        self.error_banner.hide()
+        self.clear_error()
+        # Retry login
+        import asyncio
+        asyncio.create_task(self.handle_login())
+    
+    def _handle_error_dismiss(self, e: ft.ControlEvent) -> None:
+        """Handle dismiss button click."""
+        self.error_banner.hide()
+        self.clear_error()
 
     def clear_error(self) -> None:
         """Clear error message."""
         self.error_text.value = ""
         self.error_text.visible = False
+        self.error_banner.hide()
 
     async def handle_login(self, e=None) -> None:
         """Handle login button click."""

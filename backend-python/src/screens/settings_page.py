@@ -9,6 +9,7 @@ import flet as ft
 
 from src.services.api_client import api_client
 from src.screens.navigation import NavigationSidebar
+from src.screens.error_components import ErrorBanner
 
 
 class SettingsPage:
@@ -26,6 +27,14 @@ class SettingsPage:
         self.loading_indicator = ft.ProgressRing(visible=False)
         self.content_column = None
         self.loading = False
+
+        # Error banner for network/errors with retry capability
+        self.error_banner = ErrorBanner(
+            on_retry=self._handle_error_retry,
+            on_dismiss=self._handle_error_dismiss,
+        )
+        self.error_banner.container.visible = False
+        self._last_error = None
 
         # TTS voice options
         self.tts_voice = ft.Dropdown(
@@ -103,6 +112,16 @@ class SettingsPage:
         asyncio.create_task(self.load_settings())
 
         return view
+    
+    def _handle_error_retry(self, e: ft.ControlEvent) -> None:
+        """Handle retry button click on error banner."""
+        self.error_banner.hide()
+        import asyncio
+        asyncio.create_task(self.load_settings())
+    
+    def _handle_error_dismiss(self, e: ft.ControlEvent) -> None:
+        """Handle dismiss button click on error banner."""
+        self.error_banner.hide()
 
     async def load_settings(self) -> None:
         """Load settings from API."""
@@ -117,6 +136,10 @@ class SettingsPage:
             if error:
                 # If settings don't exist yet, that's okay - use defaults
                 print(f"Could not load settings: {error}")
+                # Show error banner but don't block the UI
+                self._last_error = error
+                self.error_banner.show(error, is_retryable=True)
+                self.error_banner.container.visible = True
 
             if result:
                 self.settings = result

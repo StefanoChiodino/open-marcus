@@ -10,6 +10,7 @@ from typing import Optional
 
 from src.services.api_client import api_client
 from src.screens.navigation import NavigationSidebar
+from src.screens.error_components import ErrorBanner
 
 
 class HistoryPage:
@@ -27,6 +28,15 @@ class HistoryPage:
             size=14,
             visible=False,
         )
+        
+        # Error banner for network/errors with retry capability
+        self.error_banner = ErrorBanner(
+            on_retry=self._handle_error_retry,
+            on_dismiss=self._handle_error_dismiss,
+        )
+        self.error_banner.container.visible = False
+        self._last_error = None
+        
         self.sessions_count_text: Optional[ft.Text] = None
         self.content_column: Optional[ft.Column] = None
 
@@ -85,6 +95,12 @@ class HistoryPage:
                                         ),
                                     ),
                                     self.error_text,
+                                    # Error banner for network/errors with retry
+                                    ft.Container(
+                                        padding=ft.padding.symmetric(horizontal=16),
+                                        content=self.error_banner.container,
+                                        visible=False,
+                                    ),
                                     ft.Container(
                                         expand=True,
                                         content=self.content_column,
@@ -103,20 +119,35 @@ class HistoryPage:
         asyncio.create_task(self.load_sessions())
 
         return view
+    
+    def _handle_error_retry(self, e: ft.ControlEvent) -> None:
+        """Handle retry button click on error banner."""
+        self.error_banner.hide()
+        import asyncio
+        asyncio.create_task(self.load_sessions())
+    
+    def _handle_error_dismiss(self, e: ft.ControlEvent) -> None:
+        """Handle dismiss button click on error banner."""
+        self.error_banner.hide()
 
     async def load_sessions(self) -> None:
         """Load sessions from API."""
         self.loading = True
         self.loading_indicator.visible = True
         self.error_text.visible = False
+        self.error_banner.hide()
         self.app.page.update()
 
         try:
             result, error = await api_client.list_sessions(limit=50, offset=0)
 
             if error:
+                self._last_error = error
                 self.error_text.value = f"Failed to load sessions: {error}"
                 self.error_text.visible = True
+                # Also show error banner with retry
+                self.error_banner.show(error, is_retryable=True)
+                self.error_banner.container.visible = True
             elif result and "sessions" in result:
                 # Convert API response to display format
                 self.sessions = []

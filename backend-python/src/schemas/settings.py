@@ -2,7 +2,7 @@
 Schemas for settings endpoints.
 """
 
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -31,7 +31,17 @@ class SettingsResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ModelRecommendationSchema(BaseModel):
+    """Schema for a model recommendation."""
+    name: str
+    parameters_billions: float
+    min_ram_gb: float
+    description: str
+    suggested: bool
+
+
 class SystemInfo(BaseModel):
     """Response model for system information."""
     ram_total_gb: float
     ram_detected_gb: Optional[float] = None
+    model_recommendations: Optional[List[ModelRecommendationSchema]] = None

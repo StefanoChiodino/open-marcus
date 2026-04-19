@@ -2,17 +2,19 @@
 Settings router for FastAPI.
 """
 
-import platform
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from ..schemas.settings import SettingsUpdate, SettingsResponse, SystemInfo
+from ..schemas.settings import SettingsUpdate, SettingsResponse, SystemInfo, ModelRecommendationSchema
 from ..services.database import get_database_service
 from ..models.settings import Settings
 from ..services.jwt import jwt_service
+from ..services.ram_detection import (
+    get_total_ram_gb,
+    get_ram_detection_service,
+)
 
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -42,45 +44,8 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(secu
 
 def get_system_ram_gb() -> float:
     """Get total system RAM in GB."""
-    try:
-        if platform.system() == "Darwin":  # macOS
-            import subprocess
-            result = subprocess.run(
-                ["sysctl", "-n", "hw.memsize"],
-                capture_output=True,
-                text=True
-            )
-            bytes_mem = int(result.stdout.strip())
-            return bytes_mem / (1024 ** 3)
-        elif platform.system() == "Linux":
-            with open("/proc/meminfo", "r") as f:
-                for line in f:
-                    if line.startswith("MemTotal:"):
-                        parts = line.split()
-                        bytes_mem = int(parts[1]) * 1024  # Convert from KB to bytes
-                        return bytes_mem / (1024 ** 3)
-        elif platform.system() == "Windows":
-            import ctypes
-            kernel32 = ctypes.windll.kernel32
-            c_ulong = ctypes.c_ulong
-            class MEMORYSTATUS(ctypes.Structure):
-                _fields_ = [
-                    ("dwLength", c_ulong),
-                    ("dwMemoryLoad", c_ulong),
-                    ("dwTotalPhys", c_ulong),
-                    ("dwAvailPhys", c_ulong),
-                    ("dwTotalPageFile", c_ulong),
-                    ("dwAvailPageFile", c_ulong),
-                    ("dwTotalVirtual", c_ulong),
-                    ("dwAvailVirtual", c_ulong),
-                ]
-            memstatus = MEMORYSTATUS()
-            memstatus.dwLength = ctypes.sizeof(MEMORYSTATUS)
-            kernel32.GlobalMemoryStatus(ctypes.byref(memstatus))
-            return memstatus.dwTotalPhys / (1024 ** 3)
-    except Exception:
-        pass
-    return 0.0
+    # Use the new RAM detection service
+    return get_total_ram_gb()
 
 
 @router.get("", response_model=SettingsResponse)
@@ -179,11 +144,29 @@ async def update_settings(
 @router.get("/system", response_model=SystemInfo)
 async def get_system_info() -> SystemInfo:
     """
-    Get system information including RAM.
+    Get system information including RAM and model recommendations.
     This endpoint does not require authentication.
+    
+    Returns total RAM and recommended GGUF models based on available memory.
     """
-    ram_total = get_system_ram_gb()
+    ram_service = get_ram_detection_service()
+    ram_total = ram_service.detect()
+    recommendations = ram_service.recommendations
+    
+    # Convert to schema
+    model_recommendations = [
+        ModelRecommendationSchema(
+            name=rec.name,
+            parameters_billions=rec.parameters_billions,
+            min_ram_gb=rec.min_ram_gb,
+            description=rec.description,
+            suggested=rec.suggested,
+        )
+        for rec in recommendations
+    ]
+    
     return SystemInfo(
         ram_total_gb=round(ram_total, 2),
-        ram_detected_gb=round(ram_total, 2)
+        ram_detected_gb=round(ram_total, 2),
+        model_recommendations=model_recommendations,
     )

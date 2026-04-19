@@ -8,6 +8,15 @@ from .llm import (
     get_llm_service,
     set_llm_service,
 )
+from .ram_detection import (
+    RAMDetectionService,
+    ModelRecommendation,
+    get_ram_detection_service,
+    get_total_ram_gb,
+    get_available_ram_gb,
+    get_recommended_models,
+    get_best_model_name,
+)
 
 __all__ = [
     "LLMService",
@@ -16,4 +25,11 @@ __all__ = [
     "StreamChunk",
     "get_llm_service",
     "set_llm_service",
+    "RAMDetectionService",
+    "ModelRecommendation",
+    "get_ram_detection_service",
+    "get_total_ram_gb",
+    "get_available_ram_gb",
+    "get_recommended_models",
+    "get_best_model_name",
 ]

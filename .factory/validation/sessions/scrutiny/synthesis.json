@@ -1,25 +1,25 @@
 {
   "milestone": "sessions",
-  "round": 2,
+  "round": 3,
   "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
       "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && pytest tests/ -v",
       "exitCode": 0,
-      "note": "156 passed with 29 warnings (async test decorators not removed)"
+      "note": "156 passed with 29 warnings (same as round 2)"
     },
     "typecheck": {
       "passed": true,
       "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && mypy src/",
       "exitCode": 0,
-      "note": "Success: no issues found in 44 source files. Fixed prior mypy error in session.py line 284-285 (Optional[Session] None check)"
+      "note": "Success: no issues found in 44 source files. Same as round 2."
     },
     "lint": {
       "passed": true,
       "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && ruff check src/",
       "exitCode": 0,
-      "note": "All checks passed!"
+      "note": "All checks passed! Same as round 2."
     }
   },
   "reviewsSummary": {
@@ -27,56 +27,13 @@
     "passed": 7,
     "failed": 0,
     "failedFeatures": [],
-    "fixFeaturesReviewed": [
-      {
-        "featureId": "fix-session-chat-ai-responses",
-        "originalFailedFeature": "ui-session-chat",
-        "status": "pass",
-        "summary": "Fix addresses blocking issue by wiring AI response generation and display. Frontend send_message() now extracts and displays AI responses."
-      },
-      {
-        "featureId": "fix-session-summary-auto",
-        "originalFailedFeature": "session-summary-generation",
-        "status": "pass",
-        "summary": "Fix addresses blocking issue by wiring SummaryService into end_session router. Summary is now auto-generated when session ends."
-      }
-    ]
+    "note": "All 7 features already reviewed in round 2 and passed. No new features added to sessions milestone since round 2. This round confirms validators still pass."
   },
   "blockingIssues": [],
-  "appliedUpdates": [
-    {
-      "target": "src/routers/session.py",
-      "description": "Added None check for session after summary generation to fix mypy error (lines 284-285)",
-      "sourceFeature": "scrutiny-validation-fix"
-    }
-  ],
+  "appliedUpdates": [],
   "fixesAppliedDuringValidation": [],
-  "suggestedGuidanceUpdates": [
-    {
-      "target": "AGENTS.md",
-      "suggestion": "Add explicit requirement that features with automatic post-session actions (like summary generation) must wire those actions into the session end flow, not just provide a separate endpoint.",
-      "evidence": "session-summary-generation feature provided /summarize endpoint but didn't wire it into end_session. VAL-SESSION-006 clearly states 'after session ends, AI generates a summary' which implies automatic behavior.",
-      "isSystemic": true
-    },
-    {
-      "target": "AGENTS.md",
-      "suggestion": "For chat features, add explicit verification step that API response content is extracted and displayed in UI. Tests using heavy mocking should be flagged as insufficient for UI functionality verification.",
-      "evidence": "ui-session-chat had 23 unit tests pass but they used heavy mocking that didn't catch the missing AI response display. The feature only verified API call was made, not that response was rendered.",
-      "isSystemic": true
-    },
-    {
-      "target": "AGENTS.md",
-      "suggestion": "Add guidance on route naming conventions to avoid collisions between parameterized routes and fallback routes. Fallback routes like /session/detail should use a distinctive pattern (e.g., /session/error) that cannot collide with /session/{id}.",
-      "evidence": "ui-session-history reviewer identified collision between /session/{id} handler and /session/detail fallback used by session_detail_page",
-      "isSystemic": false
-    }
-  ],
-  "rejectedObservations": [
-    {
-      "observation": "The flet-worker skill should require interactive app verification (actually running flet run)",
-      "reason": "While this would catch UI issues earlier, it may not be practical in all environments. Better guidance on test coverage for async flows would be more actionable."
-    }
-  ],
+  "suggestedGuidanceUpdates": [],
+  "rejectedObservations": [],
   "reviewReports": [
     ".factory/validation/sessions/scrutiny/reviews/session-crud-operations.json",
     ".factory/validation/sessions/scrutiny/reviews/message-storage.json",
@@ -87,12 +44,12 @@
     ".factory/validation/sessions/scrutiny/reviews/fix-session-summary-auto.json"
   ],
   "fulfillmentStatus": {
-    "VAL-SESSION-001": "pass - Session creates with intro state, AI responses now displayed",
+    "VAL-SESSION-001": "pass - Session creates with intro state, AI responses displayed",
     "VAL-SESSION-002": "pass - State machine transitions work correctly",
-    "VAL-SESSION-003": "pass - AI responses now displayed in chat",
+    "VAL-SESSION-003": "pass - AI responses displayed in chat",
     "VAL-SESSION-004": "pass - History page shows sessions with date, duration, summary",
-    "VAL-SESSION-005": "pass - Detail page shows conversation, route handling fixed",
+    "VAL-SESSION-005": "pass - Detail page shows conversation",
     "VAL-SESSION-006": "pass - Summary auto-generated on session end"
   },
-  "previousRound": ".factory/validation/sessions/scrutiny/synthesis.json"
+  "previousRound": ".factory/validation/sessions/scrutiny/synthesis-round3.json"
 }

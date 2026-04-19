@@ -21,6 +21,7 @@ from ..services.database import get_database_service
 from ..services.session import SessionService
 from ..services.summary import SummaryService
 from ..services.jwt import jwt_service
+from ..services.llm import LLMService, ChatMessage, get_llm_service as get_llm_svc
 
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
@@ -56,6 +57,11 @@ def get_session_service() -> SessionService:
 def get_summary_service() -> SummaryService:
     """Dependency to get summary service."""
     return SummaryService()
+
+
+def get_llm_service_dep() -> LLMService:
+    """Dependency to get LLM service."""
+    return get_llm_svc()
 
 
 def session_to_response(session) -> SessionResponse:
@@ -197,34 +203,51 @@ async def add_message(
     data: MessageCreate,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
-    session_service: SessionService = Depends(get_session_service)
+    session_service: SessionService = Depends(get_session_service),
+    llm_service: LLMService = Depends(get_llm_service_dep)
 ) -> MessageAddResponse:
     """
     Add a message to a session.
     
     This transitions the session from 'intro' to 'active' state if it's the first message.
-    Generates and stores an AI response from Marcus Aurelius.
+    Generates and stores an AI response from Marcus Aurelius using local LLM.
     """
-    message = session_service.add_message(
+    # First, store the user's message
+    user_message = session_service.add_message(
         db, session_id, user_id, role="user", content=data.content
     )
     
-    if message is None:
+    if user_message is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Session not found"
         )
     
-    # Generate AI response (placeholder until LLM integration)
-    ai_responses = [
-        "I understand. The path to wisdom begins with self-reflection. What troubles your mind today?",
-        "Remember, it is not that we have a short time to live, but that we waste a lot of it. What weighs on your spirit?",
-        "The happiness of your life depends upon the quality of your thoughts. Share what is on your mind, and we shall examine it together.",
-        "You have power over your mind - not outside events. Realize this, and you will find strength. What would you like to explore?",
-        "The soul becomes dyed with the color of its thoughts. Speak freely, and we shall seek the truth together.",
-    ]
-    import random
-    ai_content = random.choice(ai_responses)
+    # Get session with messages to build conversation context
+    session = session_service.get_session_with_messages(db, session_id, user_id)
+    
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+    
+    # Build conversation messages for LLM
+    messages_for_llm = [ChatMessage(role="system", content=LLMService.MARCUS_SYSTEM_PROMPT)]
+    
+    # Add previous messages to context
+    for msg in session.messages:
+        messages_for_llm.append(ChatMessage(role=msg.role, content=msg.content))
+    
+    # Add the new user message (already stored but needed for context)
+    messages_for_llm.append(ChatMessage(role="user", content=data.content))
+    
+    # Generate AI response using LLM service
+    ai_content = llm_service.create_chat_completion(
+        messages=messages_for_llm,
+        max_tokens=256,
+        temperature=0.7,
+    )
     
     # Store AI response
     ai_message = session_service.add_ai_response(

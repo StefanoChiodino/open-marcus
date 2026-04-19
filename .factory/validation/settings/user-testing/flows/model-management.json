@@ -1,0 +1,28 @@
+{
+  "assertionIds": ["VAL-SETTINGS-002"],
+  "status": "pass",
+  "evidence": {
+    "listModels": {
+      "endpoint": "GET /api/models",
+      "response": {
+        "models": [
+          {"name": "Qwen-Qwen2.5-14B-Instruct-Q5_K_M.gguf", "is_active": false},
+          {"name": "Qwen-Qwen2.5-7B-Instruct-Q5_K_M.gguf", "is_active": false}
+        ],
+        "active_model": null
+      }
+    },
+    "switchModel": {
+      "endpoint": "POST /api/models/active",
+      "payload": {"model_name": "Qwen-Qwen2.5-7B-Instruct-Q5_K_M.gguf"},
+      "response": {"success": true, "message": "Model Qwen-Qwen2.5-7B-Instruct-Q5_K_M.gguf is now active"}
+    },
+    "persistCheck": {
+      "endpoint": "GET /api/settings",
+      "selected_model": "Qwen-Qwen2.5-7B-Instruct-Q5_K_M.gguf"
+    }
+  },
+  "frictions": [],
+  "blockers": [],
+  "toolsUsed": ["curl"]
+}

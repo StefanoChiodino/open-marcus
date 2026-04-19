@@ -2,6 +2,7 @@
 Database service for SQLAlchemy management with optional encryption.
 """
 
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -13,8 +14,14 @@ from ..models import Base
 from .encryption import EncryptionService
 
 
+# Default database paths
+DATA_DIR = Path("/Users/stefano/repos/open-marcus/data")
+DEFAULT_DB_FILE = DATA_DIR / "openMarcus.db"
+ENCRYPTED_DB_FILE = DATA_DIR / "openMarcus.db.enc"
+
+
 class DatabaseService:
-    """Manages database connections and session lifecycle."""
+    """Manages database connections and session lifecycle with encryption support."""
     
     def __init__(
         self,
@@ -29,10 +36,8 @@ class DatabaseService:
             encryption_service: Optional encryption service for encrypted databases.
         """
         if database_url is None:
-            # Default to data directory in repo root
-            data_dir = Path("/Users/stefano/repos/open-marcus/data")
-            data_dir.mkdir(exist_ok=True)
-            database_url = f"sqlite:///{data_dir}/openMarcus.db"
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            database_url = f"sqlite:///{DEFAULT_DB_FILE}"
         
         self.database_url = database_url
         self.engine: Optional[Engine] = None
@@ -46,7 +51,7 @@ class DatabaseService:
             if self._db_file_path.name == "openMarcus.db" and str(self._db_file_path).startswith("/Users"):
                 pass  # Already a path
             elif not self._db_file_path.is_absolute():
-                self._db_file_path = Path("/Users/stefano/repos/open-marcus/data") / database_url[len("sqlite:///"):]
+                self._db_file_path = DATA_DIR / database_url[len("sqlite:///"):]
         
         self._create_engine()
     
@@ -93,6 +98,14 @@ class DatabaseService:
         """Get the path to the actual database file."""
         return self._db_file_path
     
+    def get_encrypted_file_path(self) -> Path:
+        """Get the path to the encrypted database file."""
+        return ENCRYPTED_DB_FILE
+    
+    def is_encrypted(self) -> bool:
+        """Check if the database is currently encrypted (i.e., .enc file exists but .db does not)."""
+        return ENCRYPTED_DB_FILE.exists() and not self._db_file_path.exists()
+    
     def encrypt_database(self, encrypted_path: Optional[Path] = None) -> bool:
         """
         Encrypt the database file to a backup location.
@@ -110,17 +123,17 @@ class DatabaseService:
             return False
         
         if encrypted_path is None:
-            encrypted_path = self._db_file_path.with_suffix(self._db_file_path.suffix + ".enc")
+            encrypted_path = ENCRYPTED_DB_FILE
         
         return self.encryption_service.encrypt_file(self._db_file_path, encrypted_path)
     
-    def decrypt_database(self, encrypted_path: Path, target_path: Optional[Path] = None) -> bool:
+    def decrypt_database(self, encrypted_path: Optional[Path] = None, target_path: Optional[Path] = None) -> bool:
         """
         Decrypt the database file from encrypted backup.
         
         Args:
-            encrypted_path: Path to encrypted file.
-            target_path: Path for decrypted file. If None, overwrites original.
+            encrypted_path: Path to encrypted file. If None, uses default .enc path.
+            target_path: Path for decrypted file. If None, uses default .db path.
             
         Returns:
             True if successful, False otherwise
@@ -128,10 +141,13 @@ class DatabaseService:
         if not self.encryption_service or not self.encryption_service.is_initialized():
             return False
         
-        if target_path is None and self._db_file_path:
-            target_path = self._db_file_path
+        if encrypted_path is None:
+            encrypted_path = ENCRYPTED_DB_FILE
         
         if target_path is None:
+            target_path = DEFAULT_DB_FILE
+        
+        if not encrypted_path.exists():
             return False
         
         # Decrypt to target path
@@ -142,6 +158,43 @@ class DatabaseService:
             self.database_url = f"sqlite:///{target_path}"
             self._db_file_path = target_path
             self._create_engine()
+        
+        return success
+    
+    def decrypt_to_db(self) -> bool:
+        """
+        Decrypt the encrypted database to the working .db file.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        if self._db_file_path is None:
+            return False
+        # Compute encrypted path from the same base as the db file
+        encrypted_path = self._db_file_path.with_suffix(self._db_file_path.suffix + ".enc")
+        return self.decrypt_database(encrypted_path, self._db_file_path)
+    
+    def encrypt_from_db(self) -> bool:
+        """
+        Encrypt the working .db file to the encrypted backup.
+        After encryption, removes the unencrypted .db file.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        if self._db_file_path is None:
+            return False
+        
+        # Use .enc suffix alongside the actual database file
+        encrypted_path = self._db_file_path.with_suffix(self._db_file_path.suffix + ".enc")
+        success = self.encrypt_database(encrypted_path)
+        
+        if success and self._db_file_path.exists():
+            # Remove the unencrypted file after successful encryption
+            try:
+                os.remove(self._db_file_path)
+            except OSError:
+                pass
         
         return success
 

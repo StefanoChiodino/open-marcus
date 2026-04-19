@@ -3,7 +3,6 @@ App-level password lock service.
 Manages master password for encrypting/decrypting the database.
 """
 
-import os
 import json
 from pathlib import Path
 from typing import Optional, Tuple
@@ -12,11 +11,19 @@ from datetime import datetime
 from .key_derivation import KeyDerivationService, key_derivation_service
 from .encryption import EncryptionService, encryption_service
 from .password import PasswordService
+from .database import DatabaseService
 
 
 # Configuration file stored alongside database
 CONFIG_DIR = Path("/Users/stefano/repos/open-marcus/data")
 CONFIG_FILE = CONFIG_DIR / "app_config.json"
+
+# Database file paths - also in CONFIG_DIR for easy testing/mocking
+def get_default_db_file() -> Path:
+    return CONFIG_DIR / "openMarcus.db"
+
+def get_encrypted_db_file() -> Path:
+    return CONFIG_DIR / "openMarcus.db.enc"
 
 
 class PasswordLockService:
@@ -26,6 +33,11 @@ class PasswordLockService:
     On first launch, user sets a master password.
     On subsequent launches, this password is required to access the database.
     The password is used to derive an encryption key that encrypts the database.
+    
+    Workflow:
+    - First launch: User creates password -> database gets encrypted
+    - Subsequent launches: User enters password -> database gets decrypted
+    - On lock: database gets re-encrypted
     """
     
     def __init__(
@@ -48,6 +60,7 @@ class PasswordLockService:
         self._is_unlocked: bool = False
         self._salt: Optional[bytes] = None
         self._password_hash: Optional[str] = None
+        self._db_service: Optional[DatabaseService] = None
     
     def _ensure_config_dir(self) -> None:
         """Ensure config directory exists."""
@@ -67,6 +80,47 @@ class PasswordLockService:
         with open(CONFIG_FILE, 'w') as f:
             json.dump(config, f, indent=2)
     
+    def _init_database_service(self) -> DatabaseService:
+        """Get or create the database service with encryption wired up."""
+        if self._db_service is None:
+            from .database import get_database_service
+            self._db_service = get_database_service()
+            # Wire encryption service into database service
+            self._db_service.encryption_service = self.encryption
+        return self._db_service
+    
+    def _decrypt_database(self) -> bool:
+        """
+        Decrypt the encrypted database to working .db file.
+        
+        Returns:
+            True if successful or no encrypted file exists (unencrypted state), False on error
+        """
+        encrypted_file = get_encrypted_db_file()
+        if not encrypted_file.exists():
+            # No encrypted file - database is already in plaintext
+            return True
+        
+        db_service = self._init_database_service()
+        return db_service.decrypt_to_db()
+    
+    def _encrypt_database(self) -> bool:
+        """
+        Encrypt the working .db file to encrypted backup and remove plaintext.
+        
+        Returns:
+            True if successful or no database file exists, False on error
+        """
+        db_service = self._init_database_service()
+        
+        # Check if decrypted database exists
+        db_path = db_service.get_database_file_path()
+        if not db_path or not db_path.exists():
+            # No plaintext database to encrypt
+            return True
+        
+        return db_service.encrypt_from_db()
+    
     def is_first_launch(self) -> bool:
         """
         Check if this is a first launch (no password set).
@@ -84,6 +138,15 @@ class PasswordLockService:
     def get_salt(self) -> Optional[bytes]:
         """Get the current salt."""
         return self._salt
+    
+    def is_database_encrypted(self) -> bool:
+        """
+        Check if the database is currently encrypted.
+        
+        Returns:
+            True if .enc file exists and .db does not, False otherwise
+        """
+        return get_encrypted_db_file().exists() and not get_default_db_file().exists()
     
     def setup_new_password(self, password: str) -> Tuple[bool, str]:
         """
@@ -119,6 +182,14 @@ class PasswordLockService:
         
         self._salt = salt
         self._password_hash = password_hash
+        
+        # If there's an existing unencrypted database, encrypt it now
+        if get_default_db_file().exists():
+            success = self._encrypt_database()
+            if not success:
+                # Continue anyway - database encryption is best effort
+                pass
+        
         self._is_unlocked = True
         
         return True, ""
@@ -153,12 +224,23 @@ class PasswordLockService:
         self._salt = salt
         self._password_hash = password_hash
         self.encryption.initialize_with_password(password, salt)
+        
+        # Decrypt database to working .db file
+        success = self._decrypt_database()
+        if not success:
+            self._is_unlocked = False
+            return False, "Failed to decrypt database"
+        
         self._is_unlocked = True
         
         return True, ""
     
     def lock(self) -> None:
         """Lock the app (require password to unlock again)."""
+        if self._is_unlocked and self.is_database_encrypted():
+            # Re-encrypt database before locking
+            self._encrypt_database()
+        
         self._is_unlocked = False
         self.encryption._fernet = None
         self.encryption._derived_key = None

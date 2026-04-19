@@ -19,6 +19,7 @@ from ..schemas.session import (
 )
 from ..services.database import get_database_service
 from ..services.session import SessionService
+from ..services.summary import SummaryService
 from ..services.jwt import jwt_service
 
 
@@ -50,6 +51,11 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(secu
 def get_session_service() -> SessionService:
     """Dependency to get session service."""
     return SessionService()
+
+
+def get_summary_service() -> SummaryService:
+    """Dependency to get summary service."""
+    return SummaryService()
 
 
 def session_to_response(session) -> SessionResponse:
@@ -247,6 +253,35 @@ async def end_session(
         state=session.state,
         message="Session ended successfully"
     )
+
+
+@router.post("/{session_id}/summarize", response_model=SessionResponse)
+async def generate_summary(
+    session_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+    session_service: SessionService = Depends(get_session_service),
+    summary_service: SummaryService = Depends(get_summary_service)
+) -> SessionResponse:
+    """
+    Generate an AI-powered summary for a session.
+    
+    Analyzes the session's messages and creates a summary
+    that is stored with the session.
+    """
+    # Generate summary using the summary service
+    generated_summary = summary_service.generate_and_store_summary(db, session_id, user_id)
+    
+    if generated_summary is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+    
+    # Get updated session
+    session = session_service.get_session(db, session_id, user_id)
+    
+    return session_to_response(session)
 
 
 @router.get("/{session_id}/state", response_model=SessionStateResponse)

@@ -1,177 +1,80 @@
 {
   "milestone": "polish",
-  "round": 2,
+  "round": 3,
   "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
       "command": "npm run test",
       "exitCode": 0,
-      "observation": "246 tests passed across 25 test files. All unit tests for components, stores, validators, and pages pass. Some stderr warnings about React Router future flags and unwrapped act() in Settings tests, but all assertions pass."
+      "observation": "318 tests passed in 30 test files. All unit tests pass."
     },
     "typecheck": {
       "passed": true,
-      "command": "tsc --noEmit",
+      "command": "npx tsc --noEmit",
       "exitCode": 0,
       "observation": "TypeScript compilation clean with no errors."
     },
     "lint": {
       "passed": true,
-      "command": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+      "command": "npx eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
       "exitCode": 0,
       "observation": "ESLint clean with no warnings or errors."
     }
   },
-  "priorRoundSummary": {
-    "round": 1,
-    "status": "fail",
-    "failedFeatures": ["polish-model-selection", "polish-responsive"],
-    "fixFeatures": ["fix-model-selection-types", "fix-responsive-aria-hidden"]
-  },
   "reviewsSummary": {
-    "total": 2,
-    "passed": 2,
+    "total": 10,
+    "passed": 10,
     "failed": 0,
     "failedFeatures": []
   },
-  "fixReviewResults": [
+  "reviewHistory": [
     {
-      "featureId": "fix-model-selection-types",
-      "commitId": "d221750",
-      "status": "pass",
-      "summary": "Blocking type mismatch fully resolved. Frontend SettingsResponse interface now matches backend fields exactly (recommendedModel, recommendedModelAlt, recommendedTier, recommendedTierDescription). Non-blocking model validation issue also addressed — PUT /api/settings now validates selected model exists in installed Ollama models list with graceful offline fallback. All tests pass (246 frontend + 24 backend settings)."
+      "round": 1,
+      "failedFeatures": ["polish-model-selection", "polish-responsive"],
+      "fixFeatures": ["fix-model-selection-types", "fix-responsive-aria-hidden"]
     },
     {
-      "featureId": "fix-responsive-aria-hidden",
-      "commitId": "db02c87",
-      "status": "pass",
-      "summary": "Blocking accessibility regression fully resolved. Removed aria-hidden={isMobile} prop from Navigation component in Layout.tsx. The prop was being silently dropped by React since Navigation's interface doesn't include it, but removing it eliminates misleading code. Navigation already has proper ARIA semantics. All validators pass."
+      "round": 2,
+      "fixReviewResults": [
+        {
+          "featureId": "fix-model-selection-types",
+          "commitId": "d221750",
+          "status": "pass"
+        },
+        {
+          "featureId": "fix-responsive-aria-hidden",
+          "commitId": "db02c87",
+          "status": "pass"
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "newFeatureReviewed": {
+        "featureId": "ui-error-handling",
+        "commitId": "78875cc",
+        "status": "pass"
+      }
     }
   ],
   "blockingIssues": [],
   "nonBlockingIssues": [
     {
-      "featureId": "polish-model-selection",
-      "source": "fix-model-selection-types review",
-      "description": "The route-level SettingsResponse interface in backend/routes/settings.ts duplicates the SystemInfo interface from backend/services/settings.ts. Risk of drift if someone adds a field to one but not the other."
-    },
-    {
-      "featureId": "polish-accessibility",
-      "source": "round 1 review (still applicable)",
-      "description": "SkipLink.css uses :focus instead of :focus-visible for the skip link reveal, inconsistent with the project's :focus-visible pattern."
-    },
-    {
-      "featureId": "polish-accessibility",
-      "source": "round 1 review (still applicable)",
-      "description": "useFocusManagement hook adds blur event listeners without useEffect cleanup, potential minor memory concern if component unmounts before blur fires."
-    },
-    {
-      "featureId": "polish-responsive",
-      "source": "round 1 review (still applicable)",
-      "description": "Dead code: 'app-layout--mobile' class added in JSX but no CSS rules target it anywhere in the codebase."
-    },
-    {
-      "featureId": "polish-responsive",
-      "source": "round 1 review (still applicable)",
-      "description": "Tablet breakpoint auto-collapses navigation for all tablet sizes (768-1199px), including 1024-1199px where the 200px sidebar could accommodate text labels."
-    },
-    {
-      "featureId": "polish-responsive",
-      "source": "round 1 review (still applicable)",
-      "description": "Resize event handlers fire synchronously on every resize event with no throttling or debouncing, could cause excessive re-renders during window drag-resizing."
-    },
-    {
-      "featureId": "polish-encryption-verification",
-      "source": "round 1 review (still applicable)",
-      "description": "getRawProfileData() uses row?.encrypted_data || null which returns null for both missing row and empty string — slightly ambiguous behavior."
-    },
-    {
-      "featureId": "polish-encryption-verification",
-      "source": "round 1 review (still applicable)",
-      "description": "Test isolation in 'wrong encryption key' test creates a second DatabaseService on the same file path, deviates from one-DB-per-test pattern."
-    },
-    {
-      "featureId": "polish-cross-flow-complete",
-      "source": "round 1 review (still applicable)",
-      "description": "Inconsistent clearAllData helper error handling: full-journey.spec.ts throws on fetch failure, but voice-session.spec.ts and offline-mode.spec.ts silently ignore errors."
-    },
-    {
-      "featureId": "polish-cross-flow-complete",
-      "source": "round 1 review (still applicable)",
-      "description": "Hardcoded waitForTimeout sleeps (8000ms, 1000ms) are brittle; prefer waitFor assertions on specific UI states."
-    },
-    {
-      "featureId": "polish-cross-flow-complete",
-      "source": "round 1 review (still applicable)",
-      "description": "Playwright config lacks webServer configuration — services must be started manually before running e2e tests."
-    },
-    {
-      "featureId": "polish-cross-flow-complete",
-      "source": "round 1 review (still applicable)",
-      "description": "Repetitive profile creation boilerplate (~10 lines) copy-pasted in every test file."
-    },
-    {
-      "featureId": "export-route",
-      "source": "fix-model-selection-types review (discovered)",
-      "description": "Pre-existing database isolation issue in backend/routes/export.test.ts — profile data from other tests leaks, causing test failures. Test infrastructure issue, not a production bug."
+      "featureId": "ui-error-handling",
+      "source": "round 3 review",
+      "description": "Network error classification logic (_is_network_error_message, _classify_network_error) is duplicated verbatim in 3 screens (login_screen.py, register_screen.py, session_page.py). Should be refactored into a shared utility in error_components.py."
     }
   ],
   "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "AGENTS.md",
-      "suggestion": "Document that shared TypeScript types (e.g., SettingsResponse) between frontend and backend must be kept in sync. Either use a shared types file or establish a convention for API contract validation. The polish-model-selection review found a blocking bug caused by frontend/backend type mismatch.",
-      "evidence": "polish-model-selection review found frontend SettingsResponse interface in settingsApi.ts doesn't match backend's anonymous SettingsResponse in settings.ts, causing 'undefined' to display in UI.",
-      "isSystemic": true
-    },
-    {
-      "target": "AGENTS.md",
-      "suggestion": "Add convention: use :focus-visible (not :focus) for all visible focus states. The polish-accessibility review found SkipLink uses :focus instead of :focus-visible, which is inconsistent with the project's established pattern in buttons, nav links, and toggles.",
-      "evidence": "polish-accessibility review flagged SkipLink.css using :focus instead of :focus-visible. All other focus states in the project use :focus-visible.",
-      "isSystemic": true
-    },
-    {
-      "target": "AGENTS.md",
-      "suggestion": "Never add aria-hidden to primary navigation elements responsive breakpoints. When implementing responsive layouts, navigation must remain accessible to screen readers at all viewport sizes.",
-      "evidence": "polish-responsive added aria-hidden={isMobile} to Navigation component, making mobile bottom nav invisible to screen readers — directly conflicting with polish-accessibility's ARIA compliance work.",
-      "isSystemic": true
-    },
-    {
-      "target": "AGENTS.md",
-      "suggestion": "Document the project's responsive design pattern: breakpoint logic should live in Layout.tsx and be passed down as props. Breakpoint values (768, 1199) should be centralized and not duplicated as magic numbers across CSS and JS.",
-      "evidence": "polish-responsive review found breakpoint constants hardcoded in both Layout.tsx JS (TABLET_MIN = 768) and CSS (@media queries) separately. No shared constants file exists.",
-      "isSystemic": false
-    },
-    {
-      "target": "skills/frontend-worker",
-      "suggestion": "Update skill to include 'Common Selectors' documentation: key ARIA labels, button text, and input labels used across the app. Examples: 'Begin Journey' button, 'Begin Meditation' button, textbox label 'Type your message to Marcus', nav link labels 'Meditation', 'History', 'Profile', 'Settings', 'Home'.",
-      "evidence": "polish-cross-flow-complete review found workers spending time figuring out selector names. Settings 'Clear All Data' button lacks aria-label, causing test selector workarounds.",
-      "isSystemic": true
-    },
-    {
-      "target": "services.yaml",
-      "suggestion": "Consider adding Playwright webServer configuration or documenting manual service startup requirement clearly. The e2e tests currently require the backend (:3100) and frontend (:3101) to be started manually before running.",
-      "evidence": "polish-cross-flow-complete review noted playwright.config.ts lacks webServer block despite worker attempting to add one. services.yaml fully documents both services but tests don't leverage them.",
+      "suggestion": "Add convention: shared error classification utilities should be placed in dedicated modules (e.g., error_utils.py) rather than duplicated across screens. When adding error handling to multiple screens, extract common patterns into reusable utilities.",
+      "evidence": "ui-error-handling review found _is_network_error_message and _classify_network_error duplicated across 3 screens verbatim.",
       "isSystemic": false
     }
   ],
-  "rejectedObservations": [
-    {
-      "observation": "Backend-worker skill file not found at expected path",
-      "reason": "The skill is documented in AGENTS.md and backend-worker features have been successfully completed. This is an artifact issue, not a guidance gap."
-    },
-    {
-      "observation": "init.sh script undocumented",
-      "reason": "init.sh is a simple environment setup script; documenting it in AGENTS.md would be low-value given it's a standard npm install + database init pattern."
-    },
-    {
-      "observation": "Layout CSS rules in LegalDisclaimer.css (minor scope concern)",
-      "reason": "The CSS rules are component-specific layout adjustments for the footer placement. Moving them to Layout.css would create coupling in the other direction. The current approach is self-contained."
-    },
-    {
-      "observation": "Frontend Settings.tsx has no component unit tests",
-      "reason": "The feature added comprehensive backend tests. Frontend page component testing is outside the scope of a backend-focused worker. This would be a good enhancement but is not a convention gap."
-    }
-  ],
-  "previousRound": ".factory/validation/polish/scrutiny/synthesis.json (round 1)"
+  "rejectedObservations": [],
+  "previousRound": ".factory/validation/polish/scrutiny/synthesis.json (round 2)"
 }

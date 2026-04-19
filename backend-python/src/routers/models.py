@@ -4,6 +4,7 @@ Models router for FastAPI.
 Handles model listing, downloading, and switching.
 """
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -23,6 +24,7 @@ from ..services.model_management import get_model_management_service
 from ..models.settings import Settings
 
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/models", tags=["models"])
 security = HTTPBearer()
 

@@ -304,14 +304,14 @@ async def _stream_llm_response(
     )
     
     if user_message is None:
-        yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'error': 'Session not found'})}\n\n"
         return
     
     # Get session with messages to build conversation context
     session = session_service.get_session_with_messages(db, session_id, user_id)
     
     if session is None:
-        yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'error': 'Session not found'})}\n\n"
         return
     
     # Build conversation messages using PersonaService

@@ -37,7 +37,7 @@ commands:
   dev:backend: |
     cd /Users/stefano/repos/open-marcus/backend-python
     source venv/bin/activate
-    uvicorn src.main:app --reload --port 8000
+    uvicorn src.api:app --reload --port 8000
   build:mac: |
     cd /Users/stefano/repos/open-marcus/backend-python
     source venv/bin/activate
@@ -58,7 +58,7 @@ services:
     start: |
       cd /Users/stefano/repos/open-marcus/backend-python
       source venv/bin/activate
-      uvicorn src.main:app --reload --port 8000
+      uvicorn src.api:app --reload --port 8000
     stop: lsof -ti :8000 | xargs kill 2>/dev/null || true
     healthcheck: curl -sf http://localhost:8000/health || echo "Health check placeholder"
     port: 8000

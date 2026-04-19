@@ -98,20 +98,39 @@ For this milestone (foundation):
 
 ### Isolation Rules
 - Flet app path: /Users/stefano/repos/open-marcus/backend-python/src/main.py
-- Backend API: http://localhost:8000
-- DO NOT modify production code to work around import issues
+- Backend API: http://localhost:8000 (ensure this is running first with `uvicorn src.api:app --reload --port 8000`)
+- DO NOT modify production code to work around issues
 
 ### Critical Issue
-**The Flet app cannot launch due to an import structure bug.**
+**The Flet app crashes on launch due to `ft.icons` vs `ft.Icons` API change.**
 
 Error:
 ```
-ImportError: attempted relative import beyond top-level package
+AttributeError: module 'flet' has no attribute 'icons'
 ```
-Location: `screens/login_screen.py` line 8
 
-Root cause: `main.py` imports `from screens.login_screen import` but screens use `from ..services.api_client` relative imports. When Python imports screens via PYTHONPATH, it doesn't recognize the package hierarchy needed for relative imports.
+Location: All screen files use `ft.icons.X` but Flet 0.28.3 uses `ft.Icons.X` (capital I).
+
+Files affected:
+- screens/login_screen.py: `ft.icons.MOOD`
+- screens/lock_screen.py: `ft.icons.LOCK`
+- screens/home_page.py: `ft.icons.HISTORY`, `ft.icons.SETTINGS`, `ft.icons.PERSON`, `ft.icons.PLAY_ARROW`
+- screens/session_page.py: `ft.icons.ARROW_BACK`, `ft.icons.INFO_OUTLINE`, `ft.icons.SEND`
+- screens/history_page.py: `ft.icons.ARROW_BACK`, `ft.icons.SCHEDULE`, `ft.icons.CALENDAR_TODAY`, `ft.icons.CHEVRON_RIGHT`
+- screens/settings_page.py: `ft.icons.ARROW_BACK`, `ft.icons.VOLUME_UP`, `ft.icons.MIC`, `ft.icons.PSYCHOLOGY`, `ft.icons.INFO_OUTLINE`, `ft.icons.FOLDER`, `ft.icons.DOWNLOAD`, `ft.icons.DELETE`
 
 Impact: VAL-AUTH-006, VAL-UI-001, VAL-UI-002 cannot be tested.
 
-Quick fix (NOT applied per instructions): Change main.py imports from `from screens.xxx` to `from src.screens.xxx`.
+### Prior Issue (FIXED)
+The prior round's ImportError (`ft.colors`) was fixed by `fix-flet-colors-api`. However, the same issue with `ft.icons` was not addressed in that fix.
+
+### Running the App
+To test manually:
+```bash
+cd /Users/stefano/repos/open-marcus/backend-python
+source venv/bin/activate
+# Start backend API first (in another terminal)
+uvicorn src.api:app --reload --port 8000
+# Then run Flet app
+PYTHONPATH=. flet run src/main.py -p 8750
+```

@@ -1,6 +1,6 @@
 {
   "milestone": "foundation",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "assertionsSummary": {
     "total": 8,
@@ -18,29 +18,29 @@
   "failedAssertions": [
     {
       "id": "VAL-AUTH-006",
-      "reason": "Flet app cannot launch due to ImportError: attempted relative import beyond top-level package at screens/login_screen.py line 8. App password lock (lock screen) cannot be tested."
+      "reason": "Flet app crashes on launch with AttributeError: module 'flet' has no attribute 'icons'. All screens use ft.icons.X but Flet 0.28.3 API requires ft.Icons.X (capital I). Lock screen cannot display."
     },
     {
       "id": "VAL-UI-001",
-      "reason": "Flet app cannot launch due to ImportError. App launch cannot be tested."
+      "reason": "Flet app crashes on launch with AttributeError: module 'flet' has no attribute 'icons'. App cannot launch."
     },
     {
       "id": "VAL-UI-002",
-      "reason": "Flet app cannot launch due to ImportError. Navigation between screens cannot be tested."
+      "reason": "Flet app crashes on launch with AttributeError: module 'flet' has no attribute 'icons'. Navigation between screens cannot be tested."
     }
   ],
   "blockedAssertions": [],
   "appliedUpdates": [
     {
       "target": "user-testing.md",
-      "description": "Documented that Flet app has import bug preventing launch. Backend API works correctly on port 8000.",
+      "description": "Updated guidance: The Flet app now crashes on launch due to ft.icons vs ft.Icons API change in Flet 0.28.3. Prior ImportError (ft.colors) was fixed but ft.icons was not addressed.",
       "source": "setup"
     },
     {
       "target": "services.yaml",
-      "description": "Backend API confirmed running on port 8000 with health check passing. Added missing updated_at column to users table in database.",
+      "description": "Fixed backend-api start command: changed 'uvicorn src.main:app' to 'uvicorn src.api:app' since FastAPI app is in api.py not main.py. Backend API now starts correctly.",
       "source": "setup"
     }
   ],
-  "previousRound": null
+  "previousRound": ".factory/validation/foundation/user-testing/synthesis.json"
 }

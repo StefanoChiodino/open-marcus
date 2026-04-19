@@ -5,9 +5,9 @@
     "VAL-AUTH-003": { "status": "passed", "validatedAt": "2026-04-19T00:00:00Z", "evidence": "Invalid password returned 401 error" },
     "VAL-AUTH-004": { "status": "passed", "validatedAt": "2026-04-19T00:00:00Z", "evidence": "Protected route /api/auth/me returned 401 without token, 200 with valid token" },
     "VAL-AUTH-005": { "status": "passed", "validatedAt": "2026-04-19T00:00:00Z", "evidence": "Database query confirmed password_hash contains argon2id hash, not plain text" },
-    "VAL-AUTH-006": { "status": "failed", "validatedAt": "2026-04-19T00:00:00Z", "blockingReason": "Flet app cannot launch due to ImportError in screens/login_screen.py line 8: attempted relative import beyond top-level package" },
-    "VAL-UI-001": { "status": "failed", "validatedAt": "2026-04-19T00:00:00Z", "blockingReason": "Flet app cannot launch due to ImportError in screens/login_screen.py line 8" },
-    "VAL-UI-002": { "status": "failed", "validatedAt": "2026-04-19T00:00:00Z", "blockingReason": "Flet app cannot launch due to ImportError in screens/login_screen.py line 8" }
+    "VAL-AUTH-006": { "status": "failed", "validatedAt": "2026-04-19T00:00:00Z", "blockingReason": "Flet app cannot launch due to AttributeError: module 'flet' has no attribute 'icons'. Code uses ft.icons.X but Flet 0.28.3 uses ft.Icons.X (capital I). App crashes before lock screen can display." },
+    "VAL-UI-001": { "status": "failed", "validatedAt": "2026-04-19T00:00:00Z", "blockingReason": "Flet app cannot launch due to AttributeError: module 'flet' has no attribute 'icons'. Code uses ft.icons.X but Flet 0.28.3 uses ft.Icons.X (capital I). App crashes on startup." },
+    "VAL-UI-002": { "status": "failed", "validatedAt": "2026-04-19T00:00:00Z", "blockingReason": "Flet app cannot launch due to AttributeError: module 'flet' has no attribute 'icons'. Code uses ft.icons.X but Flet 0.28.3 uses ft.Icons.X (capital I). Navigation cannot be tested." }
   },
   "updatedAt": "2026-04-19T00:00:00Z"
 }

@@ -5,12 +5,15 @@ Display past meditation sessions.
 
 import flet as ft
 
+from src.screens.navigation import NavigationSidebar
+
 
 class HistoryPage:
     """History page showing list of past sessions."""
 
     def __init__(self, app):
         self.app = app
+        self.navigation = NavigationSidebar(app)
         self.sessions = [
             {
                 "id": "1",
@@ -33,35 +36,43 @@ class HistoryPage:
         return ft.View(
             route="/history",
             controls=[
-                ft.AppBar(
-                    title=ft.Text("Session History"),
-                    center_title=True,
-                    leading=ft.IconButton(
-                        icon=ft.Icons.ARROW_BACK,
-                        on_click=lambda _: self.app.navigate_to("/home"),
-                    ),
-                ),
-                ft.Container(
+                ft.Row(
+                    controls=[
+                        self.navigation.build("/history"),
+                        ft.VerticalDivider(width=1),
+                        ft.Container(
+                            expand=True,
+                            content=ft.Column(
+                                controls=[
+                                    ft.Container(
+                                        padding=ft.padding.all(24),
+                                        content=ft.Column(
+                                            controls=[
+                                                ft.Text(
+                                                    "Your Meditation Journey",
+                                                    size=28,
+                                                    weight=ft.FontWeight.BOLD,
+                                                ),
+                                                ft.Container(height=8),
+                                                ft.Text(
+                                                    f"{len(self.sessions)} sessions with Marcus Aurelius",
+                                                    size=14,
+                                                    color=ft.Colors.GREY_600,
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    ft.Container(
+                                        expand=True,
+                                        padding=ft.padding.symmetric(horizontal=24),
+                                        content=self.build_sessions_list(),
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ],
+                    spacing=0,
                     expand=True,
-                    padding=ft.padding.all(24),
-                    content=ft.Column(
-                        controls=[
-                            ft.Text(
-                                "Your Meditation Journey",
-                                size=28,
-                                weight=ft.FontWeight.BOLD,
-                            ),
-                            ft.Container(height=8),
-                            ft.Text(
-                                f"{len(self.sessions)} sessions with Marcus Aurelius",
-                                size=14,
-                                color=ft.Colors.GREY_600,
-                            ),
-                            ft.Container(height=24),
-                            self.build_sessions_list(),
-                        ],
-                        scroll=ft.ScrollMode.AUTO,
-                    ),
                 ),
             ],
         )

@@ -6,6 +6,7 @@ Profile editing for existing users.
 import flet as ft
 
 from src.services.api_client import api_client
+from src.screens.navigation import NavigationSidebar
 
 
 class ProfilePage:
@@ -13,6 +14,7 @@ class ProfilePage:
 
     def __init__(self, app):
         self.app = app
+        self.navigation = NavigationSidebar(app)
         self.profile = None
         self.name_field = ft.TextField(
             label="Your Name",
@@ -60,18 +62,18 @@ class ProfilePage:
         view = ft.View(
             route="/profile",
             controls=[
-                ft.AppBar(
-                    title=ft.Text("Edit Profile"),
-                    center_title=True,
-                    leading=ft.IconButton(
-                        icon=ft.Icons.ARROW_BACK,
-                        on_click=lambda _: self.app.navigate_to("/home"),
-                    ),
-                ),
-                ft.Container(
+                ft.Row(
+                    controls=[
+                        self.navigation.build("/profile"),
+                        ft.VerticalDivider(width=1),
+                        ft.Container(
+                            expand=True,
+                            padding=ft.padding.all(24),
+                            content=self.content_column,
+                        ),
+                    ],
+                    spacing=0,
                     expand=True,
-                    padding=ft.padding.all(24),
-                    content=self.content_column,
                 ),
             ],
         )

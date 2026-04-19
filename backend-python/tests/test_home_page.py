@@ -84,13 +84,18 @@ class TestHomePageStructure:
         home_page = HomePage(mock_app)
         view = home_page.build()
         
-        # Check that the view has controls (AppBar, Container)
-        assert len(view.controls) >= 2
+        # Check that the view has controls
+        # The structure is: Row(NavigationRail, VerticalDivider, Container)
+        assert len(view.controls) >= 1
         
-        # The second control should be a Container with the content
-        container = view.controls[1]
-        assert isinstance(container, ft.Container)
-        assert isinstance(container.content, ft.Column)
+        # The first control is a Row with the navigation and content
+        nav_row = view.controls[0]
+        assert isinstance(nav_row, ft.Row)
+        
+        # Find the Container (second control in row) which holds the content
+        content_container = nav_row.controls[2]
+        assert isinstance(content_container, ft.Container)
+        assert isinstance(content_container.content, ft.Column)
 
 
 class TestHomePageNavigation:
@@ -131,7 +136,7 @@ class TestHomePageNavigation:
 
     @patch('asyncio.create_task')
     def test_navigate_to_history(self, mock_create_task):
-        """Test History button navigates to /history."""
+        """Test NavigationRail can navigate to /history."""
         from src.screens.home_page import HomePage
         
         mock_app = MagicMock()
@@ -139,24 +144,31 @@ class TestHomePageNavigation:
         mock_app.navigate_to = MagicMock()
         
         home_page = HomePage(mock_app)
-        home_page.build()  # First build to set up content_column
-        home_page.update_content()
+        home_page.build()  # Build to set up navigation
         
-        # Find History button in the AppBar
+        # Find the NavigationRail in the view
         view = home_page.build()
-        appbar = view.controls[0]
         
-        for control in appbar.actions:
-            if isinstance(control, ft.IconButton) and control.icon == ft.Icons.HISTORY:
-                control.on_click(None)
-                mock_app.navigate_to.assert_called_with("/history")
-                return
+        # The first control is a Row containing NavigationRail and content
+        nav_row = view.controls[0]
+        assert isinstance(nav_row, ft.Row)
         
-        pytest.fail("History button not found in AppBar")
+        # First element in the row is the NavigationRail
+        nav_rail = nav_row.controls[0]
+        assert isinstance(nav_rail, ft.NavigationRail)
+        
+        # Simulate selecting History (index 1)
+        # Create a mock event with selected_index
+        mock_event = MagicMock()
+        mock_event.control = nav_rail
+        mock_event.control.selected_index = 1
+        nav_rail.on_change(mock_event)
+        
+        mock_app.navigate_to.assert_called_with("/history")
 
     @patch('asyncio.create_task')
     def test_navigate_to_settings(self, mock_create_task):
-        """Test Settings button navigates to /settings."""
+        """Test NavigationRail can navigate to /settings."""
         from src.screens.home_page import HomePage
         
         mock_app = MagicMock()
@@ -165,20 +177,21 @@ class TestHomePageNavigation:
         
         home_page = HomePage(mock_app)
         home_page.build()
-        home_page.update_content()
         
-        # Find Settings button
+        # Find NavigationRail
         view = home_page.build()
-        appbar = view.controls[0]
+        nav_row = view.controls[0]
+        nav_rail = nav_row.controls[0]
+        assert isinstance(nav_rail, ft.NavigationRail)
         
-        for control in appbar.actions:
-            if isinstance(control, ft.IconButton) and control.icon == ft.Icons.SETTINGS:
-                control.on_click(None)
-                mock_app.navigate_to.assert_called_with("/settings")
-                return
+        # Simulate selecting Settings (index 2)
+        mock_event = MagicMock()
+        mock_event.control = nav_rail
+        mock_event.control.selected_index = 2
+        nav_rail.on_change(mock_event)
         
-        pytest.fail("Settings button not found in AppBar")
-
+        mock_app.navigate_to.assert_called_with("/settings")
+    
     @patch('asyncio.create_task')
     def test_navigate_to_profile_edit(self, mock_create_task):
         """Test Edit Profile button navigates to /profile."""

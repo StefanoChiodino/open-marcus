@@ -5,12 +5,15 @@ Meditation chat interface with Marcus Aurelius.
 
 import flet as ft
 
+from src.screens.navigation import NavigationSidebar
+
 
 class SessionPage:
     """Session page with chat interface."""
 
     def __init__(self, app):
         self.app = app
+        self.navigation = NavigationSidebar(app)
         self.messages = []
         self.message_input = ft.TextField(
             hint_text="Share your thoughts...",
@@ -27,97 +30,119 @@ class SessionPage:
         return ft.View(
             route="/session",
             controls=[
-                ft.AppBar(
-                    title=ft.Text("Meditation Session"),
-                    center_title=True,
-                    leading=ft.IconButton(
-                        icon=ft.Icons.ARROW_BACK,
-                        on_click=lambda _: self.app.navigate_to("/home"),
-                    ),
-                    actions=[
-                        ft.IconButton(
-                            icon=ft.Icons.INFO_OUTLINE,
-                            on_click=self.show_session_info,
-                        ),
-                    ],
-                ),
-                ft.Container(
-                    expand=True,
-                    padding=ft.padding.all(20),
-                    content=ft.Column(
-                        controls=[
-                            # Marcus intro card
-                            ft.Container(
-                                content=ft.Column(
-                                    controls=[
-                                        ft.Row(
+                ft.Row(
+                    controls=[
+                        self.navigation.build("/session"),
+                        ft.VerticalDivider(width=1),
+                        ft.Container(
+                            expand=True,
+                            content=ft.Column(
+                                controls=[
+                                    ft.Container(
+                                        padding=ft.padding.all(16),
+                                        content=ft.Row(
                                             controls=[
-                                                ft.CircleAvatar(
-                                                    content=ft.Text(
-                                                        "M",
-                                                        size=20,
-                                                        color=ft.Colors.WHITE,
-                                                    ),
-                                                    bgcolor=ft.Colors.DEEP_PURPLE,
-                                                    radius=20,
+                                                ft.IconButton(
+                                                    icon=ft.Icons.ARROW_BACK,
+                                                    on_click=lambda _: self.app.navigate_to("/home"),
                                                 ),
-                                                ft.Container(width=12),
-                                                ft.Column(
-                                                    controls=[
-                                                        ft.Text(
-                                                            "Marcus Aurelius",
-                                                            size=16,
-                                                            weight=ft.FontWeight.BOLD,
-                                                        ),
-                                                        ft.Text(
-                                                            "Roman Emperor & Stoic Philosopher",
-                                                            size=12,
-                                                            color=ft.Colors.GREY_600,
-                                                        ),
-                                                    ],
+                                                ft.Text(
+                                                    "Meditation Session",
+                                                    size=18,
+                                                    weight=ft.FontWeight.BOLD,
+                                                ),
+                                                ft.Container(expand=True),
+                                                ft.IconButton(
+                                                    icon=ft.Icons.INFO_OUTLINE,
+                                                    on_click=self.show_session_info,
                                                 ),
                                             ],
                                         ),
-                                        ft.Container(height=12),
-                                        ft.Text(
-                                            "I am here to guide your meditation. Share what is on your mind, and we shall explore it together through the lens of Stoic wisdom.",
-                                            size=14,
-                                            color=ft.Colors.GREY_700,
-                                            italic=True,
+                                    ),
+                                    ft.Container(
+                                        expand=True,
+                                        padding=ft.padding.all(20),
+                                        content=ft.Column(
+                                            controls=[
+                                                # Marcus intro card
+                                                ft.Container(
+                                                    content=ft.Column(
+                                                        controls=[
+                                                            ft.Row(
+                                                                controls=[
+                                                                    ft.CircleAvatar(
+                                                                        content=ft.Text(
+                                                                            "M",
+                                                                            size=20,
+                                                                            color=ft.Colors.WHITE,
+                                                                        ),
+                                                                        bgcolor=ft.Colors.DEEP_PURPLE,
+                                                                        radius=20,
+                                                                    ),
+                                                                    ft.Container(width=12),
+                                                                    ft.Column(
+                                                                        controls=[
+                                                                            ft.Text(
+                                                                                "Marcus Aurelius",
+                                                                                size=16,
+                                                                                weight=ft.FontWeight.BOLD,
+                                                                            ),
+                                                                            ft.Text(
+                                                                                "Roman Emperor & Stoic Philosopher",
+                                                                                size=12,
+                                                                                color=ft.Colors.GREY_600,
+                                                                            ),
+                                                                        ],
+                                                                    ),
+                                                                ],
+                                                            ),
+                                                            ft.Container(height=12),
+                                                            ft.Text(
+                                                                "I am here to guide your meditation. Share what is on your mind, and we shall explore it together through the lens of Stoic wisdom.",
+                                                                size=14,
+                                                                color=ft.Colors.GREY_700,
+                                                                italic=True,
+                                                            ),
+                                                        ],
+                                                    ),
+                                                    padding=20,
+                                                    border_radius=12,
+                                                    bgcolor=ft.Colors.SURFACE_VARIANT,
+                                                ),
+                                                ft.Container(height=16),
+                                                # Messages list
+                                                ft.ListView(
+                                                    expand=True,
+                                                    controls=self.build_message_controls(),
+                                                ),
+                                                ft.Container(height=16),
+                                                # Input area
+                                                ft.Container(
+                                                    content=ft.Row(
+                                                        controls=[
+                                                            self.message_input,
+                                                            ft.Container(width=12),
+                                                            ft.IconButton(
+                                                                icon=ft.Icons.SEND,
+                                                                icon_size=28,
+                                                                bgcolor=ft.Colors.DEEP_PURPLE,
+                                                                color=ft.Colors.WHITE,
+                                                                on_click=self.send_message,
+                                                            ),
+                                                        ],
+                                                        alignment=ft.MainAxisAlignment.CENTER,
+                                                    ),
+                                                    padding=ft.padding.only(top=8),
+                                                ),
+                                            ],
                                         ),
-                                    ],
-                                ),
-                                padding=20,
-                                border_radius=12,
-                                bgcolor=ft.Colors.SURFACE_VARIANT,
+                                    ),
+                                ],
                             ),
-                            ft.Container(height=16),
-                            # Messages list
-                            ft.ListView(
-                                expand=True,
-                                controls=self.build_message_controls(),
-                            ),
-                            ft.Container(height=16),
-                            # Input area
-                            ft.Container(
-                                content=ft.Row(
-                                    controls=[
-                                        self.message_input,
-                                        ft.Container(width=12),
-                                        ft.IconButton(
-                                            icon=ft.Icons.SEND,
-                                            icon_size=28,
-                                            bgcolor=ft.Colors.DEEP_PURPLE,
-                                            color=ft.Colors.WHITE,
-                                            on_click=self.send_message,
-                                        ),
-                                    ],
-                                    alignment=ft.MainAxisAlignment.CENTER,
-                                ),
-                                padding=ft.padding.only(top=8),
-                            ),
-                        ],
-                    ),
+                        ),
+                    ],
+                    spacing=0,
+                    expand=True,
                 ),
             ],
         )

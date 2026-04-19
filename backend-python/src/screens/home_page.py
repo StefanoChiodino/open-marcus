@@ -6,6 +6,7 @@ Welcome screen with profile display and session start.
 import flet as ft
 
 from src.services.api_client import api_client
+from src.screens.navigation import NavigationSidebar
 
 
 class HomePage:
@@ -20,6 +21,7 @@ class HomePage:
         self.loading = True
         self.loading_indicator = ft.ProgressRing(visible=True)
         self.content_column = None
+        self.navigation = NavigationSidebar(app)
 
     def build(self) -> ft.View:
         """Build the home view."""
@@ -30,24 +32,24 @@ class HomePage:
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            expand=True,
         )
         
         view = ft.View(
             route="/home",
             controls=[
-                ft.AppBar(
-                    title=ft.Text("OpenMarcus"),
-                    center_title=True,
-                    actions=[
-                        ft.IconButton(icon=ft.Icons.EDIT, on_click=lambda _: self.app.navigate_to("/profile")),
-                        ft.IconButton(icon=ft.Icons.HISTORY, on_click=lambda _: self.app.navigate_to("/history")),
-                        ft.IconButton(icon=ft.Icons.SETTINGS, on_click=lambda _: self.app.navigate_to("/settings")),
+                ft.Row(
+                    controls=[
+                        self.navigation.build("/home"),
+                        ft.VerticalDivider(width=1),
+                        ft.Container(
+                            expand=True,
+                            padding=ft.padding.all(24),
+                            content=self.content_column,
+                        ),
                     ],
-                ),
-                ft.Container(
+                    spacing=0,
                     expand=True,
-                    padding=ft.padding.all(24),
-                    content=self.content_column,
                 ),
             ],
         )

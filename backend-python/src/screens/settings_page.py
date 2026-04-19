@@ -5,12 +5,15 @@ App configuration and preferences.
 
 import flet as ft
 
+from src.screens.navigation import NavigationSidebar
+
 
 class SettingsPage:
     """Settings page with app configuration options."""
 
     def __init__(self, app):
         self.app = app
+        self.navigation = NavigationSidebar(app)
         self.tts_voice = ft.Dropdown(
             label="Text-to-Speech Voice",
             width=400,
@@ -41,154 +44,154 @@ class SettingsPage:
         return ft.View(
             route="/settings",
             controls=[
-                ft.AppBar(
-                    title=ft.Text("Settings"),
-                    center_title=True,
-                    leading=ft.IconButton(
-                        icon=ft.Icons.ARROW_BACK,
-                        on_click=lambda _: self.app.navigate_to("/home"),
-                    ),
-                ),
-                ft.Container(
-                    expand=True,
-                    padding=ft.padding.all(24),
-                    content=ft.ListView(
-                        controls=[
-                            # Header
-                            ft.Text(
-                                "Configuration",
-                                size=28,
-                                weight=ft.FontWeight.BOLD,
-                            ),
-                            ft.Container(height=24),
-                            # TTS Section
-                            self.build_section(
-                                title="Text-to-Speech",
-                                icon=ft.Icons.VOLUME_UP,
+                ft.Row(
+                    controls=[
+                        self.navigation.build("/settings"),
+                        ft.VerticalDivider(width=1),
+                        ft.Container(
+                            expand=True,
+                            padding=ft.padding.all(24),
+                            content=ft.ListView(
                                 controls=[
-                                    self.tts_voice,
-                                ],
-                            ),
-                            ft.Container(height=16),
-                            # STT Section
-                            self.build_section(
-                                title="Speech-to-Text",
-                                icon=ft.Icons.MIC,
-                                controls=[
-                                    self.stt_enabled,
-                                    ft.Container(height=8),
+                                    # Header
                                     ft.Text(
-                                        "Allow voice input for meditation sessions",
-                                        size=12,
-                                        color=ft.Colors.GREY_600,
+                                        "Configuration",
+                                        size=28,
+                                        weight=ft.FontWeight.BOLD,
                                     ),
-                                ],
-                            ),
-                            ft.Container(height=16),
-                            # AI Model Section
-                            self.build_section(
-                                title="AI Model",
-                                icon=ft.Icons.PSYCHOLOGY,
-                                controls=[
-                                    self.ai_model,
-                                    ft.Container(height=8),
-                                    ft.Text(
-                                        "Select the AI model for meditation conversations",
-                                        size=12,
-                                        color=ft.Colors.GREY_600,
-                                    ),
-                                    ft.Container(height=12),
-                                    ft.Container(
-                                        content=ft.Row(
-                                            controls=[
-                                                ft.Icon(
-                                                    ft.Icons.INFO_OUTLINE,
-                                                    size=16,
-                                                    color=ft.Colors.BLUE,
-                                                ),
-                                                ft.Container(width=8),
-                                                ft.Text(
-                                                    "Smaller models use less RAM but may be less nuanced",
-                                                    size=12,
-                                                    color=ft.Colors.GREY_600,
-                                                ),
-                                            ],
-                                        ),
-                                    ),
-                                ],
-                            ),
-                            ft.Container(height=16),
-                            # Data Management Section
-                            self.build_section(
-                                title="Data Management",
-                                icon=ft.Icons.FOLDER,
-                                controls=[
-                                    ft.Row(
+                                    ft.Container(height=24),
+                                    # TTS Section
+                                    self.build_section(
+                                        title="Text-to-Speech",
+                                        icon=ft.Icons.VOLUME_UP,
                                         controls=[
-                                            ft.ElevatedButton(
-                                                "Export Data",
-                                                icon=ft.Icons.DOWNLOAD,
-                                                on_click=self.handle_export,
-                                            ),
-                                            ft.Container(width=12),
-                                            ft.OutlinedButton(
-                                                "Clear All Data",
-                                                icon=ft.Icons.DELETE,
-                                                icon_color=ft.Colors.ERROR,
-                                                on_click=self.handle_clear_data,
+                                            self.tts_voice,
+                                        ],
+                                    ),
+                                    ft.Container(height=16),
+                                    # STT Section
+                                    self.build_section(
+                                        title="Speech-to-Text",
+                                        icon=ft.Icons.MIC,
+                                        controls=[
+                                            self.stt_enabled,
+                                            ft.Container(height=8),
+                                            ft.Text(
+                                                "Allow voice input for meditation sessions",
+                                                size=12,
+                                                color=ft.Colors.GREY_600,
                                             ),
                                         ],
                                     ),
-                                    ft.Container(height=8),
-                                    ft.Text(
-                                        "Export your data for backup or clear all data to start fresh",
-                                        size=12,
-                                        color=ft.Colors.GREY_600,
+                                    ft.Container(height=16),
+                                    # AI Model Section
+                                    self.build_section(
+                                        title="AI Model",
+                                        icon=ft.Icons.PSYCHOLOGY,
+                                        controls=[
+                                            self.ai_model,
+                                            ft.Container(height=8),
+                                            ft.Text(
+                                                "Select the AI model for meditation conversations",
+                                                size=12,
+                                                color=ft.Colors.GREY_600,
+                                            ),
+                                            ft.Container(height=12),
+                                            ft.Container(
+                                                content=ft.Row(
+                                                    controls=[
+                                                        ft.Icon(
+                                                            ft.Icons.INFO_OUTLINE,
+                                                            size=16,
+                                                            color=ft.Colors.BLUE,
+                                                        ),
+                                                        ft.Container(width=8),
+                                                        ft.Text(
+                                                            "Smaller models use less RAM but may be less nuanced",
+                                                            size=12,
+                                                            color=ft.Colors.GREY_600,
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                    ft.Container(height=16),
+                                    # Data Management Section
+                                    self.build_section(
+                                        title="Data Management",
+                                        icon=ft.Icons.FOLDER,
+                                        controls=[
+                                            ft.Row(
+                                                controls=[
+                                                    ft.ElevatedButton(
+                                                        "Export Data",
+                                                        icon=ft.Icons.DOWNLOAD,
+                                                        on_click=self.handle_export,
+                                                    ),
+                                                    ft.Container(width=12),
+                                                    ft.OutlinedButton(
+                                                        "Clear All Data",
+                                                        icon=ft.Icons.DELETE,
+                                                        icon_color=ft.Colors.ERROR,
+                                                        on_click=self.handle_clear_data,
+                                                    ),
+                                                ],
+                                            ),
+                                            ft.Container(height=8),
+                                            ft.Text(
+                                                "Export your data for backup or clear all data to start fresh",
+                                                size=12,
+                                                color=ft.Colors.GREY_600,
+                                            ),
+                                        ],
+                                    ),
+                                    ft.Container(height=32),
+                                    # System Info
+                                    ft.Container(
+                                        content=ft.Column(
+                                            controls=[
+                                                ft.Divider(),
+                                                ft.Container(height=16),
+                                                ft.Row(
+                                                    controls=[
+                                                        ft.Text(
+                                                            "System RAM:",
+                                                            size=14,
+                                                            weight=ft.FontWeight.BOLD,
+                                                        ),
+                                                        ft.Text(
+                                                            "Detecting...",
+                                                            size=14,
+                                                            color=ft.Colors.GREY_600,
+                                                        ),
+                                                    ],
+                                                ),
+                                                ft.Container(height=8),
+                                                ft.Row(
+                                                    controls=[
+                                                        ft.Text(
+                                                            "App Version:",
+                                                            size=14,
+                                                            weight=ft.FontWeight.BOLD,
+                                                        ),
+                                                        ft.Text(
+                                                            "0.1.0",
+                                                            size=14,
+                                                            color=ft.Colors.GREY_600,
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                        alignment=ft.alignment.center,
                                     ),
                                 ],
                             ),
-                            ft.Container(height=32),
-                            # System Info
-                            ft.Container(
-                                content=ft.Column(
-                                    controls=[
-                                        ft.Divider(),
-                                        ft.Container(height=16),
-                                        ft.Row(
-                                            controls=[
-                                                ft.Text(
-                                                    "System RAM:",
-                                                    size=14,
-                                                    weight=ft.FontWeight.BOLD,
-                                                ),
-                                                ft.Text(
-                                                    "Detecting...",
-                                                    size=14,
-                                                    color=ft.Colors.GREY_600,
-                                                ),
-                                            ],
-                                        ),
-                                        ft.Container(height=8),
-                                        ft.Row(
-                                            controls=[
-                                                ft.Text(
-                                                    "App Version:",
-                                                    size=14,
-                                                    weight=ft.FontWeight.BOLD,
-                                                ),
-                                                ft.Text(
-                                                    "0.1.0",
-                                                    size=14,
-                                                    color=ft.Colors.GREY_600,
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                                alignment=ft.alignment.center,
-                            ),
-                        ],
-                    ),
+                        ),
+                    ],
+                    spacing=0,
+                    expand=True,
                 ),
             ],
         )

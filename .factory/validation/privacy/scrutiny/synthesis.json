@@ -1,13 +1,13 @@
 {
   "milestone": "privacy",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
       "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && pytest tests/ -v",
       "exitCode": 0,
-      "output": "361 passed in 14.67s"
+      "output": "362 passed, 58 warnings in 15.10s"
     },
     "typecheck": {
       "passed": true,
@@ -23,34 +23,27 @@
     }
   },
   "reviewsSummary": {
-    "total": 2,
-    "passed": 1,
-    "failed": 1,
-    "failedFeatures": ["privacy-encryption"]
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "failedFeatures": []
   },
-  "blockingIssues": [
-    {
-      "featureId": "privacy-encryption",
-      "severity": "blocking",
-      "description": "change_password() in password_lock.py does NOT re-encrypt the database with the new key. It only updates the config with new salt/password hash, but the .db.enc file remains encrypted with the OLD key. This allows the old password to still decrypt the database after a password change. Fix: decrypt with old key, then re-encrypt with new key.",
-      "file": "backend-python/src/services/password_lock.py",
-      "line": 284
-    }
-  ],
+  "blockingIssues": [],
   "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "AGENTS.md",
       "suggestion": "Specify exact cryptographic choices in Security Model section: PBKDF2-SHA256 with 480k iterations for key derivation, Fernet (AES-128-CBC + HMAC-SHA256) for symmetric encryption. Also document that change_password requires re-encryption of the database.",
-      "evidence": "privacy-encryption review found AGENTS.md only says 'Master password -> argon2 -> database encryption key' but implementation uses PBKDF2 and Fernet. Also, change_password re-encryption requirement is not documented.",
+      "evidence": "privacy-encryption review (round 1) found AGENTS.md only says 'Master password -> argon2 -> database encryption key' but implementation uses PBKDF2 and Fernet. Also, change_password re-encryption requirement is not documented.",
       "isSystemic": false
-    }
-  ],
-  "rejectedObservations": [
+    },
     {
-      "observation": "AGENTS.md Off-Limits section doesn't list analytics prohibition explicitly as convention",
-      "reason": "Ambiguous - the privacy-no-analytics review found AGENTS.md does list 'Do not add any analytics or telemetry' under Off-Limits, so no gap exists"
+      "target": "AGENTS.md",
+      "suggestion": "Add guideline that all password-related features require integration tests that verify end-to-end behavior (e.g., password change test should verify old password fails and new password works).",
+      "evidence": "fix-privacy-change-password review noted the new test would have caught the original bug if it existed during initial implementation. Having this as a convention would help prevent similar issues.",
+      "isSystemic": true
     }
   ],
-  "previousRound": null
+  "rejectedObservations": [],
+  "previousRound": ".factory/validation/privacy/scrutiny/synthesis.json"
 }

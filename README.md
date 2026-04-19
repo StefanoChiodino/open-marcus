@@ -18,17 +18,15 @@ OpenMarcus is a desktop application for mental health journaling and AI-assisted
 
 ```
 open-marcus/
-├── backend-python/          # Python/Flet application
-│   ├── src/
-│   │   ├── main.py         # Flet app entry point
-│   │   ├── api.py          # FastAPI backend
-│   │   ├── screens/       # Flet UI screens
-│   │   ├── services/      # Business logic
-│   │   ├── routers/       # API routes
-│   │   ├── models/        # SQLAlchemy models
-│   │   └── schemas/       # Pydantic schemas
-│   ├── tests/             # Unit tests (380+ passing)
-│   └── venv/              # Python virtual environment
+├── src/                   # Python/Flet application
+│   ├── main.py            # Flet app entry point
+│   ├── api.py             # FastAPI backend
+│   ├── screens/           # Flet UI screens
+│   ├── services/          # Business logic
+│   ├── routers/           # API routes
+│   ├── models/             # SQLAlchemy models
+│   ├── schemas/           # Pydantic schemas
+│   └── tests/             # Unit tests (380+ passing)
 ├── docs/                  # Documentation
 ├── data/                  # Runtime data (encrypted DB, models)
 ├── test-data/             # Test fixtures
@@ -45,7 +43,6 @@ open-marcus/
 ### Installation
 
 ```bash
-cd backend-python
 python3 -m venv venv
 source venv/bin/activate  # macOS/Linux
 # or: venv\Scripts\activate  # Windows
@@ -76,7 +73,6 @@ pip install -r requirements.txt
 ### Running Tests
 
 ```bash
-cd backend-python
 source venv/bin/activate
 pytest
 ```
@@ -95,7 +91,7 @@ ruff check src/
 
 ## Data Storage
 
-All data is stored locally in `backend-python/data/`:
+All data is stored locally in `src/data/`:
 - `openmarcus.db` - Encrypted SQLite database
 - `models/` - Downloaded AI models (GGUF format)
 

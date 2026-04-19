@@ -2,6 +2,8 @@
 Profile model for user profile information.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Optional
 import uuid

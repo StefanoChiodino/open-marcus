@@ -2,6 +2,8 @@
 Message model for chat messages in a session.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 import uuid

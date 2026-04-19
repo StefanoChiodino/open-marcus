@@ -20,6 +20,7 @@ from .psych_update import PsychUpdate
 from .semantic_assertion import SemanticAssertion
 from .settings import Settings
 
+
 __all__ = [
     "Base",
     "User",

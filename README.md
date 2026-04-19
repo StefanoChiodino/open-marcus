@@ -1,6 +1,6 @@
 # OpenMarcus
 
-A private, local-first AI mental health companion built with Python.
+A private, local-first AI mental health companion built with Python/Flet.
 
 ## Overview
 
@@ -18,97 +18,49 @@ OpenMarcus is a desktop application for mental health journaling and AI-assisted
 
 ```
 open-marcus/
-├── src/                   # Python/Flet application
-│   ├── main.py            # Flet app entry point
-│   ├── api.py             # FastAPI backend
-│   ├── screens/           # Flet UI screens
-│   ├── services/          # Business logic
-│   ├── routers/           # API routes
-│   ├── models/             # SQLAlchemy models
-│   ├── schemas/           # Pydantic schemas
-│   └── tests/             # Unit tests (380+ passing)
-├── docs/                  # Documentation
-├── data/                  # Runtime data (encrypted DB, models)
-├── test-data/             # Test fixtures
-└── scripts/              # Utility scripts
+├── main.py              # Flet app entry point
+├── api.py               # FastAPI backend
+├── screens/            # Flet UI screens
+├── services/            # Business logic
+├── routers/             # API routes
+├── models/              # SQLAlchemy models
+├── schemas/             # Pydantic schemas
+├── tests/               # Unit tests (380+ passing)
+├── venv/                # Python virtual environment
+├── docs/                # Documentation
+├── data/                # Runtime data (encrypted DB, models)
+└── scripts/            # Utility scripts
 ```
 
 ## Setup
 
-### Prerequisites
-
-- Python 3.9+
-- At least 8GB RAM (16GB recommended for larger models)
-
-### Installation
-
 ```bash
 python3 -m venv venv
-source venv/bin/activate  # macOS/Linux
-# or: venv\Scripts\activate  # Windows
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### First Run
+## Run
 
-1. Start the backend server:
-   ```bash
-   uvicorn src.api:app --reload --port 8000
-   ```
-
-2. In another terminal, launch the Flet app:
-   ```bash
-   flet run src/main.py
-   ```
-
-### First-Time Setup
-
-1. Create an app password on first launch (protects your data)
-2. Register an account with username/email/password
-3. Complete the onboarding questionnaire
-4. Download your first AI model when prompted
+```bash
+flet run
+```
 
 ## Development
 
-### Running Tests
-
 ```bash
 source venv/bin/activate
-pytest
+pytest      # Run tests
+mypy        # Type check
+ruff check  # Lint
 ```
-
-### Type Checking
-
-```bash
-mypy src/
-```
-
-### Linting
-
-```bash
-ruff check src/
-```
-
-## Data Storage
-
-All data is stored locally in `src/data/`:
-- `openmarcus.db` - Encrypted SQLite database
-- `models/` - Downloaded AI models (GGUF format)
 
 ## Privacy
 
-OpenMarcus is designed with privacy as a core principle:
 - All data encrypted at rest (AES-256 via Fernet)
-- No external network requests for data processing
-- No telemetry, analytics, or crash reporting
+- No telemetry, analytics, or external network requests
 - App password protects access to your data
 - Export/delete all data anytime from settings
-
-## Documentation
-
-See `docs/` for detailed documentation:
-- [Memory Management](./docs/MEMORY-MANAGEMENT.md) - How context and memory work
-- [Stoic Emperor Memory System](./docs/STOIC-EMPEROR-MEMORY.md) - Reference architecture
 
 ## License
 

@@ -6,6 +6,8 @@ Handles intro state and active chat state transitions.
 
 import flet as ft
 import asyncio
+import tempfile
+import os
 from typing import Optional
 
 from src.services.api_client import api_client, StreamHandler
@@ -47,6 +49,13 @@ class SessionPage:
             on_click=self.send_message,
         )
         
+        # Microphone/Recording state
+        self.is_recording = False
+        self.audio_recorder: Optional[ft.AudioRecorder] = None
+        self.mic_button: Optional[ft.IconButton] = None
+        self.recording_indicator: Optional[ft.Container] = None
+        self.temp_audio_path: Optional[str] = None
+        
         # Main content container
         self.content_container: Optional[ft.Container] = None
         self.messages_list: Optional[ft.ListView] = None
@@ -60,6 +69,143 @@ class SessionPage:
             color=ft.Colors.ERROR,
             visible=False,
         )
+        
+        # Initialize audio recorder
+        self._init_audio_recorder()
+
+    def _init_audio_recorder(self) -> None:
+        """Initialize the audio recorder control."""
+        self.audio_recorder = ft.AudioRecorder(
+            on_state_changed=self._on_recording_state_changed,
+        )
+        
+        # Create microphone button
+        self.mic_button = ft.IconButton(
+            icon=ft.Icons.MIC,
+            icon_size=24,
+            icon_color=ft.Colors.GREY_600,
+            tooltip="Record voice message",
+            on_click=self._toggle_recording,
+        )
+        
+        # Recording indicator
+        self.recording_indicator = ft.Container(
+            content=ft.Row(
+                controls=[
+                    ft.Icon(
+                        name=ft.Icons.FIBER_MANUAL_RECORD,
+                        color=ft.Colors.RED,
+                        size=12,
+                    ),
+                    ft.Text(
+                        "Recording...",
+                        size=12,
+                        color=ft.Colors.RED,
+                    ),
+                ],
+                spacing=4,
+            ),
+            visible=False,
+            padding=ft.padding.only(right=8),
+        )
+    
+    def _on_recording_state_changed(self, e: ft.AudioRecorderStateChangeEvent) -> None:
+        """Handle audio recorder state changes."""
+        if e.state == ft.AudioRecorderState.RECORDING:
+            self.is_recording = True
+            self.recording_indicator.visible = True
+            self.mic_button.icon = ft.Icons.STOP
+            self.mic_button.icon_color = ft.Colors.RED
+        elif e.state == ft.AudioRecorderState.STOPPED:
+            self.is_recording = False
+            self.recording_indicator.visible = False
+            self.mic_button.icon = ft.Icons.MIC
+            self.mic_button.icon_color = ft.Colors.GREY_600
+        self.app.page.update()
+
+    async def _toggle_recording(self, e: ft.ControlEvent) -> None:
+        """Toggle recording state."""
+        if self.is_recording:
+            await self._stop_recording()
+        else:
+            await self._start_recording()
+
+    async def _start_recording(self) -> None:
+        """Start audio recording."""
+        if not self.audio_recorder:
+            return
+        
+        # Check microphone permission first
+        has_permission = await self.audio_recorder.has_permission_async()
+        if not has_permission:
+            self.show_error("Microphone permission denied")
+            return
+        
+        # Create a temporary file for recording
+        temp_dir = tempfile.gettempdir()
+        self.temp_audio_path = os.path.join(temp_dir, "openmarcus_recording.webm")
+        
+        try:
+            await self.audio_recorder.start_recording_async(self.temp_audio_path)
+            self.is_recording = True
+            self.recording_indicator.visible = True
+            self.mic_button.icon = ft.Icons.STOP
+            self.mic_button.icon_color = ft.Colors.RED
+            self.app.page.update()
+        except Exception as ex:
+            self.show_error(f"Failed to start recording: {str(ex)}")
+
+    async def _stop_recording(self) -> None:
+        """Stop audio recording and transcribe."""
+        if not self.audio_recorder:
+            return
+        
+        try:
+            await self.audio_recorder.stop_recording_async()
+            self.is_recording = False
+            self.recording_indicator.visible = False
+            self.mic_button.icon = ft.Icons.MIC
+            self.mic_button.icon_color = ft.Colors.GREY_600
+            self.app.page.update()
+            
+            # Transcribe the recording
+            await self._transcribe_recording()
+        except Exception as ex:
+            self.show_error(f"Failed to stop recording: {str(ex)}")
+
+    async def _transcribe_recording(self) -> None:
+        """Send recorded audio to backend for transcription."""
+        if not self.temp_audio_path or not os.path.exists(self.temp_audio_path):
+            return
+        
+        try:
+            # Check if file has content
+            file_size = os.path.getsize(self.temp_audio_path)
+            if file_size == 0:
+                return
+            
+            # Send to backend for transcription
+            result, error = await api_client.transcribe_audio(self.temp_audio_path)
+            
+            if error:
+                self.show_error(f"Transcription failed: {error}")
+                return
+            
+            if result and result.get("text"):
+                # Put transcribed text in message input
+                transcribed_text = result["text"].strip()
+                self.message_input.value = transcribed_text
+                self.message_input.focus()
+                self.app.page.update()
+        except Exception as ex:
+            self.show_error(f"Transcription error: {str(ex)}")
+        finally:
+            # Clean up temp file
+            try:
+                if self.temp_audio_path and os.path.exists(self.temp_audio_path):
+                    os.unlink(self.temp_audio_path)
+            except Exception:
+                pass
 
     def build(self) -> ft.View:
         """Build the session view."""
@@ -130,6 +276,8 @@ class SessionPage:
                     spacing=0,
                     expand=True,
                 ),
+                # Audio recorder control (hidden but must be in view for recording to work)
+                self.audio_recorder,
             ],
         )
         
@@ -143,6 +291,8 @@ class SessionPage:
         self.input_container = ft.Container(
             content=ft.Row(
                 controls=[
+                    self.mic_button,
+                    self.recording_indicator,
                     self.message_input,
                     ft.Container(width=12),
                     self.send_button,

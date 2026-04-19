@@ -469,6 +469,111 @@ class APIClient:
             return None, "Cannot connect to server. Please ensure the backend is running."
         except Exception as e:
             return None, f"Network error: {str(e)}"
+    
+    async def transcribe_audio(
+        self,
+        audio_path: str,
+        language: Optional[str] = None,
+    ) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Transcribe an audio file to text.
+        
+        Args:
+            audio_path: Path to the audio file to transcribe
+            language: Optional language code (e.g., 'en')
+            
+        Returns:
+            Tuple of (transcription_data, error_message)
+        """
+        import os
+        
+        url = f"{self.BASE_URL}/api/stt/transcribe"
+        
+        if not os.path.exists(audio_path):
+            return None, f"Audio file not found: {audio_path}"
+        
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                # Prepare the file and form data
+                with open(audio_path, "rb") as f:
+                    files = {"file": (os.path.basename(audio_path), f, "audio/webm")}
+                    data = {}
+                    if language:
+                        data["language"] = language
+                    
+                    response = await client.post(
+                        url,
+                        files=files,
+                        data=data,
+                        headers=self.get_headers()
+                    )
+                
+                if response.status_code == 200:
+                    return response.json(), None
+                elif response.status_code == 401:
+                    return None, "Invalid or expired token"
+                elif response.status_code == 400:
+                    error_detail = response.json().get("detail", "Bad request")
+                    return None, error_detail
+                else:
+                    return None, f"Server error (status {response.status_code})"
+                    
+        except httpx.TimeoutException:
+            return None, "Request timed out. Please try again."
+        except httpx.ConnectError:
+            return None, "Cannot connect to server. Please ensure the backend is running."
+        except Exception as e:
+            return None, f"Network error: {str(e)}"
+    
+    async def transcribe_bytes(
+        self,
+        audio_bytes: bytes,
+        filename: str = "audio.webm",
+        language: Optional[str] = None,
+    ) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Transcribe audio from bytes.
+        
+        Args:
+            audio_bytes: Raw audio bytes
+            filename: Filename to use for the upload
+            language: Optional language code (e.g., 'en')
+            
+        Returns:
+            Tuple of (transcription_data, error_message)
+        """
+        url = f"{self.BASE_URL}/api/stt/transcribe"
+        
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                files = {"file": (filename, audio_bytes, "audio/webm")}
+                data = {}
+                if language:
+                    data["language"] = language
+                
+                response = await client.post(
+                    url,
+                    files=files,
+                    data=data,
+                    headers=self.get_headers()
+                )
+                
+                if response.status_code == 200:
+                    return response.json(), None
+                elif response.status_code == 401:
+                    return None, "Invalid or expired token"
+                elif response.status_code == 400:
+                    error_detail = response.json().get("detail", "Bad request")
+                    return None, error_detail
+                else:
+                    return None, f"Server error (status {response.status_code})"
+                    
+        except httpx.TimeoutException:
+            return None, "Request timed out. Please try again."
+        except httpx.ConnectError:
+            return None, "Cannot connect to server. Please ensure the backend is running."
+        except Exception as e:
+            return None, f"Network error: {str(e)}"
 
 
 # Global API client instance

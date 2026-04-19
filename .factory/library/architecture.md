@@ -1,91 +1,97 @@
-# Architecture
+# OpenMarcus Architecture
 
-This document describes how the OpenMarcus application works at a high level.
+## Overview
 
-## Components
+OpenMarcus is a mental well-being app with a Marcus Aurelius persona that runs entirely locally with no telemetry.
 
-### Frontend (React + TypeScript)
-- **Location:** `/Users/stefano/repos/open-marcus/src`
-- **Framework:** React 18 with TypeScript
-- **Routing:** React Router v6
-- **State:** Zustand for client state, React Query for server state
-- **Styling:** CSS modules
+## Architecture Layers
 
-**Key Pages:**
-- `/` - Home page with welcome greeting
-- `/login` - Login screen
-- `/register` - Registration screen
-- `/session` - Meditation chat with Marcus
-- `/history` - Session history list
-- `/history/:id` - Session detail
-- `/profile` - Profile settings
-- `/settings` - App settings
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FLET UI LAYER (Python)                       │
+│  Screens: Login, Register, Onboarding, Home, Session, History   │
+│  State: AppState (user, profile, current session)               │
+└─────────────────────────────────────────────────────────────────┘
+                              │ HTTP/WebSocket
+┌─────────────────────────────────────────────────────────────────┐
+│                 FASTAPI BACKEND (Python)                        │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │ Auth Router  │  │Session Router│  │Settings Router│         │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────┐        │
+│  │                  SERVICES LAYER                       │        │
+│  │  AuthService  │  SessionService  │  MemoryService   │        │
+│  │  LLMSevice    │  STTService     │  TTSService      │        │
+│  └──────────────────────────────────────────────────────┘        │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────┐        │
+│  │                 DATA LAYER (SQLAlchemy)              │        │
+│  │  User │ Profile │ Session │ Message │ PsychUpdate   │        │
+│  └──────────────────────────────────────────────────────┘        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│                    LOCAL SERVICES                                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │ llama-cpp  │  │faster-whisper│ │  piper-tts  │             │
+│  │  (LLM)     │  │   (STT)     │  │   (TTS)     │             │
+│  └─────────────┘  └─────────────┘  └─────────────┘             │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### Backend (Node.js + Express)
-- **Location:** `/Users/stefano/repos/open-marcus/backend`
-- **Framework:** Express.js with TypeScript
-- **Database:** PostgreSQL with better-sqlite3
-- **Auth:** JWT tokens with argon2 password hashing
+## Data Models
 
-**Key API Endpoints:**
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `GET/POST /api/profile` - Profile management
-- `GET/POST /api/sessions` - Session management
-- `GET /api/sessions/:id` - Session detail
-- `GET/PUT /api/settings` - Settings management
-- `POST /api/export/clear` - Clear all user data
+### User & Auth
+- **User**: id, username, password_hash, created_at
+- **Password**: Derived from master password, encrypts database
 
-### External Services
+### Profile & Journey
+- **Profile**: id, user_id, name, goals, experience_level, created_at
+- **Session**: id, user_id, state (intro/active/concluded), created_at, summary
+- **Message**: id, session_id, role, content, created_at, psych_update_id
 
-**Ollama (LLM)**
-- Runs on `localhost:11434`
-- Provides AI responses from Marcus Aurelius model
+### Memory System (Mental Health Journey)
+- **PsychUpdate**: id, message_id, detected_patterns, emotional_state, stoic_principle, suggested_direction, confidence
+- **SemanticAssertion**: id, user_id, source_message_id, text, confidence, created_at
 
-**STT Server (Speech-to-Text)**
-- Runs on `localhost:8765`
-- sherpa-onnx Whisper for transcription
+### Settings
+- **Settings**: id, user_id, selected_model, tts_voice, stt_enabled, ram_detected
 
-**TTS Server (Text-to-Speech)**
-- Runs on `localhost:8766`
-- edge-tts for voice synthesis
+## Key Patterns
 
-## Data Flow
+### Memory Context Building
+Before each AI response, build context from:
+1. User profile (name, goals, experience)
+2. Semantic assertions (facts about user)
+3. Recent emotional states
+4. Past conversation highlights
 
-1. User registers/logs in → JWT token stored in localStorage
-2. Profile created → stored in PostgreSQL
-3. Meditation session → messages sent to Ollama → responses streamed back
-4. Session saved → stored with messages in PostgreSQL
-5. History → loaded from PostgreSQL
+### PsychUpdate Flow
+After each AI response:
+1. Generate response with Marcus persona
+2. Extract psych_update (detected patterns, emotional state)
+3. Extract semantic assertions (0-3 facts)
+4. Store both in database
+5. Inject accumulated context into next prompt
 
-## State Management
+### Model Selection by RAM
+| RAM | Recommended Model | Size |
+|-----|-----------------|------|
+| 4GB | Qwen2-0.5B | ~1GB |
+| 8GB | Phi-3-mini | ~4GB |
+| 16GB | Llama-3.2-7B | ~8GB |
+| 32GB+ | Llama-3.1-13B | ~16GB |
 
-**Zustand Stores:**
-- `authStore` - Authentication state (token, user)
-- `profileStore` - User profile
-- `voiceStore` - Voice settings
-- `ttsSettingsStore` - TTS configuration
+## Security Model
 
-**React Query:**
-- Used for server state (sessions, settings)
-- Provides caching and background refetching
+- Master password → argon2 → database encryption key
+- JWT for API authentication
+- No third-party network calls except model downloads
+- All data local, encrypted at rest
 
-## Key User Flows
+## Reference Implementations
 
-### Registration → Onboarding → Session
-1. User registers at `/register`
-2. JWT stored, redirected to `/`
-3. If no profile, onboarding form shown
-4. Profile created, redirected to home
-5. Click "Begin Meditation" → `/session`
-6. Click "Begin Meditation" → active session with Marcus
-
-### Session → History
-1. User sends messages to Marcus
-2. Marcus responds via Ollama streaming
-3. User clicks "End Session"
-4. Summary generated
-5. Session saved to database
-6. User navigates to `/history`
-7. Session appears in list
+- **Stoic Emperor**: `/Users/stefano/repos/stoic-emperor/src/core/emperor_brain.py`
+- **Memory Architecture**: `/Users/stefano/repos/aigent/docs/memory-architecture.md`

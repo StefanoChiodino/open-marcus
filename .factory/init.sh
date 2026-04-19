@@ -1,18 +1,49 @@
 #!/bin/bash
 set -e
 
-cd /Users/stefano/repos/open-marcus
+cd /Users/stefano/repos/open-marcus/backend-python
 
-# Install dependencies if needed
-if [ ! -d "node_modules" ]; then
-  echo "Installing dependencies..."
-  pnpm install
+# Check Python version
+PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+echo "Python version: $PYTHON_VERSION"
+
+# Create virtual environment if it doesn't exist
+if [ ! -d "venv" ]; then
+    echo "Creating Python virtual environment..."
+    python3 -m venv venv
 fi
 
-# Check if playwright browsers are installed
-if [ ! -d "node_modules/@playwright/test" ]; then
-  echo "Installing Playwright browsers..."
-  npx playwright install chromium
-fi
+# Activate virtual environment
+source venv/bin/activate
 
-echo "Environment ready for e2e testing"
+# Install core dependencies
+echo "Installing core dependencies..."
+pip install --upgrade pip
+
+# Flet and web framework
+pip install flet fastapi uvicorn
+
+# Database
+pip install sqlalchemy aiosqlite
+
+# Data validation
+pip install pydantic pydantic-settings
+
+# Authentication
+pip install passlib[argon2] python-jose[cryptography] bcrypt
+
+# LLM integration (llama-cpp-python with Metal support for Mac)
+pip install llama-cpp-python
+
+# Speech
+pip install faster-whisper piper-tts
+
+# Testing
+pip install pytest pytest-asyncio httpx
+
+# Code quality
+pip install ruff black mypy
+
+echo "Python environment ready"
+echo "To activate: source venv/bin/activate"
+echo "To run Flet: flet run"

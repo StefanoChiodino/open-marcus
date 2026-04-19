@@ -1,6 +1,6 @@
 ---
 name: e2e-worker
-description: E2E test implementation for OpenMarcus comprehensive testing
+description: E2E test implementation for OpenMarcus Flet Python app
 ---
 
 # E2E Worker
@@ -9,147 +9,121 @@ NOTE: Startup and cleanup are handled by `worker-base`. This skill defines the W
 
 ## When to Use This Skill
 
-This worker handles e2e test implementation for the comprehensive e2e testing mission. Use this worker for features related to:
-- Creating new e2e test files
-- Adding tests to existing test files
-- Verifying test coverage against validation contract
+Features that involve:
+- End-to-end testing of complete user flows
+- Cross-feature integration verification
+- Memory continuity testing
+- Privacy/security verification
 
 ## Required Skills
 
-- `agent-browser` - For manual verification of UI behavior during test development
-- `tuistory` - Not needed for e2e tests
+- `tuistry` - For terminal UI testing
+- `agent-browser` - For web interface testing if Flet web target used
 
 ## Work Procedure
 
-### Step 1: Read Mission Context
+### 1. Read Mission Context
+- Read mission.md and AGENTS.md for requirements
+- Read validation-contract.md for testable behaviors
+- Read features.json to understand current feature scope
 
-1. Read the mission's `validation-contract.md` to understand what assertions need coverage
-2. Read the mission's `features.json` to understand which feature you're implementing
-3. Read existing e2e tests in `/Users/stefano/repos/open-marcus/e2e/` to understand patterns
+### 2. Understand Test Structure
 
-### Step 2: Understand Test Patterns
+Tests are located in `/Users/stefano/repos/open-marcus/backend-python/tests/`
 
-Review existing tests to understand:
-- How authentication is handled
-- How test data is created and cleaned up
-- What helper functions exist
-- How assertions are structured
-
-### Step 3: Implement Tests
-
-For each test file you're creating:
-
-1. **Create the test file** at `/Users/stefano/repos/open-marcus/e2e/{area}-comprehensive.spec.ts`
-
-2. **Include proper imports:**
-   ```typescript
-   import { test, expect } from '@playwright/test';
-   ```
-
-3. **Add shared helpers** at the top of the file:
-   - `registerAndGetToken()` - Register via API, return token
-   - `clearAllData()` - Clear all user data via API
-   - `createProfile()` - Navigate UI to create profile
-
-4. **Structure tests** using `test.describe()` for grouping:
-   ```typescript
-   test.describe('Auth Flows', () => {
-     test.beforeEach(async ({ page }) => {
-       // Setup for each test
-     });
-     
-     test('VAL-AUTH-001: Login with valid credentials redirects to home', async ({ page }) => {
-       // Test implementation
-     });
-   });
-   ```
-
-5. **Follow selector priority:**
-   - Role-based: `getByRole('button', { name: '...' })`
-   - Label-based: `getByLabel(...)`
-   - Text-based: `getByText(...)`
-   - CSS class: last resort
-
-6. **Include assertions** matching VAL-XXX names:
-   ```typescript
-   test('VAL-AUTH-001: Login with valid credentials redirects to home', async ({ page }) => {
-     // Arrange - register user first
-     const token = await registerAndGetToken();
-     
-     // Act - navigate to login and submit
-     await page.goto('/login');
-     await page.getByLabel('Username').fill(username);
-     await page.getByLabel('Password').fill(password);
-     await page.getByRole('button', { name: 'Sign In' }).click();
-     
-     // Assert - redirected to home
-     await expect(page).toHaveURL('/');
-     await expect(page.getByRole('heading', { name: 'Welcome to OpenMarcus' })).toBeVisible();
-   });
-   ```
-
-### Step 4: Use Appropriate Timeouts
-
-- Navigation: `waitForLoadState('networkidle')`
-- Element visibility: Use `toBeVisible({ timeout: 10000 })`
-- API responses: Set appropriate timeouts
-- Session/Marcus responses: May need 30-60 seconds
-
-### Step 5: Handle Async and Waiting
-
-```typescript
-// Wait for loading to complete
-await expect(page.getByText('Loading...')).not.toBeVisible();
-
-// Wait for network to settle
-await page.waitForLoadState('networkidle');
-
-// Wait for specific element
-await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible({ timeout: 10000 });
+```
+tests/
+├── conftest.py           # Shared fixtures
+├── test_auth.py          # Authentication flows
+├── test_sessions.py      # Session management
+├── test_memory.py        # Memory system
+├── test_integration.py   # Cross-feature flows
+└── test_privacy.py       # Privacy verification
 ```
 
-### Step 6: Verify Test Works
+### 3. Write Tests
 
-1. Run the test: `npm run test:e2e -- {filename}.spec.ts`
-2. If it fails, debug and fix
-3. Run 3 times to ensure stability
-4. Check for console errors
+**Authentication Tests:**
+```python
+import pytest
+from httpx import AsyncClient
+from src.main import app
 
-### Step 7: Run Full Suite
+@pytest.mark.asyncio
+async def test_login_success():
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        response = await client.post("/api/auth/login", json={
+            "username": "testuser",
+            "password": "testpass123"
+        })
+        assert response.status_code == 200
+        assert "token" in response.json()
+```
 
-After implementing all tests for a feature:
-1. Run full e2e suite: `npm run test:e2e`
-2. Fix any failing tests
-3. Ensure no console errors
+**Memory Continuity Tests:**
+```python
+@pytest.mark.asyncio
+async def test_memory_persists():
+    # Create session 1, share info
+    # End session
+    # Create session 2
+    # Verify AI references previous info
+```
+
+**Complete Journey Tests:**
+```python
+@pytest.mark.asyncio
+async def test_full_journey():
+    # Register → Onboard → Session → History
+    pass
+```
+
+### 4. Run Tests
+```bash
+cd /Users/stefano/repos/open-marcus/backend-python
+source venv/bin/activate
+pytest tests/ -v
+```
+
+### 5. Verify Coverage
+
+Ensure all VAL-XXX assertions from validation-contract.md are covered:
+- VAL-AUTH-001 through VAL-AUTH-006
+- VAL-SESSION-001 through VAL-SESSION-006
+- VAL-MEMORY-001 through VAL-MEMORY-006
+- VAL-AI-001 through VAL-AI-007
+- VAL-SPEECH-001 through VAL-SPEECH-004
+- VAL-SETTINGS-001 through VAL-SETTINGS-005
+- VAL-PRIVACY-001 through VAL-PRIVACY-004
+- VAL-CROSS-001 through VAL-CROSS-004
+
+## Test Categories
+
+### Unit Tests
+- Individual service functions
+- Fast, isolated tests
+- Mock external dependencies
+
+### Integration Tests
+- API endpoint testing
+- Database operations
+- Service interactions
+
+### E2E Tests
+- Complete user flows
+- Memory continuity
+- Privacy verification
 
 ## Example Handoff
 
 ```json
 {
-  "salientSummary": "Implemented comprehensive auth flow tests covering 10 assertions (VAL-AUTH-001 through VAL-AUTH-010). Tests cover login success/failure, registration, password guidance, logout, session persistence.",
-  "whatWasImplemented": "Created e2e/auth-comprehensive.spec.ts with 10 test cases covering all auth flows including edge cases like invalid credentials, duplicate username, and session persistence after reload.",
-  "whatWasLeftUndone": "",
+  "salientSummary": "Implemented comprehensive e2e tests for auth and session flows covering 15 assertions.",
+  "whatWasImplemented": "Created test_auth.py with register/login/logout tests, test_sessions.py with session CRUD and state machine tests.",
+  "whatWasLeftUndone": "Memory continuity tests pending LLM integration",
   "verification": {
     "commandsRun": [
-      { "command": "npm run test:e2e -- auth-comprehensive.spec.ts", "exitCode": 0, "observation": "All 10 auth tests passed" },
-      { "command": "npm run test:e2e -- --grep 'logout'", "exitCode": 0, "observation": "Logout flow tests pass" }
-    ],
-    "interactiveChecks": [
-      { "action": "Login with valid credentials", "observed": "Redirected to home with personalized greeting" },
-      { "action": "Login with invalid password", "observed": "Error alert displayed" },
-      { "action": "Logout clears localStorage", "observed": "Token removed, redirected to /login" }
-    ]
-  },
-  "tests": {
-    "added": [
-      {
-        "file": "e2e/auth-comprehensive.spec.ts",
-        "cases": [
-          { "name": "VAL-AUTH-001: Login with valid credentials", "verifies": "Successful login redirects to home" },
-          { "name": "VAL-AUTH-002: Login with invalid password", "verifies": "Error message displayed" },
-          { "name": "VAL-AUTH-007: Logout clears auth", "verifies": "Token cleared, redirect to login" }
-        ]
-      }
+      { "command": "pytest tests/ -v", "exitCode": 0, "observation": "28 tests passed" }
     ]
   },
   "discoveredIssues": []
@@ -158,7 +132,7 @@ After implementing all tests for a feature:
 
 ## When to Return to Orchestrator
 
-- Feature depends on an API endpoint or behavior that doesn't exist
-- Requirements are ambiguous or contradictory
-- Existing bugs affect test implementation
-- All tests pass consistently and feature is complete
+- Feature depends on incomplete backend
+- Memory tests need LLM integration
+- Privacy tests need runtime verification
+- All tests pass and feature complete

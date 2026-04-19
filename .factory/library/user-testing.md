@@ -1,87 +1,73 @@
-# User Testing
-
-This document describes how to perform user testing validation for the OpenMarcus application.
-
-## Validation Surface
-
-**Browser Testing:** The primary validation surface is the web UI accessed via browser.
-
-**Tools:**
-- `agent-browser` - For automated browser testing with Playwright
-- Manual browser - For exploratory testing and screenshots
-
-**Breakpoints:**
-- Desktop: 1280px width
-- Tablet: 768px width
-- Mobile: 375px width
-
-## Required Testing Skills/Tools
-
-- Playwright for automated e2e tests
-- `agent-browser` skill for browser automation
-- Network inspection for API verification
-
-## Resource Cost Classification
-
-**E2E Tests (Playwright):**
-- Memory per instance: ~300MB (browser) + ~200MB (app)
-- CPU: Moderate during test execution
-- Max concurrent validators: 3 (given typical machine resources)
+# User Testing Surface
 
 ## Testing Approach
 
-### Automated E2E Tests
+This document describes how user testing is performed for OpenMarcus Flet rewrite.
 
-**Running Tests:**
-```bash
-# All e2e tests
-npm run test:e2e
+## Test Tool
 
-# Specific file
-npm run test:e2e -- auth-comprehensive.spec.ts
+**Flet App Testing**
+- Run: `flet run` launches the app
+- Use `agent-browser` for web-based testing if Flet web target used
+- Use `tuistory` for terminal-based verification
 
-# With UI
-npm run test:e2e -- --headed
+## Validation Surfaces
 
-# Specific test
-npm run test:e2e -- --grep "VAL-AUTH-001"
-```
+### Authentication Flow
+1. Fresh app launch → Password creation prompt
+2. Login with credentials → Home screen
+3. Invalid login → Error message
+4. Logout → Return to login
 
-**Test Files Location:** `/Users/stefano/repos/open-marcus/e2e/`
+### Profile/Onboarding
+1. Complete onboarding form
+2. View profile on home
+3. Edit profile → Changes persist
 
-### Manual Verification
+### Meditation Session
+1. Click "Begin Meditation" → Session created
+2. Send first message → State transitions to active
+3. Receive AI response → Tokens stream
+4. End session → Summary generated
 
-When automated tests need manual verification:
+### Memory System
+1. Share personal info in session
+2. Return next day
+3. AI references past conversation
 
-1. Start services:
-   ```bash
-   # Backend
-   PORT=3100 npx tsx backend/server.ts &
-   
-   # Frontend
-   PORT=3101 npm run dev:frontend &
-   ```
+### Speech
+1. Click microphone → Record audio
+2. Audio transcribed to text
+3. Click TTS → Hear Marcus speak
 
-2. Open browser to `http://localhost:3101`
+### Settings
+1. Change model → Different responses
+2. Export data → JSON file created
+3. Clear data → App returns to fresh state
 
-3. Navigate and verify each VAL-XXX assertion
+## Resource Cost Classification
 
-## Validation Contract Mapping
+| Surface | Testing Cost | Notes |
+|---------|-------------|-------|
+| Auth | Low | API-based, fast |
+| Profile | Low | API-based, fast |
+| Session Chat | Medium | LLM inference, depends on model speed |
+| Memory | Medium | LLM inference, multi-turn testing |
+| Speech | High | Requires microphone, longer tests |
+| Settings | Low | API-based, fast |
+| Privacy | Medium | Code inspection + runtime verification |
 
-Each VAL-XXX assertion in `validation-contract.md` maps to:
-- An automated Playwright test in the e2e suite
-- Manual verification steps if automated testing not possible
+## Critical Test Paths
 
-## Test Isolation
+### Complete Journey
+1. Register → Onboard → First Session → View History → Return Next Day
 
-- Each test file runs independently
-- Use `test.beforeEach()` to setup fresh state
-- Clear localStorage and data between tests
-- Use unique usernames (timestamp-based) to avoid conflicts
+### Memory Continuity
+1. Session 1: Share "I have a presentation tomorrow"
+2. Session 2: Ask "What should I focus on today?"
+3. Verify AI knows about presentation
 
-## Common Issues
-
-1. **Tests failing due to timing** - Add appropriate waits, use `waitForLoadState('networkidle')`
-2. **Auth state leaking** - Always clear localStorage in beforeEach
-3. **Data pollution** - Use `clearAllData()` helper to reset state
-4. **Ollama not responding** - Tests should handle this gracefully with timeouts
+### Privacy Verification
+1. Inspect network traffic during use
+2. Verify no external API calls
+3. Check database is encrypted

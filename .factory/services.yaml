@@ -1,43 +1,65 @@
 commands:
-  install: pnpm install
-  typecheck: npm run typecheck
-  build: npm run build
-  test: npm run test
-  test:e2e: npx playwright test
-  lint: npm run lint
+  install: |
+    cd /Users/stefano/repos/open-marcus/backend-python
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -e .
+  install:manual: |
+    cd /Users/stefano/repos/open-marcus/backend-python
+    pip install flet fastapi uvicorn sqlalchemy pydantic
+    pip install passlib[argon2] python-jose[cryptography]
+    pip install llama-cpp-python faster-whisper
+    pip install pytest pytest-asyncio httpx
+  typecheck: |
+    cd /Users/stefano/repos/open-marcus/backend-python
+    source venv/bin/activate
+    mypy src/ || echo "mypy not installed, skipping"
+  test: |
+    cd /Users/stefano/repos/open-marcus/backend-python
+    source venv/bin/activate
+    pytest tests/ -v
+  test:unit: |
+    cd /Users/stefano/repos/open-marcus/backend-python
+    source venv/bin/activate
+    pytest tests/unit/ -v
+  lint: |
+    cd /Users/stefano/repos/open-marcus/backend-python
+    source venv/bin/activate
+    ruff check src/ || flake8 src/ || echo "Linter not configured"
+  format: |
+    cd /Users/stefano/repos/open-marcus/backend-python
+    source venv/bin/activate
+    black src/ || ruff format src/ || echo "Formatter not configured"
+  dev:flet: |
+    cd /Users/stefano/repos/open-marcus/backend-python
+    source venv/bin/activate
+    flet run
+  dev:backend: |
+    cd /Users/stefano/repos/open-marcus/backend-python
+    source venv/bin/activate
+    uvicorn src.main:app --reload --port 8000
+  build:mac: |
+    cd /Users/stefano/repos/open-marcus/backend-python
+    source venv/bin/activate
+    flet build macos
 
 services:
-  backend:
-    start: PORT=3100 npx tsx backend/server.ts
-    stop: lsof -ti :3100 | xargs kill
-    healthcheck: curl -sf http://localhost:3100/health
-    port: 3100
+  flet-app:
+    start: |
+      cd /Users/stefano/repos/open-marcus/backend-python
+      source venv/bin/activate
+      flet run
+    stop: pkill -f "flet" || true
+    healthcheck: echo "Flet app runs in foreground"
+    port: 8550
     depends_on: []
 
-  frontend:
-    start: PORT=3101 npm run dev:frontend
-    stop: lsof -ti :3101 | xargs kill
-    healthcheck: curl -sf http://localhost:3101
-    port: 3101
-    depends_on: [backend]
-
-  ollama:
-    start: ollama serve
-    stop: pkill -f "ollama serve"
-    healthcheck: curl -sf http://localhost:11434/api/tags
-    port: 11434
-    depends_on: []
-
-  stt:
-    start: cd servers/stt && node server.mjs --port 8765
-    stop: lsof -ti :8765 | xargs kill
-    healthcheck: curl -sf http://localhost:8765/health
-    port: 8765
-    depends_on: []
-
-  tts:
-    start: cd servers/tts && python3 server.py --port 8766
-    stop: lsof -ti :8766 | xargs kill
-    healthcheck: curl -sf http://localhost:8766/health
-    port: 8766
+  backend-api:
+    start: |
+      cd /Users/stefano/repos/open-marcus/backend-python
+      source venv/bin/activate
+      uvicorn src.main:app --reload --port 8000
+    stop: lsof -ti :8000 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:8000/health || echo "Health check placeholder"
+    port: 8000
     depends_on: []

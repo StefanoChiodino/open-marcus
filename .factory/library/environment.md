@@ -1,95 +1,107 @@
-# Environment
+# Environment Setup
 
-Environment variables, external dependencies, and setup notes for OpenMarcus.
+## Prerequisites
+
+- Python 3.11+
+- macOS (target platform)
+- 4GB+ RAM (for local AI models)
+
+## Project Structure
+
+```
+backend-python/
+├── src/
+│   ├── main.py           # Flet app + FastAPI
+│   ├── models/           # SQLAlchemy models
+│   ├── routers/          # FastAPI routes
+│   ├── services/         # Business logic
+│   └── screens/          # Flet UI screens
+├── tests/
+├── config/
+│   └── prompts.yaml      # Marcus persona prompts
+├── models/               # GGUF model files
+├── data/                 # SQLite database (encrypted)
+└── venv/                 # Python virtual environment
+```
+
+## Dependencies
+
+### Core
+- `flet>=1.0.0` - UI framework
+- `fastapi>=0.100` - Web framework
+- `uvicorn` - ASGI server
+
+### Database
+- `sqlalchemy>=2.0` - ORM
+- `aiosqlite` - Async SQLite driver
+
+### Auth & Security
+- `passlib[argon2]` - Password hashing
+- `python-jose[cryptography]` - JWT tokens
+- `cryptography` - Encryption utilities
+
+### AI/ML
+- `llama-cpp-python` - Local LLM inference (with Metal support)
+- `faster-whisper` - Speech-to-text
+- `piper-tts` - Text-to-speech
+
+### Testing
+- `pytest` - Test framework
+- `pytest-asyncio` - Async test support
+- `httpx` - HTTP client for tests
+
+### Code Quality
+- `ruff` - Linter
+- `black` - Formatter
+- `mypy` - Type checker
 
 ## Environment Variables
 
-**Backend:**
-- `PORT` - Backend server port (default: 3100)
-- `JWT_SECRET` - Secret for JWT token signing
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `OPENMARCUS_PORT` | Backend API port | `8000` |
+| `OPENMARCUS_DB_PATH` | Database file path | `./data/openMarcus.db` |
+| `OPENMARCUS_MODEL_PATH` | Default LLM model | `./models/` |
 
-**Frontend:**
-- `PORT` - Frontend dev server port (default: 3101)
-- `VITE_API_URL` - Backend API URL
+## RAM Detection
 
-**External Services:**
-- `OLLAMA_HOST` - Ollama server URL (default: localhost:11434)
-- `STT_SERVER_URL` - STT server URL (default: localhost:8765)
-- `TTS_SERVER_URL` - TTS server URL (default: localhost:8766)
+System detects available RAM on startup using:
 
-## External Dependencies
+```python
+import sys
+import psutil
 
-### Required
-- **SQLite** - Local database via better-sqlite3 (no external DB needed)
-- **Node.js** - For backend and frontend dev
-
-### Optional (app works without but features limited)
-- **Ollama** - On localhost:11434 (AI responses)
-- **STT Server** - On localhost:8765 (voice input)
-- **TTS Server** - On localhost:8766 (voice output)
-
-## Setup Notes
-
-### First Time Setup
-
-```bash
-# Install dependencies
-pnpm install
-
-# Install Playwright browsers
-npx playwright install chromium
-
-# Start backend (creates SQLite DB automatically on first run)
-PORT=3100 npx tsx backend/server.ts &
-
-# Start frontend
-PORT=3101 npm run dev:frontend &
+def get_ram_gb() -> int:
+    return psutil.virtual_memory().total // (1024**3)
 ```
 
-### Database Setup
+Recommended model sizes based on RAM:
+- 4GB: 2B parameter models
+- 8GB: 7B parameter models
+- 16GB: 13B parameter models
+- 32GB+: 70B parameter models
 
-The backend uses SQLite via better-sqlite3. Database file is created automatically at:
-- `./data/openmarcus.db` (relative to project root)
+## Model Management
 
-No external database server needed - SQLite stores data locally in a single file.
+Models are GGUF files stored in `models/` directory.
 
-### External Services
+Recommended initial models:
+- `llama-3.2-1b-instruct-q4_k_m.gguf` - Small, fast
+- `llama-3.2-3b-instruct-q4_k_m.gguf` - Balanced
+- `llama-3.1-8b-instruct-q4_k_m.gguf` - Higher quality
 
-**Ollama:**
+Download from: https://huggingface.co/models?sort=trending
+
+## Known Issues
+
+### llama-cpp-python on Mac
+May need to set environment variable for Metal GPU:
 ```bash
-# Pull the model
-ollama pull llama3.2
-
-# Or use gemma4 if that's what's configured
-ollama pull gemma4
+export LLAMA_METAL=1
 ```
 
-**STT Server:**
+Or use homebrew openblas:
 ```bash
-cd servers/stt
-node server.mjs --port 8765
+brew install openblas
+CMAKE_ARGS="-DGGML_OPENBLAS=ON" pip install llama-cpp-python
 ```
-
-**TTS Server:**
-```bash
-cd servers/tts
-python3 server.py --port 8766
-```
-
-## Port Configuration
-
-| Service | Default Port |
-|---------|-------------|
-| Backend API | 3100 |
-| Frontend | 3101 |
-| Ollama | 11434 |
-| STT | 8765 |
-| TTS | 8766 |
-
-## Platform Notes
-
-**macOS:**
-- Uses `lsof -ti :PORT | xargs kill` for stopping services
-
-**Linux:**
-- May need `fuser -k PORT/tcp` instead of `lsof`

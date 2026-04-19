@@ -181,6 +181,81 @@ class APIClient:
         """
         return await self.get("/api/settings/system")
     
+    # Session methods
+    async def create_session(self) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Create a new meditation session.
+        
+        Returns:
+            Tuple of (session_data, error_message)
+        """
+        return await self.post("/api/sessions", {})
+    
+    async def get_session(self, session_id: str) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Get a session by ID with its messages.
+        
+        Args:
+            session_id: ID of the session
+            
+        Returns:
+            Tuple of (session_data, error_message)
+        """
+        return await self.get(f"/api/sessions/{session_id}")
+    
+    async def list_sessions(self, limit: int = 50, offset: int = 0) -> tuple[Optional[dict], Optional[str]]:
+        """
+        List all sessions for the current user.
+        
+        Args:
+            limit: Maximum number of sessions to return
+            offset: Number of sessions to skip
+            
+        Returns:
+            Tuple of (sessions_list_data, error_message)
+        """
+        return await self.get(f"/api/sessions?limit={limit}&offset={offset}")
+    
+    async def add_message(self, session_id: str, content: str) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Add a message to a session.
+        
+        Args:
+            session_id: ID of the session
+            content: Message content
+            
+        Returns:
+            Tuple of (message_data, error_message)
+        """
+        return await self.post(f"/api/sessions/{session_id}/messages", {"content": content})
+    
+    async def end_session(self, session_id: str, summary: Optional[str] = None) -> tuple[Optional[dict], Optional[str]]:
+        """
+        End a session.
+        
+        Args:
+            session_id: ID of the session
+            summary: Optional summary for the session
+            
+        Returns:
+            Tuple of (session_state_data, error_message)
+        """
+        if summary:
+            return await self.post(f"/api/sessions/{session_id}/end?summary={summary}", {})
+        return await self.post(f"/api/sessions/{session_id}/end", {})
+    
+    async def delete_session(self, session_id: str) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Delete a session.
+        
+        Args:
+            session_id: ID of the session
+            
+        Returns:
+            Tuple of (None, error_message) on error, (None, None) on success
+        """
+        return await self._delete(f"/api/sessions/{session_id}")
+    
     async def get(self, path: str) -> tuple[Optional[dict], Optional[str]]:
         """
         Make GET request to API.
@@ -201,6 +276,40 @@ class APIClient:
                 
                 if response.status_code == 200:
                     return response.json(), None
+                elif response.status_code == 401:
+                    return None, "Invalid or expired token"
+                elif response.status_code == 404:
+                    return None, "Not found"
+                else:
+                    return None, f"Server error (status {response.status_code})"
+                    
+        except httpx.TimeoutException:
+            return None, "Request timed out. Please try again."
+        except httpx.ConnectError:
+            return None, "Cannot connect to server. Please ensure the backend is running."
+        except Exception as e:
+            return None, f"Network error: {str(e)}"
+    
+    async def _delete(self, path: str) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Make DELETE request to API.
+        
+        Args:
+            path: API endpoint path (e.g., "/api/sessions/123")
+            
+        Returns:
+            Tuple of (response_data, error_message)
+        """
+        url = f"{self.BASE_URL}{path}"
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.delete(
+                    url,
+                    headers=self.get_headers()
+                )
+                
+                if response.status_code == 204:
+                    return None, None
                 elif response.status_code == 401:
                     return None, "Invalid or expired token"
                 elif response.status_code == 404:

@@ -71,3 +71,47 @@ This document describes how user testing is performed for OpenMarcus Flet rewrit
 1. Inspect network traffic during use
 2. Verify no external API calls
 3. Check database is encrypted
+
+## Validation Concurrency
+
+The orchestrator sets a max concurrent validators number for each surface based on dry run observations. Default: 3 concurrent validators maximum across all surfaces.
+
+For this milestone (foundation):
+- API auth testing: Low cost, can run up to 5 concurrent subagents safely
+- Flet UI testing: Currently blocked due to import bugs (see below)
+
+## Flow Validator Guidance: API Testing
+
+### Isolation Rules
+- Backend API URL: http://localhost:8000
+- Auth endpoints: POST /api/auth/register, POST /api/auth/login, GET /api/auth/me, POST /api/auth/verify
+- Use unique usernames per test to avoid conflicts (e.g., testuser_001, testuser_002)
+- Database: /Users/stefano/repos/open-marcus/data/openmarcus.db
+
+### Testing Protocol
+1. Register a new user with unique username
+2. Login to get JWT token
+3. Use token to access protected endpoints
+4. Verify password hash in database is argon2, not plain text
+
+## Flow Validator Guidance: Flet UI Testing (CURRENTLY BLOCKED)
+
+### Isolation Rules
+- Flet app path: /Users/stefano/repos/open-marcus/backend-python/src/main.py
+- Backend API: http://localhost:8000
+- DO NOT modify production code to work around import issues
+
+### Critical Issue
+**The Flet app cannot launch due to an import structure bug.**
+
+Error:
+```
+ImportError: attempted relative import beyond top-level package
+```
+Location: `screens/login_screen.py` line 8
+
+Root cause: `main.py` imports `from screens.login_screen import` but screens use `from ..services.api_client` relative imports. When Python imports screens via PYTHONPATH, it doesn't recognize the package hierarchy needed for relative imports.
+
+Impact: VAL-AUTH-006, VAL-UI-001, VAL-UI-002 cannot be tested.
+
+Quick fix (NOT applied per instructions): Change main.py imports from `from screens.xxx` to `from src.screens.xxx`.

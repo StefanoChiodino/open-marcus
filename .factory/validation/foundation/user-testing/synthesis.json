@@ -1,41 +1,44 @@
 {
   "milestone": "foundation",
   "round": 1,
-  "status": "pass",
+  "status": "fail",
   "assertionsSummary": {
-    "total": 15,
-    "passed": 15,
-    "failed": 0,
+    "total": 8,
+    "passed": 5,
+    "failed": 3,
     "blocked": 0
   },
   "passedAssertions": [
-    "VAL-PROFILE-001",
-    "VAL-PROFILE-002",
-    "VAL-PROFILE-003",
-    "VAL-PROFILE-004",
-    "VAL-DATA-001",
-    "VAL-DATA-002",
-    "VAL-DATA-003",
-    "VAL-DATA-004",
-    "VAL-DATA-005",
-    "VAL-DATA-006",
-    "VAL-MEDIT-006",
-    "VAL-MEDIT-007",
-    "VAL-UI-001",
-    "VAL-UI-005",
-    "VAL-UI-006"
+    "VAL-AUTH-001",
+    "VAL-AUTH-002",
+    "VAL-AUTH-003",
+    "VAL-AUTH-004",
+    "VAL-AUTH-005"
   ],
-  "failedAssertions": [],
+  "failedAssertions": [
+    {
+      "id": "VAL-AUTH-006",
+      "reason": "Flet app cannot launch due to ImportError: attempted relative import beyond top-level package at screens/login_screen.py line 8. App password lock (lock screen) cannot be tested."
+    },
+    {
+      "id": "VAL-UI-001",
+      "reason": "Flet app cannot launch due to ImportError. App launch cannot be tested."
+    },
+    {
+      "id": "VAL-UI-002",
+      "reason": "Flet app cannot launch due to ImportError. Navigation between screens cannot be tested."
+    }
+  ],
   "blockedAssertions": [],
   "appliedUpdates": [
     {
-      "target": "services.yaml",
-      "description": "Services were already running; no changes needed to services.yaml itself.",
+      "target": "user-testing.md",
+      "description": "Documented that Flet app has import bug preventing launch. Backend API works correctly on port 8000.",
       "source": "setup"
     },
     {
-      "target": "user-testing.md",
-      "description": "Documented that backend must use tsx (not plain node) for ESM+TypeScript. Noted Ollama offline impact on testing.",
+      "target": "services.yaml",
+      "description": "Backend API confirmed running on port 8000 with health check passing. Added missing updated_at column to users table in database.",
       "source": "setup"
     }
   ],

@@ -452,6 +452,16 @@ class SessionPage:
                 # Update session state
                 self.session_state = result.get("session_state", self.session_state)
                 
+                # Extract and add AI response to messages
+                ai_message = {
+                    "role": result.get("role", "assistant"),
+                    "content": result.get("content", ""),
+                }
+                if ai_message["content"]:
+                    self.messages.append(ai_message)
+                    self._update_messages_list()
+                    self.app.page.update()
+                
         except Exception as e:
             self.show_error(f"Error sending message: {str(e)}")
 

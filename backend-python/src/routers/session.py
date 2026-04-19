@@ -203,6 +203,7 @@ async def add_message(
     Add a message to a session.
     
     This transitions the session from 'intro' to 'active' state if it's the first message.
+    Generates and stores an AI response from Marcus Aurelius.
     """
     message = session_service.add_message(
         db, session_id, user_id, role="user", content=data.content
@@ -214,15 +215,38 @@ async def add_message(
             detail="Session not found"
         )
     
+    # Generate AI response (placeholder until LLM integration)
+    ai_responses = [
+        "I understand. The path to wisdom begins with self-reflection. What troubles your mind today?",
+        "Remember, it is not that we have a short time to live, but that we waste a lot of it. What weighs on your spirit?",
+        "The happiness of your life depends upon the quality of your thoughts. Share what is on your mind, and we shall examine it together.",
+        "You have power over your mind - not outside events. Realize this, and you will find strength. What would you like to explore?",
+        "The soul becomes dyed with the color of its thoughts. Speak freely, and we shall seek the truth together.",
+    ]
+    import random
+    ai_content = random.choice(ai_responses)
+    
+    # Store AI response
+    ai_message = session_service.add_ai_response(
+        db, session_id, user_id, ai_content=ai_content
+    )
+    
+    if ai_message is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+    
     # Get updated session state
     session = session_service.get_session(db, session_id, user_id)
     
+    # Return the AI response so it can be displayed to the user
     return MessageAddResponse(
-        id=message.id,
-        session_id=message.session_id,
-        role=message.role,
-        content=message.content,
-        created_at=message.created_at.isoformat() if message.created_at else "",
+        id=ai_message.id,
+        session_id=ai_message.session_id,
+        role=ai_message.role,
+        content=ai_message.content,
+        created_at=ai_message.created_at.isoformat() if ai_message.created_at else "",
         session_state=session.state if session else "unknown"
     )
 

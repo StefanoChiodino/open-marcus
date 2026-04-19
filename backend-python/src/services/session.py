@@ -197,6 +197,37 @@ class SessionService:
         
         return message
     
+    def add_ai_response(self, db: DBSession, session_id: str, user_id: str, ai_content: str) -> Optional[MessageModel]:
+        """
+        Add an AI response message to a session.
+        
+        Args:
+            db: Database session
+            session_id: ID of the session
+            user_id: ID of the user (for authorization)
+            ai_content: AI response content
+            
+        Returns:
+            Created AI Message object if successful, None if session not found
+        """
+        session = self.get_session(db, session_id, user_id)
+        
+        if session is None:
+            return None
+        
+        ai_message = MessageModel(
+            session_id=session_id,
+            role="assistant",
+            content=ai_content,
+            created_at=datetime.utcnow()
+        )
+        
+        db.add(ai_message)
+        db.commit()
+        db.refresh(ai_message)
+        
+        return ai_message
+    
     def end_session(self, db: DBSession, session_id: str, user_id: str, summary: Optional[str] = None) -> Optional[SessionModel]:
         """
         End a session, transitioning it to 'concluded' state.

@@ -1,0 +1,53 @@
+{
+  "milestone": "sessions",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-SESSION-001",
+    "VAL-SESSION-002",
+    "VAL-SESSION-003",
+    "VAL-SESSION-004",
+    "VAL-SESSION-005",
+    "VAL-SESSION-006"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "services.yaml",
+      "description": "backend-api healthcheck at http://localhost:8000/health returns healthy status",
+      "source": "setup"
+    }
+  ],
+  "flowReports": [
+    {
+      "groupId": "sessions-api-flow",
+      "assertions": [
+        "VAL-SESSION-001",
+        "VAL-SESSION-002",
+        "VAL-SESSION-003",
+        "VAL-SESSION-004",
+        "VAL-SESSION-005",
+        "VAL-SESSION-006"
+      ],
+      "status": "pass",
+      "tool": "curl",
+      "evidence": [
+        "Created session via POST /api/sessions - returned id and intro state",
+        "Added message via POST /api/sessions/{id}/messages - state transitioned to active, AI response returned",
+        "Listed sessions via GET /api/sessions - returned user's sessions in order",
+        "Got session detail via GET /api/sessions/{id} - returned full session with messages",
+        "Ended session via POST /api/sessions/{id}/end - state transitioned to concluded, summary auto-generated"
+      ]
+    }
+  ],
+  "previousRound": null,
+  "testedVia": "API testing via curl commands against running backend on port 8000",
+  "validationTimestamp": "2026-04-19T18:33:37Z"
+}

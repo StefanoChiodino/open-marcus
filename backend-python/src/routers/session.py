@@ -257,12 +257,14 @@ async def end_session(
     summary: Optional[str] = None,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
-    session_service: SessionService = Depends(get_session_service)
+    session_service: SessionService = Depends(get_session_service),
+    summary_service: SummaryService = Depends(get_summary_service)
 ) -> SessionStateResponse:
     """
     End a session, transitioning it to 'concluded' state.
     
-    Optionally provides a summary for the session.
+    Automatically generates an AI-powered summary of the session.
+    Optionally provides a manual summary for the session.
     """
     session = session_service.end_session(db, session_id, user_id, summary=summary)
     
@@ -271,6 +273,12 @@ async def end_session(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Session not found"
         )
+    
+    # Automatically generate summary if one wasn't provided
+    if summary is None:
+        summary_service.generate_and_store_summary(db, session_id, user_id)
+        # Refresh session to get updated summary
+        session = session_service.get_session(db, session_id, user_id)
     
     return SessionStateResponse(
         id=session.id,

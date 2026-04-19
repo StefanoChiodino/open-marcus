@@ -1,0 +1,36 @@
+{
+  "milestone": "speech",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-SPEECH-001",
+    "VAL-SPEECH-002",
+    "VAL-SPEECH-003",
+    "VAL-SPEECH-004"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null,
+  "details": {
+    "toolsUsed": ["curl (API testing)"],
+    "testingApproach": "API endpoint testing since Flet desktop app requires interactive UI testing",
+    "frictionsResolved": [
+      {
+        "description": "TTS synthesize API requires query parameters, not form-data multipart",
+        "resolution": "Used query string: /api/tts/synthesize?text=...&voice_id=..."
+      }
+    ],
+    "notes": [
+      "STT and TTS services use mock implementations (MockSTTService, MockTTSService) for development",
+      "Voice models downloaded to ~/.openmarcus/tts/",
+      "en_US-lessac-medium is the only downloaded voice; 6 others available for download"
+    ]
+  }
+}

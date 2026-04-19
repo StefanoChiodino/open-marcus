@@ -1,6 +1,6 @@
 {
   "milestone": "ai-integration",
-  "round": 1,
+  "round": 2,
   "status": "pass",
   "assertionsSummary": {
     "total": 9,
@@ -21,28 +21,31 @@
   ],
   "failedAssertions": [],
   "blockedAssertions": [],
-  "appliedUpdates": [
-    {
-      "target": "user-testing.md",
-      "description": "Added RAM detection evidence - 64GB system suggests Qwen2.5-14B model. Model directory: /Users/stefano/.openmarcus/models",
-      "source": "flow-report"
-    }
-  ],
+  "appliedUpdates": [],
   "flowReports": [
     "ai-inference-network.json",
     "ram-model-management.json",
     "streaming-responses.json",
     "persona-stoic.json"
   ],
-  "frictions": [
-    {
-      "group": "persona-stoic",
-      "description": "MockLLMService does not use PersonaService-built prompt - returns pre-defined responses instead. Code inspection confirms proper integration for real LLM.",
-      "impact": "Low - behavior is expected for mock in development"
-    }
-  ],
-  "evidenceDir": "/Users/stefano/.factory/missions/6f3cf8d7-cbd1-4ed7-9275-cf97cb6d538d/evidence/ai-integration",
-  "validationStateFile": "/Users/stefano/.factory/missions/6f3cf8d7-cbd1-4ed7-9275-cf97cb6d538d/validation-state.json",
-  "previousRound": null,
-  "summary": "All 9 AI integration assertions passed. Local LLM inference verified via network monitoring (0 external calls). RAM detection works (64GB -> 14B model suggestion). Streaming responses deliver 23 incremental tokens via SSE. Marcus Aurelius persona system properly integrated with stoic principles (Amor Fati, Memento Mori, Dichotomy of Control, Virtue)."
+  "reRunVerification": {
+    "date": "2026-04-19",
+    "priorSynthesisExists": true,
+    "priorRound": 1,
+    "newAssertionsToTest": 0,
+    "reason": "Prior synthesis showed all 9 assertions passed. No failed/blocked assertions from prior synthesis. No new assertions from features completed after prior synthesis. Union is empty - nothing new to test."
+  },
+  "validationStateVerification": {
+    "VAL-AI-001": "passed (validatedAt: 2026-04-19T20:19:05Z)",
+    "VAL-AI-002": "passed (validatedAt: 2026-04-19T19:18:00Z)",
+    "VAL-AI-003": "passed (validatedAt: 2026-04-19T19:18:00Z)",
+    "VAL-AI-004": "passed (validatedAt: 2026-04-19T19:17:24Z)",
+    "VAL-AI-005": "passed (validatedAt: 2026-04-19T19:18:50Z)",
+    "VAL-AI-006": "passed (validatedAt: 2026-04-19T19:18:50Z)",
+    "VAL-AI-007": "passed (validatedAt: 2026-04-19T20:19:05Z)",
+    "VAL-MODEL-001": "passed (validatedAt: 2026-04-19T19:18:00Z)",
+    "VAL-MODEL-002": "passed (validatedAt: 2026-04-19T19:18:00Z)"
+  },
+  "previousRound": "round-1-synthesis-at-commit-a99c6f7",
+  "summary": "Re-run verification confirmed: All 9 AI integration assertions from round 1 remain passing. validation-state.json verified and consistent with prior synthesis. No new tests required."
 }

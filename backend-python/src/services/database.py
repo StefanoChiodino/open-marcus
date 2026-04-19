@@ -2,12 +2,10 @@
 Database service for SQLAlchemy management with optional encryption.
 """
 
-import os
-import shutil
 from pathlib import Path
 from typing import Optional
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
@@ -37,9 +35,9 @@ class DatabaseService:
             database_url = f"sqlite:///{data_dir}/openMarcus.db"
         
         self.database_url = database_url
-        self.engine = None
+        self.engine: Optional[Engine] = None
         self._session_factory = None
-        self.encryption_service = encryption_service
+        self.encryption_service: Optional["EncryptionService"] = encryption_service
         self._db_file_path: Optional[Path] = None
         
         # Extract file path for encryption

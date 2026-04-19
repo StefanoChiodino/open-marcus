@@ -24,6 +24,10 @@ class APIClient:
         """Set auth token."""
         self._token = value
     
+    def clear_token(self) -> None:
+        """Clear the auth token (logout)."""
+        self._token = None
+    
     def get_headers(self) -> dict:
         """Get headers including auth token if available."""
         headers = {"Content-Type": "application/json"}

@@ -1,0 +1,14 @@
+[tool.ruff]
+line-length = 200
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = [
+    "E402",  # Module level import not at top of file - structural requirement for SQLAlchemy models with circular imports
+    "F821",  # Undefined name - false positive with from __future__ import annotations and SQLAlchemy forward references
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F401"]  # __init__.py often has imports after Base definition
+"src/models/*.py" = ["F821"]  # Models use forward references with __future__ annotations

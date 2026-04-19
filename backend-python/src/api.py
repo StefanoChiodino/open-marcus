@@ -11,6 +11,7 @@ from .routers.profile import router as profile_router
 from .routers.settings import router as settings_router
 from .routers.models import router as models_router
 from .routers.stt import router as stt_router
+from .routers.tts import router as tts_router
 from .services.database import init_database
 
 
@@ -48,6 +49,7 @@ def create_app() -> FastAPI:
     app.include_router(models_router)
     app.include_router(session_router)
     app.include_router(stt_router)
+    app.include_router(tts_router)
     
     @app.get("/health")
     async def health_check():

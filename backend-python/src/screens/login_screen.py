@@ -5,7 +5,7 @@ User authentication with username and password.
 
 import flet as ft
 
-from ..services.api_client import api_client
+from src.services.api_client import api_client
 
 
 class LoginScreen:

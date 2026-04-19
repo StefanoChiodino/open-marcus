@@ -7,14 +7,14 @@ Local-first, privacy-focused meditation app.
 
 import flet as ft
 
-from screens.login_screen import LoginScreen
-from screens.register_screen import RegisterScreen
-from screens.onboarding_screen import OnboardingScreen
-from screens.home_page import HomePage
-from screens.session_page import SessionPage
-from screens.history_page import HistoryPage
-from screens.settings_page import SettingsPage
-from screens.lock_screen import PasswordLockScreen
+from src.screens.login_screen import LoginScreen
+from src.screens.register_screen import RegisterScreen
+from src.screens.onboarding_screen import OnboardingScreen
+from src.screens.home_page import HomePage
+from src.screens.session_page import SessionPage
+from src.screens.history_page import HistoryPage
+from src.screens.settings_page import SettingsPage
+from src.screens.lock_screen import PasswordLockScreen
 
 
 class OpenMarcusApp:
@@ -98,7 +98,7 @@ class OpenMarcusApp:
 
 def main(page: ft.Page) -> None:
     """Application entry point."""
-    app = OpenMarcusApp(page)
+    OpenMarcusApp(page)
 
 
 ft.app(target=main)

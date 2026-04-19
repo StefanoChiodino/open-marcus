@@ -115,6 +115,11 @@ class SessionPage:
         if not self.audio_player:
             self._init_audio_player()
         
+        # Ensure audio player is available
+        if not self.audio_player:
+            self.show_error("Failed to initialize audio player")
+            return
+        
         try:
             # Synthesize speech from backend
             result, error = await api_client.synthesize_speech(text)
@@ -185,6 +190,10 @@ class SessionPage:
     
     def _on_recording_state_changed(self, e: ft.AudioRecorderStateChangeEvent) -> None:
         """Handle audio recorder state changes."""
+        # Ensure UI elements are initialized
+        if not self.recording_indicator or not self.mic_button:
+            return
+        
         if e.state == ft.AudioRecorderState.RECORDING:
             self.is_recording = True
             self.recording_indicator.visible = True
@@ -207,6 +216,11 @@ class SessionPage:
     async def _start_recording(self) -> None:
         """Start audio recording."""
         if not self.audio_recorder:
+            return
+        
+        # Ensure UI elements are initialized
+        if not self.recording_indicator or not self.mic_button:
+            self.show_error("UI not ready")
             return
         
         # Check microphone permission first
@@ -232,6 +246,11 @@ class SessionPage:
     async def _stop_recording(self) -> None:
         """Stop audio recording and transcribe."""
         if not self.audio_recorder:
+            return
+        
+        # Ensure UI elements are initialized
+        if not self.recording_indicator or not self.mic_button:
+            self.show_error("UI not ready")
             return
         
         try:

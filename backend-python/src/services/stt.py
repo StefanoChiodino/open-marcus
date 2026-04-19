@@ -135,6 +135,9 @@ class STTService:
             if not self.load_model():
                 return ""
         
+        # Ensure model is loaded after initialization attempt
+        assert self._model is not None, "Model should be loaded after successful load_model()"
+        
         try:
             logger.info(f"Transcribing audio: {audio_path}")
             

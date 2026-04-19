@@ -60,26 +60,11 @@ async def transcribe_audio(
     Returns:
         Dictionary with transcribed text
     """
-    # Validate file type
-    allowed_types = [
-        "audio/webm",
-        "audio/wav",
-        "audio/wave",
-        "audio/x-wav",
-        "audio/mp3",
-        "audio/mpeg",
-        "audio/ogg",
-        "audio/flac",
-        "audio/x-flac",
-        "audio/aac",
-        "audio/m4a",
-        "audio/webm;codecs=opus",
-    ]
-    
     content_type = file.content_type or ""
+    filename = file.filename or ""
     
     # Check if it's an audio file (allow any audio type)
-    if not content_type.startswith("audio/") and not any(ext in file.filename for ext in [".webm", ".wav", ".mp3", ".ogg", ".flac", ".m4a", ".aac"]):
+    if not content_type.startswith("audio/") and not any(ext in filename for ext in [".webm", ".wav", ".mp3", ".ogg", ".flac", ".m4a", ".aac"]):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File must be an audio file"

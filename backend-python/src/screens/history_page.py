@@ -55,7 +55,7 @@ class HistoryPage:
                             ft.Text(
                                 f"{len(self.sessions)} sessions with Marcus Aurelius",
                                 size=14,
-                                color=ft.colors.GREY_600,
+                                color=ft.Colors.GREY_600,
                             ),
                             ft.Container(height=24),
                             self.build_sessions_list(),
@@ -75,7 +75,7 @@ class HistoryPage:
                         content=ft.Text(
                             "No sessions yet. Start your first meditation!",
                             size=16,
-                            color=ft.colors.GREY_500,
+                            color=ft.Colors.GREY_500,
                             italic=True,
                         ),
                         alignment=ft.alignment.center,
@@ -108,25 +108,25 @@ class HistoryPage:
                                                         ft.Icon(
                                                             ft.icons.SCHEDULE,
                                                             size=14,
-                                                            color=ft.colors.GREY_600,
+                                                            color=ft.Colors.GREY_600,
                                                         ),
                                                         ft.Container(width=4),
                                                         ft.Text(
                                                             session.get("duration", ""),
                                                             size=12,
-                                                            color=ft.colors.GREY_600,
+                                                            color=ft.Colors.GREY_600,
                                                         ),
                                                         ft.Container(width=16),
                                                         ft.Icon(
                                                             ft.icons.CALENDAR_TODAY,
                                                             size=14,
-                                                            color=ft.colors.GREY_600,
+                                                            color=ft.Colors.GREY_600,
                                                         ),
                                                         ft.Container(width=4),
                                                         ft.Text(
                                                             session.get("date", ""),
                                                             size=12,
-                                                            color=ft.colors.GREY_600,
+                                                            color=ft.Colors.GREY_600,
                                                         ),
                                                     ],
                                                 ),
@@ -135,7 +135,7 @@ class HistoryPage:
                                         ft.Container(expand=True),
                                         ft.Icon(
                                             ft.icons.CHEVRON_RIGHT,
-                                            color=ft.colors.GREY_400,
+                                            color=ft.Colors.GREY_400,
                                         ),
                                     ],
                                 ),
@@ -143,7 +143,7 @@ class HistoryPage:
                                 ft.Text(
                                     session.get("summary", ""),
                                     size=14,
-                                    color=ft.colors.GREY_700,
+                                    color=ft.Colors.GREY_700,
                                     max_lines=2,
                                     overflow=ft.TextOverflow.ELLIPSIS,
                                 ),
@@ -154,7 +154,7 @@ class HistoryPage:
                                             content=ft.Text(
                                                 "View Details",
                                                 size=12,
-                                                color=ft.colors.DEEP_PURPLE,
+                                                color=ft.Colors.DEEP_PURPLE,
                                             ),
                                             on_click=lambda e, s=session: self.view_session(s),
                                         ),

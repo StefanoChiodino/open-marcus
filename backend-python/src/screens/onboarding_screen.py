@@ -33,7 +33,7 @@ class OnboardingScreen:
             value="beginner",
         )
         self.error_text = ft.Text(
-            color=ft.colors.ERROR,
+            color=ft.Colors.ERROR,
             visible=False,
         )
 
@@ -57,7 +57,7 @@ class OnboardingScreen:
                             ft.Text(
                                 "Let's set up your meditation profile",
                                 size=16,
-                                color=ft.colors.GREY_600,
+                                color=ft.Colors.GREY_600,
                             ),
                             ft.Container(height=40),
                             self.error_text,
@@ -92,7 +92,9 @@ class OnboardingScreen:
             self.app.page.update()
             return
 
-        # Placeholder for actual profile creation
+        # TODO: Implement actual profile creation with backend API
+        # goals and experience will be used when backend is connected
+        print(f"Creating profile: name={name}, goals={goals}, experience={experience}")
         self.error_text.value = ""
         self.error_text.visible = False
         self.app.navigate_to("/home")

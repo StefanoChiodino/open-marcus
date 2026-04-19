@@ -56,9 +56,9 @@ class SessionPage:
                                                     content=ft.Text(
                                                         "M",
                                                         size=20,
-                                                        color=ft.colors.WHITE,
+                                                        color=ft.Colors.WHITE,
                                                     ),
-                                                    bgcolor=ft.colors.DEEP_PURPLE,
+                                                    bgcolor=ft.Colors.DEEP_PURPLE,
                                                     radius=20,
                                                 ),
                                                 ft.Container(width=12),
@@ -72,7 +72,7 @@ class SessionPage:
                                                         ft.Text(
                                                             "Roman Emperor & Stoic Philosopher",
                                                             size=12,
-                                                            color=ft.colors.GREY_600,
+                                                            color=ft.Colors.GREY_600,
                                                         ),
                                                     ],
                                                 ),
@@ -82,14 +82,14 @@ class SessionPage:
                                         ft.Text(
                                             "I am here to guide your meditation. Share what is on your mind, and we shall explore it together through the lens of Stoic wisdom.",
                                             size=14,
-                                            color=ft.colors.GREY_700,
+                                            color=ft.Colors.GREY_700,
                                             italic=True,
                                         ),
                                     ],
                                 ),
                                 padding=20,
                                 border_radius=12,
-                                bgcolor=ft.colors.SURFACE_VARIANT,
+                                bgcolor=ft.Colors.SURFACE_VARIANT,
                             ),
                             ft.Container(height=16),
                             # Messages list
@@ -107,8 +107,8 @@ class SessionPage:
                                         ft.IconButton(
                                             icon=ft.icons.SEND,
                                             icon_size=28,
-                                            bgcolor=ft.colors.DEEP_PURPLE,
-                                            color=ft.colors.WHITE,
+                                            bgcolor=ft.Colors.DEEP_PURPLE,
+                                            color=ft.Colors.WHITE,
                                             on_click=self.send_message,
                                         ),
                                     ],
@@ -130,7 +130,7 @@ class SessionPage:
                     content=ft.Text(
                         "Your conversation will appear here...",
                         size=14,
-                        color=ft.colors.GREY_500,
+                        color=ft.Colors.GREY_500,
                         italic=True,
                     ),
                     alignment=ft.alignment.center,
@@ -158,7 +158,7 @@ class SessionPage:
                         right=0 if is_user else 60,
                     ),
                     border_radius=12,
-                    bgcolor=ft.colors.PRIMARY_CONTAINER if not is_user else ft.colors.SECONDARY_CONTAINER,
+                    bgcolor=ft.Colors.PRIMARY_CONTAINER if not is_user else ft.Colors.SECONDARY_CONTAINER,
                 ),
             )
         return controls

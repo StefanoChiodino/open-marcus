@@ -25,17 +25,17 @@ class PasswordLockScreen:
             visible=False
         )
         self.error_text = ft.Text(
-            color=ft.colors.ERROR,
+            color=ft.Colors.ERROR,
             visible=False,
         )
         self.success_text = ft.Text(
-            color=ft.colors.GREEN,
+            color=ft.Colors.GREEN,
             visible=False,
         )
         self.status_text = ft.Text(
             value="Enter your master password to unlock your data.",
             size=14,
-            color=ft.colors.GREY_600,
+            color=ft.Colors.GREY_600,
             text_align=ft.TextAlign.CENTER
         )
         self.unlock_button = ft.ElevatedButton(
@@ -65,7 +65,7 @@ class PasswordLockScreen:
                             ft.Icon(
                                 name=ft.icons.LOCK,
                                 size=64,
-                                color=ft.colors.DEEP_PURPLE,
+                                color=ft.Colors.DEEP_PURPLE,
                             ),
                             ft.Container(height=24),
                             ft.Text(
@@ -76,7 +76,7 @@ class PasswordLockScreen:
                             ft.Text(
                                 "Your Stoic Meditation Companion",
                                 size=16,
-                                color=ft.colors.GREY_600,
+                                color=ft.Colors.GREY_600,
                             ),
                             ft.Container(height=40),
                             self.status_text,

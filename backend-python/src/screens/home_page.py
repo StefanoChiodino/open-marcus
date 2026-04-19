@@ -37,7 +37,7 @@ class HomePage:
                             ft.Container(
                                 padding=24,
                                 border_radius=16,
-                                bgcolor=ft.colors.DEEP_PURPLE_50,
+                                bgcolor=ft.Colors.DEEP_PURPLE_50,
                                 content=ft.Column(
                                     controls=[
                                         ft.Text(
@@ -49,7 +49,7 @@ class HomePage:
                                         ft.Text(
                                             "Your personal Stoic meditation companion",
                                             size=16,
-                                            color=ft.colors.GREY_700,
+                                            color=ft.Colors.GREY_700,
                                         ),
                                     ],
                                 ),
@@ -66,7 +66,7 @@ class HomePage:
                                                     ft.Icon(
                                                         ft.icons.PERSON,
                                                         size=24,
-                                                        color=ft.colors.DEEP_PURPLE,
+                                                        color=ft.Colors.DEEP_PURPLE,
                                                     ),
                                                     ft.Text(
                                                         "Your Profile",
@@ -121,9 +121,9 @@ class HomePage:
                                 content=ft.ElevatedButton(
                                     "Begin Meditation",
                                     icon=ft.icons.PLAY_ARROW,
-                                    icon_color=ft.colors.WHITE,
-                                    bgcolor=ft.colors.DEEP_PURPLE,
-                                    color=ft.colors.WHITE,
+                                    icon_color=ft.Colors.WHITE,
+                                    bgcolor=ft.Colors.DEEP_PURPLE,
+                                    color=ft.Colors.WHITE,
                                     width=300,
                                     height=56,
                                     style=ft.ButtonStyle(

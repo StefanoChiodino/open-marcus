@@ -32,11 +32,11 @@ class RegisterScreen:
             on_submit=self.handle_register,
         )
         self.error_text = ft.Text(
-            color=ft.colors.ERROR,
+            color=ft.Colors.ERROR,
             visible=False,
         )
         self.success_text = ft.Text(
-            color=ft.colors.GREEN,
+            color=ft.Colors.GREEN,
             visible=False,
         )
         self.loading = False
@@ -62,7 +62,7 @@ class RegisterScreen:
                             ft.Text(
                                 "Start your Stoic meditation journey",
                                 size=16,
-                                color=ft.colors.GREY_600,
+                                color=ft.Colors.GREY_600,
                             ),
                             ft.Container(height=32),
                             self.error_text,

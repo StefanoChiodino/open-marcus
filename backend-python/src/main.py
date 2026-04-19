@@ -37,7 +37,7 @@ class OpenMarcusApp:
     def setup_theme(self) -> None:
         """Configure app theme with consistent styling."""
         self.page.theme = ft.Theme(
-            color_scheme_seed=ft.colors.DEEP_PURPLE,
+            color_scheme_seed=ft.Colors.DEEP_PURPLE,
             font_family="Helvetica",
         )
         self.page.theme_mode = ft.ThemeMode.LIGHT

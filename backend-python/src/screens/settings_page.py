@@ -80,7 +80,7 @@ class SettingsPage:
                                     ft.Text(
                                         "Allow voice input for meditation sessions",
                                         size=12,
-                                        color=ft.colors.GREY_600,
+                                        color=ft.Colors.GREY_600,
                                     ),
                                 ],
                             ),
@@ -95,7 +95,7 @@ class SettingsPage:
                                     ft.Text(
                                         "Select the AI model for meditation conversations",
                                         size=12,
-                                        color=ft.colors.GREY_600,
+                                        color=ft.Colors.GREY_600,
                                     ),
                                     ft.Container(height=12),
                                     ft.Container(
@@ -104,13 +104,13 @@ class SettingsPage:
                                                 ft.Icon(
                                                     ft.icons.INFO_OUTLINE,
                                                     size=16,
-                                                    color=ft.colors.BLUE,
+                                                    color=ft.Colors.BLUE,
                                                 ),
                                                 ft.Container(width=8),
                                                 ft.Text(
                                                     "Smaller models use less RAM but may be less nuanced",
                                                     size=12,
-                                                    color=ft.colors.GREY_600,
+                                                    color=ft.Colors.GREY_600,
                                                 ),
                                             ],
                                         ),
@@ -134,7 +134,7 @@ class SettingsPage:
                                             ft.OutlinedButton(
                                                 "Clear All Data",
                                                 icon=ft.icons.DELETE,
-                                                icon_color=ft.colors.ERROR,
+                                                icon_color=ft.Colors.ERROR,
                                                 on_click=self.handle_clear_data,
                                             ),
                                         ],
@@ -143,7 +143,7 @@ class SettingsPage:
                                     ft.Text(
                                         "Export your data for backup or clear all data to start fresh",
                                         size=12,
-                                        color=ft.colors.GREY_600,
+                                        color=ft.Colors.GREY_600,
                                     ),
                                 ],
                             ),
@@ -164,7 +164,7 @@ class SettingsPage:
                                                 ft.Text(
                                                     "Detecting...",
                                                     size=14,
-                                                    color=ft.colors.GREY_600,
+                                                    color=ft.Colors.GREY_600,
                                                 ),
                                             ],
                                         ),
@@ -179,7 +179,7 @@ class SettingsPage:
                                                 ft.Text(
                                                     "0.1.0",
                                                     size=14,
-                                                    color=ft.colors.GREY_600,
+                                                    color=ft.Colors.GREY_600,
                                                 ),
                                             ],
                                         ),
@@ -207,7 +207,7 @@ class SettingsPage:
                     controls=[
                         ft.Row(
                             controls=[
-                                ft.Icon(icon, size=24, color=ft.colors.DEEP_PURPLE),
+                                ft.Icon(icon, size=24, color=ft.Colors.DEEP_PURPLE),
                                 ft.Container(width=12),
                                 ft.Text(
                                     title,

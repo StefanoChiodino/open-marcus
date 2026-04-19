@@ -5,13 +5,10 @@ Handles listing installed models, downloading new GGUF models from HuggingFace,
 and managing model activation/switching.
 """
 
-import os
 import logging
 from pathlib import Path
 from typing import Optional, List, Dict, AsyncIterator
 from dataclasses import dataclass
-from datetime import datetime
-import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +95,7 @@ class ModelManagementService:
         Returns:
             List of model info dicts
         """
-        models = []
+        models: List[Dict] = []
         
         if not self.models_dir.exists():
             return models
@@ -127,7 +124,7 @@ class ModelManagementService:
             })
         
         # Sort by name
-        models.sort(key=lambda m: m["name"])
+        models.sort(key=lambda m: str(m["name"]))
         return models
     
     def get_model_path(self, model_name: str) -> Path:
@@ -191,12 +188,11 @@ class ModelManagementService:
             
             # Use hf_hub_download to get the model file
             # The model file selection depends on the repo structure
+            filename_arg: str = model_name if model_name.endswith('.gguf') else model_name + ".gguf"
             local_path = hf_hub_download(
                 repo_id=repo_id,
-                filename=model_name if model_name.endswith('.gguf') else None,
+                filename=filename_arg,
                 local_dir=self.models_dir,
-                local_dir_use_symlinks=False,
-                resume_download=True,
             )
             
             # Verify download

@@ -7,7 +7,6 @@ Handles model listing, downloading, and switching.
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from ..schemas.models import (
     ModelInfo,
@@ -21,7 +20,6 @@ from ..schemas.models import (
 from ..services.database import get_database_service
 from ..services.jwt import jwt_service
 from ..services.model_management import get_model_management_service
-from ..services.ram_detection import get_ram_detection_service, get_best_model_name
 from ..models.settings import Settings
 
 
@@ -228,7 +226,7 @@ async def delete_model(
         return ModelActivateResponse(
             success=False,
             model_name=model_name,
-            message=f"Cannot delete active model. Please switch to another model first.",
+            message="Cannot delete active model. Please switch to another model first.",
         )
     
     # Check if model exists

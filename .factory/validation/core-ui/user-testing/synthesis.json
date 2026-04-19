@@ -1,6 +1,6 @@
 {
   "milestone": "core-ui",
-  "round": 1,
+  "round": 2,
   "status": "pass",
   "assertionsSummary": {
     "total": 6,
@@ -19,5 +19,5 @@
   "failedAssertions": [],
   "blockedAssertions": [],
   "appliedUpdates": [],
-  "previousRound": null
+  "previousRound": ".factory/validation/core-ui/user-testing/synthesis.json (round 1 - identical results confirmed)"
 }

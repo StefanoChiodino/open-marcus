@@ -277,20 +277,48 @@ class PasswordLockService:
         if not self.verify_password(current_password):
             return False, "Current password is incorrect"
         
+        # Keep reference to old Fernet for decryption
+        old_fernet = self.encryption._fernet
+        
         # Generate new salt
         new_salt = self.key_derivation.generate_salt()
         
         # Hash new password
         new_password_hash = self.password_service.hash_password(new_password)
         
-        # Update config
+        # Update config FIRST (before we change encryption)
         config = self._load_config()
         config["password_hash"] = new_password_hash
         config["salt"] = new_salt.hex()
         config["password_changed_at"] = datetime.utcnow().isoformat()
         self._save_config(config)
         
-        # Re-initialize encryption with new key
+        # Decrypt existing .db.enc with OLD key
+        encrypted_file = get_encrypted_db_file()
+        if encrypted_file.exists() and old_fernet is not None:
+            # Read encrypted data
+            with open(encrypted_file, 'rb') as f:
+                encrypted_data = f.read()
+            
+            # Decrypt with old key
+            try:
+                plaintext = old_fernet.decrypt(encrypted_data)
+            except Exception as e:
+                return False, f"Failed to decrypt database with old password: {e}"
+            
+            # Derive new key and create new Fernet
+            new_key = self.key_derivation.derive_key_with_salt_password(new_password, new_salt)
+            from cryptography.fernet import Fernet
+            new_fernet = Fernet(new_key)
+            
+            # Re-encrypt with new key
+            new_encrypted_data = new_fernet.encrypt(plaintext)
+            
+            # Write new encrypted file
+            with open(encrypted_file, 'wb') as f:
+                f.write(new_encrypted_data)
+        
+        # Update instance state
         self._salt = new_salt
         self._password_hash = new_password_hash
         self.encryption.initialize_with_password(new_password, new_salt)

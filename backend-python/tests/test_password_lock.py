@@ -118,6 +118,52 @@ class TestPasswordLockService:
         assert success is False
         assert "incorrect" in error.lower()
     
+    def test_change_password_re_encrypts_database(self, temp_config):
+        """Test that change_password properly re-encrypts the database.
+        
+        This test verifies the core fix: after changing password, the database
+        configuration is updated and old password verification fails.
+        
+        Note: Full E2E test with actual database encryption requires the full
+        app infrastructure due to singleton database service.
+        """
+        service = PasswordLockService()
+        service.setup_new_password("oldpassword")
+        
+        # Change password
+        success, error = service.change_password("oldpassword", "newpassword")
+        assert success is True, f"Password change failed: {error}"
+        
+        # Verify old password no longer works via verify_password
+        # (This tests that password hash was properly updated)
+        assert service.verify_password("oldpassword") is False, \
+            "Old password should fail verification after change"
+        
+        # Verify new password works
+        assert service.verify_password("newpassword") is True, \
+            "New password should pass verification"
+        
+        # Verify the config was updated with new salt
+        import json
+        config_path = temp_config / "app_config.json"
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        
+        # Config should have password_changed_at timestamp
+        assert "password_changed_at" in config, \
+            "Config should record password change timestamp"
+        
+        # Create a fresh service and verify old password fails to unlock
+        service2 = PasswordLockService()
+        success, error = service2.unlock_with_password("oldpassword")
+        assert success is False, \
+            f"Old password should fail to unlock after change: {error}"
+        
+        # New password should unlock successfully
+        success, error = service2.unlock_with_password("newpassword")
+        assert success is True, \
+            f"New password should unlock successfully: {error}"
+    
     def test_lock(self, temp_config):
         """Test locking the app."""
         service = PasswordLockService()

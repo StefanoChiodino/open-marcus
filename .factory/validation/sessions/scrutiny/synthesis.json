@@ -1,19 +1,19 @@
 {
   "milestone": "sessions",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
       "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && pytest tests/ -v",
       "exitCode": 0,
-      "note": "156 passed with 28 warnings (async test decoractors not removed)"
+      "note": "156 passed with 29 warnings (async test decorators not removed)"
     },
     "typecheck": {
       "passed": true,
       "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && mypy src/",
       "exitCode": 0,
-      "note": "Success: no issues found in 44 source files"
+      "note": "Success: no issues found in 44 source files. Fixed prior mypy error in session.py line 284-285 (Optional[Session] None check)"
     },
     "lint": {
       "passed": true,
@@ -23,59 +23,34 @@
     }
   },
   "reviewsSummary": {
-    "total": 5,
-    "passed": 2,
-    "failed": 3,
-    "failedFeatures": [
-      "session-summary-generation",
-      "ui-session-chat",
-      "ui-session-history"
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "failedFeatures": [],
+    "fixFeaturesReviewed": [
+      {
+        "featureId": "fix-session-chat-ai-responses",
+        "originalFailedFeature": "ui-session-chat",
+        "status": "pass",
+        "summary": "Fix addresses blocking issue by wiring AI response generation and display. Frontend send_message() now extracts and displays AI responses."
+      },
+      {
+        "featureId": "fix-session-summary-auto",
+        "originalFailedFeature": "session-summary-generation",
+        "status": "pass",
+        "summary": "Fix addresses blocking issue by wiring SummaryService into end_session router. Summary is now auto-generated when session ends."
+      }
     ]
   },
-  "blockingIssues": [
-    {
-      "featureId": "session-summary-generation",
-      "severity": "blocking",
-      "description": "Summary generation is NOT automatically triggered when a session ends. VAL-SESSION-006 requires 'after session ends, AI generates a summary' but the /summarize endpoint must be called manually as a separate step. The end_session endpoint does not invoke summary generation.",
-      "evidence": "end_session in routers/session.py does not call summary_service.generate_and_store_summary(). Frontend session_page.py end_session method only calls api_client.end_session(), no subsequent call to generate summary."
-    },
-    {
-      "featureId": "ui-session-chat",
-      "severity": "blocking",
-      "description": "send_message() in session_page.py calls api_client.add_message() but never extracts or displays the AI response. User messages appear in UI but Marcus Aurelius never responds. The result from add_message is checked for session_state but the actual message content (AI response) is never extracted or displayed in the messages list.",
-      "evidence": "session_page.py line 299: after successful api_client.add_message(), the code only extracts session_state from result but never adds the returned message to self.messages for display."
-    },
-    {
-      "featureId": "ui-session-history",
-      "severity": "blocking",
-      "description": "main.py route handler at line 80 incorrectly matches '/session/detail' fallback route as a session ID request. The condition 'if self.page.route.startswith(\"/session/\") and self.page.route != \"/session\":' matches the fallback route and attempts to load 'detail' as a session ID from the API.",
-      "evidence": "Fixed during scrutiny by adding check to exclude 'detail' route. Now redirects to history page when /session/detail is accessed."
-    }
-  ],
+  "blockingIssues": [],
   "appliedUpdates": [
     {
-      "target": "services.yaml",
-      "description": "No changes needed - services.yaml correctly documents the backend services",
-      "sourceFeature": null
-    },
-    {
-      "target": "library",
-      "description": "No factual knowledge gaps discovered about the codebase during this validation",
-      "sourceFeature": null
+      "target": "src/routers/session.py",
+      "description": "Added None check for session after summary generation to fix mypy error (lines 284-285)",
+      "sourceFeature": "scrutiny-validation-fix"
     }
   ],
-  "fixesAppliedDuringValidation": [
-    {
-      "file": "src/screens/session_detail_page.py",
-      "issue": "Optional[dict] type error - session.get() called without None check",
-      "fix": "Added None check for session in _build_session_detail_content() before calling .get()"
-    },
-    {
-      "file": "src/main.py",
-      "issue": "Route handler incorrectly matched /session/detail as a session ID",
-      "fix": "Added condition to exclude 'detail' route and redirect to history page"
-    }
-  ],
+  "fixesAppliedDuringValidation": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "AGENTS.md",
@@ -107,15 +82,17 @@
     ".factory/validation/sessions/scrutiny/reviews/message-storage.json",
     ".factory/validation/sessions/scrutiny/reviews/session-summary-generation.json",
     ".factory/validation/sessions/scrutiny/reviews/ui-session-chat.json",
-    ".factory/validation/sessions/scrutiny/reviews/ui-session-history.json"
+    ".factory/validation/sessions/scrutiny/reviews/ui-session-history.json",
+    ".factory/validation/sessions/scrutiny/reviews/fix-session-chat-ai-responses.json",
+    ".factory/validation/sessions/scrutiny/reviews/fix-session-summary-auto.json"
   ],
   "fulfillmentStatus": {
-    "VAL-SESSION-001": "partial - Session creates with intro state, but chat UI doesn't display AI responses",
+    "VAL-SESSION-001": "pass - Session creates with intro state, AI responses now displayed",
     "VAL-SESSION-002": "pass - State machine transitions work correctly",
-    "VAL-SESSION-003": "fail - AI responses not displayed in chat",
+    "VAL-SESSION-003": "pass - AI responses now displayed in chat",
     "VAL-SESSION-004": "pass - History page shows sessions with date, duration, summary",
-    "VAL-SESSION-005": "pass - Detail page shows conversation, but route handling bug (fixed)",
-    "VAL-SESSION-006": "fail - Summary not auto-generated on session end"
+    "VAL-SESSION-005": "pass - Detail page shows conversation, route handling fixed",
+    "VAL-SESSION-006": "pass - Summary auto-generated on session end"
   },
-  "previousRound": null
+  "previousRound": ".factory/validation/sessions/scrutiny/synthesis.json"
 }

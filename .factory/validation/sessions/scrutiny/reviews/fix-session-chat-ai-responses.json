@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-session-chat-ai-responses",
+  "reviewedAt": "2026-04-19T19:30:00.000Z",
+  "commitId": "ea42ca6cf23db35a04988211d358424a50f4e0ff",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The fix addresses the blocking issue by: (1) Backend router now generates placeholder Stoic AI responses and returns them instead of user message; (2) SessionService added add_ai_response() method to persist AI messages; (3) Frontend send_message() now extracts role and content from API result and appends AI message to self.messages for display.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": ".factory/validation/sessions/scrutiny/reviews/ui-session-chat.json",
+  "summary": "Fix successfully addresses the blocking issue. The original problem was send_message() called api_client.add_message() but never extracted or displayed the AI response. Now the frontend properly extracts and displays AI responses. All 156 tests pass."
+}

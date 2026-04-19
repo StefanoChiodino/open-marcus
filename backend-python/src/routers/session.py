@@ -280,6 +280,10 @@ async def end_session(
         # Refresh session to get updated summary
         session = session_service.get_session(db, session_id, user_id)
     
+    # If session is still None at this point, something went wrong
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
     return SessionStateResponse(
         id=session.id,
         state=session.state,

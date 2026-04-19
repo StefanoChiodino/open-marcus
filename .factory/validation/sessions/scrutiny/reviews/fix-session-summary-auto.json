@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-session-summary-auto",
+  "reviewedAt": "2026-04-19T19:30:00.000Z",
+  "commitId": "ea42ca6cf23db35a04988211d358424a50f4e0ff",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The fix properly addresses the blocking issue by wiring SummaryService into the end_session router. When end_session is called without a manual summary, it now automatically calls summary_service.generate_and_store_summary() to generate an AI-powered summary, then refreshes the session to return the updated summary.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": ".factory/validation/sessions/scrutiny/reviews/session-summary-generation.json",
+  "summary": "Fix successfully addresses VAL-SESSION-006. The end_session router now automatically triggers summary generation via SummaryService when no manual summary is provided. The fix adds summary_service as a dependency and calls generate_and_store_summary() after ending the session, then refreshes the session to return the updated summary. All 156 tests pass."
+}

@@ -1,79 +1,72 @@
 {
   "milestone": "ai-integration",
-  "round": 1,
+  "round": 2,
   "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
       "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && pytest tests/ -v",
       "exitCode": 0,
-      "output": "271 passed, 28 warnings in 12.94s"
+      "output": "271 passed, 28 warnings in 12.85s"
     },
     "typecheck": {
       "passed": true,
       "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && mypy src/",
       "exitCode": 0,
-      "output": "Success: no issues found in 50 source files (after fixes: added type annotation for models list, fixed sort key return type, fixed hf_hub_download call signature)"
+      "output": "Success: no issues found in 50 source files"
     },
     "lint": {
       "passed": true,
       "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && ruff check src/",
       "exitCode": 0,
-      "output": "All checks passed! (7 fixable errors auto-fixed: unused imports in models.py and model_management.py)"
+      "output": "All checks passed!"
     }
   },
   "reviewsSummary": {
     "total": 5,
-    "passed": 3,
-    "failed": 2,
-    "failedFeatures": [
-      "llm-model-management",
-      "llm-streaming-responses"
-    ]
+    "passed": 5,
+    "failed": 0,
+    "failedFeatures": []
   },
   "blockingIssues": [],
-  "appliedUpdates": [
-    {
-      "target": "services.yaml",
-      "description": "Ruff auto-fix removed unused imports in models.py and model_management.py (typing.Optional, get_best_model_name, os, datetime, hashlib). No services.yaml changes needed.",
-      "sourceFeature": "llm-model-management"
-    },
-    {
-      "target": "routers/models.py",
-      "description": "Added logging import and logger instance to fix NameError at runtime",
-      "sourceFeature": "llm-model-management"
-    },
-    {
-      "target": "routers/session.py",
-      "description": "Fixed error event format to use {'type': 'error', 'error': ...} so API client recognizes them",
-      "sourceFeature": "llm-streaming-responses"
-    }
-  ],
+  "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "AGENTS.md",
-      "suggestion": "Document the logging convention: when creating new router/service files, include `import logging` and `logger = logging.getLogger(__name__)` as a standard pattern. Currently only settings.py and session.py show this pattern, but it's not codified.",
-      "evidence": "llm-model-management failed because worker didn't add logger import. llm-ram-detection and llm-marcus-persona also followed this pattern correctly (from reading other files), suggesting it's an established convention but undocumented.",
+      "suggestion": "Document SSE event format convention: events should use `type` field (e.g., `{'type': 'token', 'content': '...'}`, `{'type': 'error', 'error': '...'}`). This was identified as a gap when llm-streaming-responses had an error event format bug in the original commit.",
+      "evidence": "llm-streaming-responses: original error events used `{'error': '...'}` without type field, causing silent error swallowing. Fixed in 1d812bc.",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Document the logging import convention for new router/service files: include `import logging` and `logger = logging.getLogger(__name__)`. This pattern is used in settings.py, session.py, and models.py but not codified.",
+      "evidence": "llm-model-management failed originally (NameError: logger not defined) because worker didn't add logger import. Logging pattern is consistent across codebase but undocumented.",
       "isSystemic": true
     },
     {
       "target": "backend-worker skill",
-      "suggestion": "Add explicit step in Work Procedure for logging setup: 'Add logging import and logger instance to new router/service files'. Also add note about SSE event format conventions for streaming endpoints.",
-      "evidence": "llm-model-management: worker missed logger import. llm-streaming-responses: worker used inconsistent error event format (`{'error'}` vs `{'type': 'error'}`). Both are convention gaps in the skill.",
+      "suggestion": "Add explicit step for adding logger import when creating new router/service files. Also add note about SSE event format conventions for streaming endpoints.",
+      "evidence": "llm-model-management: worker missed logger import. llm-streaming-responses: worker used inconsistent error event format. Both were convention gaps in skill.",
       "isSystemic": true
     },
     {
-      "target": "AGENTS.md or skill",
-      "suggestion": "Add SSE event format standard: events should include `type` field (e.g., `{'type': 'token', 'content': '...'}`, `{'type': 'error', 'error': '...'}`). Current session.py has mixed formats - 'token', 'session_state', 'complete' use type field but errors don't.",
-      "evidence": "llm-streaming-responses review identified that session.py:302 and :318 yield `{'error': '...'}` without type field, while the same file uses `{'type': 'token'}` for tokens. This inconsistency caused the error handling bug.",
+      "target": "AGENTS.md",
+      "suggestion": "Consider consolidating MARCUS_SYSTEM_PROMPT in one place. Currently defined in both LLMService (llm.py:53) and PersonaService (persona.py:46). AGENTS.md suggests 'config/prompts.yaml' for persona prompts but implementation uses hardcoded constants.",
+      "evidence": "llm-marcus-persona review found duplicate prompts in llm.py and persona.py. AGENTS.md line mentions config/prompts.yaml but not followed.",
+      "isSystemic": false
+    },
+    {
+      "target": "services.yaml",
+      "suggestion": "Add health check for LLM model loading, or document that model loading is lazy (loaded on first use rather than at service startup). Currently backend-api has healthcheck but no equivalent for LLM model loading.",
+      "evidence": "llm-llama-cpp-integration review: model loaded lazily on first use, not at service startup. services.yaml has no startup/cleanup for model loading.",
       "isSystemic": false
     }
   ],
   "rejectedObservations": [
     {
-      "observation": "marcus-persona review suggested AGENTS.md doesn't exist in mission dir",
-      "reason": "AGENTS.md does exist at /Users/stefano/.factory/missions/6f3cf8d7-cbd1-4ed7-9275-cf97cb6d538d/AGENTS.md - the observation was based on checking the wrong path"
+      "observation": "llm-ram-detection review said architecture.md not in library/ - actually architecture.md exists at repo root .factory/library/architecture.md",
+      "reason": "Library observation was based on checking wrong path"
     }
   ],
-  "previousRound": null
+  "previousRound": ".factory/validation/ai-integration/scrutiny/synthesis.json (round 1)"
 }

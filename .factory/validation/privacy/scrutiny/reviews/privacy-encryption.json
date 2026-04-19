@@ -1,0 +1,73 @@
+{
+  "featureId": "privacy-encryption",
+  "reviewedAt": "2026-04-19T22:45:00Z",
+  "commitId": "089af66",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The encryption implementation uses proper cryptography (PBKDF2-SHA256 with 480k iterations, Fernet/AES-128-CBC) and has adequate test coverage. However, there is a CRITICAL BUG: the change_password() method does NOT re-encrypt the database with the new key. It only updates the password hash and salt in config but leaves the database encrypted with the OLD encryption key. This means after a password change, the database can still be decrypted with the old password, violating the security expectation.",
+    "issues": [
+      {
+        "file": "backend-python/src/services/password_lock.py",
+        "line": 284,
+        "severity": "blocking",
+        "description": "CRITICAL BUG - change_password() does not re-encrypt the database. The method generates a new salt, re-initializes encryption with the new key, but never re-encrypts the existing .db.enc file with the new key. The encrypted database can still be decrypted with the OLD password/key. Fix: decrypt with old key, then re-encrypt with new key, or use the new key to re-encrypt the existing database file directly."
+      },
+      {
+        "file": "backend-python/src/services/password_lock.py",
+        "line": 36,
+        "severity": "non_blocking",
+        "description": "Hardcoded path 'CONFIG_DIR = Path(\"/Users/stefano/repos/open-marcus/data\")' in password_lock.py. This path is also hardcoded in database.py (DATA_DIR). These should be consolidated into a shared config module or use environment variables for configurability."
+      },
+      {
+        "file": "backend-python/src/services/database.py",
+        "line": 24,
+        "severity": "non_blocking",
+        "description": "Hardcoded path 'DATA_DIR = Path(\"/Users/stefano/repos/open-marcus/data\")' duplicated from password_lock.py. Path constants should be defined once and imported where needed."
+      },
+      {
+        "file": "backend-python/src/services/database.py",
+        "line": 179,
+        "severity": "non_blocking",
+        "description": "Silent failure when removing plaintext file: 'except OSError: pass'. If os.remove() fails, the method returns True but the plaintext file may still exist. Should return False or raise an exception when cleanup fails."
+      },
+      {
+        "file": "backend-python/src/services/password_lock.py",
+        "line": 249,
+        "severity": "non_blocking",
+        "description": "unlock_with_password() calls _decrypt_database() but if decryption fails, the error message says 'Failed to decrypt database' yet there's no indication whether the .enc file was missing vs. corrupted vs. wrong password. The decrypt_database() method catches InvalidToken but doesn't propagate why it failed."
+      },
+      {
+        "file": "backend-python/src/services/database.py",
+        "line": 157,
+        "severity": "non_blocking",
+        "description": "The decrypt_database() method creates a new engine with _create_engine() after decryption, but this doesn't verify the decrypted database is valid before updating the URL and engine. A corrupted decrypt would result in a broken database connection."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "The feature uses hardcoded paths (/Users/stefano/repos/open-marcus/data) that are NOT mentioned in AGENTS.md or services.yaml. The architecture.md mentions 'local storage' but doesn't specify path conventions. This could cause issues if the app is deployed to different locations.",
+      "evidence": "password_lock.py:36 CONFIG_DIR = Path('/Users/stefano/repos/open-marcus/data'), database.py:24 DATA_DIR = Path('/Users/stefano/repos/open-marcus/data')"
+    },
+    {
+      "area": "conventions",
+      "observation": "AGENTS.md mentions 'Database encrypted with password-derived key' under Security Model but doesn't specify the exact algorithm choices (PBKDF2 vs argon2, iteration count, etc). These implementation details are now baked into the code without being documented as project standards.",
+      "evidence": "AGENTS.md security section says only 'Master password -> argon2 -> database encryption key' but implementation uses PBKDF2 for key derivation and Fernet for encryption."
+    },
+    {
+      "area": "skills",
+      "observation": "The backend-worker SKILL.md procedure mentions 'Use Pydantic models for request/response validation' but no Pydantic models were created for the password_lock service. The service uses plain dict for config storage. This is acceptable for internal services but deviates from documented conventions.",
+      "evidence": "password_lock.py uses json.dump/load with plain dicts rather than Pydantic models for config"
+    },
+    {
+      "area": "knowledge",
+      "observation": "The worker discovered that change_password requires re-encryption but didn't implement it. This is a non-obvious security requirement that isn't documented - when password changes, the database key must also change. This should be documented as a security pattern.",
+      "evidence": "change_password() in password_lock.py only updates config, doesn't re-encrypt database"
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "The encryption implementation uses solid cryptography (PBKDF2-SHA256 with 480k iterations, Fernet/AES-128-CBC with HMAC) and has good test coverage for the encryption workflow. The CRITICAL issue is that change_password() does NOT re-encrypt the database with the new key, allowing the old password to still decrypt the database. Secondary issues include hardcoded paths duplicated across files, silent failures in file cleanup, and missing type hints. The security model in AGENTS.md should be updated to specify the exact cryptographic choices made."
+}

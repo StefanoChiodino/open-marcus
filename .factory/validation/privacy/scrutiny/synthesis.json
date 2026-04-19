@@ -1,0 +1,56 @@
+{
+  "milestone": "privacy",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && pytest tests/ -v",
+      "exitCode": 0,
+      "output": "361 passed in 14.67s"
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && mypy src/",
+      "exitCode": 0,
+      "output": "Success: no issues found in 55 source files"
+    },
+    "lint": {
+      "passed": true,
+      "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && ruff check src/",
+      "exitCode": 0,
+      "output": "All checks passed!"
+    }
+  },
+  "reviewsSummary": {
+    "total": 2,
+    "passed": 1,
+    "failed": 1,
+    "failedFeatures": ["privacy-encryption"]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "privacy-encryption",
+      "severity": "blocking",
+      "description": "change_password() in password_lock.py does NOT re-encrypt the database with the new key. It only updates the config with new salt/password hash, but the .db.enc file remains encrypted with the OLD key. This allows the old password to still decrypt the database after a password change. Fix: decrypt with old key, then re-encrypt with new key.",
+      "file": "backend-python/src/services/password_lock.py",
+      "line": 284
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Specify exact cryptographic choices in Security Model section: PBKDF2-SHA256 with 480k iterations for key derivation, Fernet (AES-128-CBC + HMAC-SHA256) for symmetric encryption. Also document that change_password requires re-encryption of the database.",
+      "evidence": "privacy-encryption review found AGENTS.md only says 'Master password -> argon2 -> database encryption key' but implementation uses PBKDF2 and Fernet. Also, change_password re-encryption requirement is not documented.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "AGENTS.md Off-Limits section doesn't list analytics prohibition explicitly as convention",
+      "reason": "Ambiguous - the privacy-no-analytics review found AGENTS.md does list 'Do not add any analytics or telemetry' under Off-Limits, so no gap exists"
+    }
+  ],
+  "previousRound": null
+}

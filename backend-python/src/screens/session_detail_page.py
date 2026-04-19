@@ -192,6 +192,18 @@ class SessionDetailPage:
         """Build the session detail content."""
         session = self.session_data
 
+        if session is None:
+            return ft.Column(
+                controls=[
+                    ft.Container(height=20),
+                    ft.Text(
+                        "No session data available",
+                        size=14,
+                        color=ft.Colors.GREY_600,
+                    ),
+                ],
+            )
+
         # Format date
         created_at = session.get("created_at", "")
         if created_at:

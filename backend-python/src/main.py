@@ -79,10 +79,16 @@ class OpenMarcusApp:
         # Handle session detail route with ID pattern /session/{id}
         if self.page.route.startswith("/session/") and self.page.route != "/session":
             # Extract session ID from route
-            session_id = self.page.route.split("/session/")[1]
-            if session_id:
-                self.current_session_id = session_id
+            route_part = self.page.route.split("/session/")[1]
+            # Exclude special routes like "detail" used as fallback when no session ID
+            if route_part and route_part != "detail":
+                self.current_session_id = route_part
                 self.page.views.append(self.session_detail_page.build())
+                return
+            elif route_part == "detail":
+                # This is the fallback route from session_detail_page when no session ID
+                # Redirect to history page as there's no valid session to display
+                self.page.views.append(self.history_page.build())
                 return
 
         if self.page.route == "/lock":

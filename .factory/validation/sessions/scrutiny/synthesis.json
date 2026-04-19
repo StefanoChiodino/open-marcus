@@ -1,0 +1,121 @@
+{
+  "milestone": "sessions",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && pytest tests/ -v",
+      "exitCode": 0,
+      "note": "156 passed with 28 warnings (async test decoractors not removed)"
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && mypy src/",
+      "exitCode": 0,
+      "note": "Success: no issues found in 44 source files"
+    },
+    "lint": {
+      "passed": true,
+      "command": "cd /Users/stefano/repos/open-marcus/backend-python && source venv/bin/activate && ruff check src/",
+      "exitCode": 0,
+      "note": "All checks passed!"
+    }
+  },
+  "reviewsSummary": {
+    "total": 5,
+    "passed": 2,
+    "failed": 3,
+    "failedFeatures": [
+      "session-summary-generation",
+      "ui-session-chat",
+      "ui-session-history"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "session-summary-generation",
+      "severity": "blocking",
+      "description": "Summary generation is NOT automatically triggered when a session ends. VAL-SESSION-006 requires 'after session ends, AI generates a summary' but the /summarize endpoint must be called manually as a separate step. The end_session endpoint does not invoke summary generation.",
+      "evidence": "end_session in routers/session.py does not call summary_service.generate_and_store_summary(). Frontend session_page.py end_session method only calls api_client.end_session(), no subsequent call to generate summary."
+    },
+    {
+      "featureId": "ui-session-chat",
+      "severity": "blocking",
+      "description": "send_message() in session_page.py calls api_client.add_message() but never extracts or displays the AI response. User messages appear in UI but Marcus Aurelius never responds. The result from add_message is checked for session_state but the actual message content (AI response) is never extracted or displayed in the messages list.",
+      "evidence": "session_page.py line 299: after successful api_client.add_message(), the code only extracts session_state from result but never adds the returned message to self.messages for display."
+    },
+    {
+      "featureId": "ui-session-history",
+      "severity": "blocking",
+      "description": "main.py route handler at line 80 incorrectly matches '/session/detail' fallback route as a session ID request. The condition 'if self.page.route.startswith(\"/session/\") and self.page.route != \"/session\":' matches the fallback route and attempts to load 'detail' as a session ID from the API.",
+      "evidence": "Fixed during scrutiny by adding check to exclude 'detail' route. Now redirects to history page when /session/detail is accessed."
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "services.yaml",
+      "description": "No changes needed - services.yaml correctly documents the backend services",
+      "sourceFeature": null
+    },
+    {
+      "target": "library",
+      "description": "No factual knowledge gaps discovered about the codebase during this validation",
+      "sourceFeature": null
+    }
+  ],
+  "fixesAppliedDuringValidation": [
+    {
+      "file": "src/screens/session_detail_page.py",
+      "issue": "Optional[dict] type error - session.get() called without None check",
+      "fix": "Added None check for session in _build_session_detail_content() before calling .get()"
+    },
+    {
+      "file": "src/main.py",
+      "issue": "Route handler incorrectly matched /session/detail as a session ID",
+      "fix": "Added condition to exclude 'detail' route and redirect to history page"
+    }
+  ],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Add explicit requirement that features with automatic post-session actions (like summary generation) must wire those actions into the session end flow, not just provide a separate endpoint.",
+      "evidence": "session-summary-generation feature provided /summarize endpoint but didn't wire it into end_session. VAL-SESSION-006 clearly states 'after session ends, AI generates a summary' which implies automatic behavior.",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "For chat features, add explicit verification step that API response content is extracted and displayed in UI. Tests using heavy mocking should be flagged as insufficient for UI functionality verification.",
+      "evidence": "ui-session-chat had 23 unit tests pass but they used heavy mocking that didn't catch the missing AI response display. The feature only verified API call was made, not that response was rendered.",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Add guidance on route naming conventions to avoid collisions between parameterized routes and fallback routes. Fallback routes like /session/detail should use a distinctive pattern (e.g., /session/error) that cannot collide with /session/{id}.",
+      "evidence": "ui-session-history reviewer identified collision between /session/{id} handler and /session/detail fallback used by session_detail_page",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "The flet-worker skill should require interactive app verification (actually running flet run)",
+      "reason": "While this would catch UI issues earlier, it may not be practical in all environments. Better guidance on test coverage for async flows would be more actionable."
+    }
+  ],
+  "reviewReports": [
+    ".factory/validation/sessions/scrutiny/reviews/session-crud-operations.json",
+    ".factory/validation/sessions/scrutiny/reviews/message-storage.json",
+    ".factory/validation/sessions/scrutiny/reviews/session-summary-generation.json",
+    ".factory/validation/sessions/scrutiny/reviews/ui-session-chat.json",
+    ".factory/validation/sessions/scrutiny/reviews/ui-session-history.json"
+  ],
+  "fulfillmentStatus": {
+    "VAL-SESSION-001": "partial - Session creates with intro state, but chat UI doesn't display AI responses",
+    "VAL-SESSION-002": "pass - State machine transitions work correctly",
+    "VAL-SESSION-003": "fail - AI responses not displayed in chat",
+    "VAL-SESSION-004": "pass - History page shows sessions with date, duration, summary",
+    "VAL-SESSION-005": "pass - Detail page shows conversation, but route handling bug (fixed)",
+    "VAL-SESSION-006": "fail - Summary not auto-generated on session end"
+  },
+  "previousRound": null
+}

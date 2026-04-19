@@ -147,6 +147,36 @@ class APIClient:
             "experience_level": experience_level
         })
     
+    async def get_settings(self) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Get the current user's settings.
+        
+        Returns:
+            Tuple of (settings_data, error_message)
+        """
+        return await self.get("/api/settings")
+    
+    async def update_settings(self, settings: dict) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Update the current user's settings.
+        
+        Args:
+            settings: Dictionary of settings to update
+            
+        Returns:
+            Tuple of (settings_data, error_message)
+        """
+        return await self.put("/api/settings", settings)
+    
+    async def get_system_info(self) -> tuple[Optional[dict], Optional[str]]:
+        """
+        Get system information (RAM, etc.).
+        
+        Returns:
+            Tuple of (system_info, error_message)
+        """
+        return await self.get("/api/settings/system")
+    
     async def get(self, path: str) -> tuple[Optional[dict], Optional[str]]:
         """
         Make GET request to API.

@@ -1,0 +1,61 @@
+{
+  "timestamp": "2026-04-19T20:19:05.221851",
+  "total_network_calls": 6,
+  "external_calls": 0,
+  "blocked_calls": 0,
+  "external_hosts_contacted": [],
+  "all_calls": [
+    {
+      "timestamp": "2026-04-19T20:19:05.178699",
+      "event": "socket_connect",
+      "host": "::1",
+      "port": 8000,
+      "is_external": false,
+      "is_blocked": false
+    },
+    {
+      "timestamp": "2026-04-19T20:19:05.178905",
+      "event": "socket_connect",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "is_external": false,
+      "is_blocked": false
+    },
+    {
+      "timestamp": "2026-04-19T20:19:05.211492",
+      "event": "socket_connect",
+      "host": "::1",
+      "port": 8000,
+      "is_external": false,
+      "is_blocked": false
+    },
+    {
+      "timestamp": "2026-04-19T20:19:05.211688",
+      "event": "socket_connect",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "is_external": false,
+      "is_blocked": false
+    },
+    {
+      "timestamp": "2026-04-19T20:19:05.216164",
+      "event": "socket_connect",
+      "host": "::1",
+      "port": 8000,
+      "is_external": false,
+      "is_blocked": false
+    },
+    {
+      "timestamp": "2026-04-19T20:19:05.216326",
+      "event": "socket_connect",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "is_external": false,
+      "is_blocked": false
+    }
+  ],
+  "external_call_details": [],
+  "blocked_call_details": [],
+  "val_ai_001_pass": true,
+  "val_ai_007_pass": true
+}

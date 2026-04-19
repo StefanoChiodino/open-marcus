@@ -18,7 +18,7 @@ function HomePage() {
       return;
     }
     // Start session before navigating so /session shows active chat, not another begin prompt
-    useSessionStore.getState().beginSession(profile.id);
+    useSessionStore.getState().beginSession();
     navigate('/session');
   };
 

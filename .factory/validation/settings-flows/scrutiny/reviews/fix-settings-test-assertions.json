@@ -1,0 +1,31 @@
+{
+  "featureId": "fix-settings-test-assertions",
+  "reviewedAt": "2026-04-08T03:05:00.000Z",
+  "commitId": "79213e1",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The fix adequately addresses 2 of 3 blocking issues. VAL-SETTINGS-005 and VAL-SETTINGS-STT-005 now have proper error message assertions. However, VAL-SETTINGS-004 fix is incomplete - the new test checks for a success toast but does not verify that data actually appears in the UI after import, which was the original blocking issue.",
+    "issues": [
+      {
+        "file": "e2e/settings-data-comprehensive.spec.ts",
+        "line": 396,
+        "severity": "blocking",
+        "description": "VAL-SETTINGS-004 fix is incomplete: The new test 'Importing valid export with profile data restores data to UI' verifies a success toast appears (`/Data imported|imported.*profile/i`) but does NOT verify that the actual data (profile) appears in the UI after import. The original issue stated 'Should verify that data appears in the UI or via API after import.' The test should add an assertion like `await expect(page.getByTestId('profile-name')).toContainText('Import Data Restore User')` after the import completes to confirm the profile was actually restored, not just that a toast appeared."
+      },
+      {
+        "file": "e2e/settings-stt-comprehensive.spec.ts",
+        "line": 568,
+        "severity": "non_blocking",
+        "description": "test.skip(true, 'No STT models available to test') - incorrect API usage. Should be test.skip('No STT models available to test') without the boolean argument. This was noted in the original e2e-settings-stt-comprehensive review but the new test reproduces the same pattern."
+      }
+    ]
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": [
+    ".factory/validation/settings-flows/scrutiny/reviews/e2e-settings-data-comprehensive.json",
+    ".factory/validation/settings-flows/scrutiny/reviews/e2e-settings-stt-comprehensive.json"
+  ],
+  "summary": "The fix addresses VAL-SETTINGS-005 and VAL-SETTINGS-STT-005 adequately by adding proper error message assertions. However, the VAL-SETTINGS-004 fix only verifies a success toast appears after import, not that the data actually appears in the UI. The original blocking issue required verifying 'data appears in the UI after import' but the test only checks the toast notification, not the actual data restoration. This leaves the core issue partially unaddressed."
+}

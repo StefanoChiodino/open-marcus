@@ -15,6 +15,26 @@ Features that involve React components, UI design, CSS styling, client-side stat
 
 - `agent-browser`: For UI validation and screenshot evidence
 
+## Auth-Specific Testing
+
+When implementing auth UI, test these specific behaviors:
+
+1. **Login Flow**
+   - Navigate to app without auth token → should see login page
+   - Enter correct credentials → should redirect to home
+   - Enter wrong password → should see error message
+   - Check localStorage: `auth_token` and `auth_user` should be set
+
+2. **Protected Routes**
+   - Clear localStorage
+   - Navigate to /session → should redirect to /login
+   - Login, then navigate to /session → should access session
+
+3. **Logout**
+   - Click logout button → should clear localStorage
+   - Should redirect to login page
+   - Back button should not restore auth state
+
 ## Work Procedure
 
 1. **Read Mission Context**

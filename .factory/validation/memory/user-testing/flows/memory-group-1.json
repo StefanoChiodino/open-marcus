@@ -1,0 +1,121 @@
+{
+  "groupId": "memory-group-1",
+  "testedAt": "2026-04-19T19:43:30.000Z",
+  "isolation": {
+    "backendApiUrl": "http://localhost:8000",
+    "database": "/Users/stefano/repos/open-marcus/data/openMarcus.db",
+    "user": "testuser_memory_001",
+    "userId": "2e49b134-b711-4449-92f4-92c37a16b895"
+  },
+  "toolsUsed": ["curl", "sqlite3"],
+  "assertions": [
+    {
+      "id": "VAL-MEMORY-001",
+      "title": "Psychological Analysis",
+      "status": "pass",
+      "steps": [
+        { "action": "Register user testuser_memory_001", "expected": "User created", "observed": "User created with id 2e49b134-b711-4449-92f4-92c37a16b895" },
+        { "action": "Login and get JWT token", "expected": "Token returned", "observed": "Token received successfully" },
+        { "action": "Create session", "expected": "Session in intro state", "observed": "Session created with state intro" },
+        { "action": "Send message with emotional content", "expected": "AI response and PsychUpdate created", "observed": "AI responded and PsychUpdate record created" },
+        { "action": "Query psych_updates table", "expected": "PsychUpdate linked to user message", "observed": "PsychUpdate found with emotional_state=anxious, detected_patterns, suggested_direction" }
+      ],
+      "evidence": {
+        "databaseRecords": [
+          {
+            "table": "psych_updates",
+            "sampleRecord": {
+              "id": "e9d56551-04df-4168-b256-93ed024bd0ba",
+              "message_id": "4ace3fad-2f67-45f2-8020-1f2a83c6bcbb",
+              "emotional_state": "anxious",
+              "detected_patterns": ["emotional indicators: anxious, worried, down"],
+              "suggested_direction": "Continue providing reassurance and grounding techniques. Focus on breathing and present moment.",
+              "confidence": 0.9
+            }
+          }
+        ],
+        "totalPsychUpdates": 4
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MEMORY-002",
+      "title": "Semantic Assertions",
+      "status": "pass",
+      "steps": [
+        { "action": "Send message with goal/preference/pattern language", "expected": "SemanticAssertions created", "observed": "Message 'I always feel like I am not doing enough. I want to be more productive and I prefer working alone rather than in groups.' triggered assertion extraction" },
+        { "action": "Query semantic_assertions table", "expected": "Assertions with categories: goal, preference, pattern", "observed": "4 assertions created with correct categories and confidence scores" }
+      ],
+      "evidence": {
+        "databaseRecords": [
+          {
+            "id": "cc7a4067-c24a-46fb-b9d3-632cd4aca186",
+            "text": "I want to be more productive and I prefer working alone rather than in groups",
+            "category": "goal",
+            "confidence": 0.6
+          },
+          {
+            "id": "5242b466-13ea-4af4-890e-cbebbf5b86d1",
+            "text": "I always feel like I am not doing enough",
+            "category": "pattern",
+            "confidence": 0.5
+          }
+        ],
+        "totalSemanticAssertions": 4
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MEMORY-005",
+      "title": "Emotional State Tracking",
+      "status": "pass",
+      "steps": [
+        { "action": "Send messages with different emotional content", "expected": "Emotional states recorded in psych_updates", "observed": "Multiple emotional states tracked: anxious, lonely" },
+        { "action": "Query psych_updates for emotional_state", "expected": "States recorded over time", "observed": "Found 4 psych_updates with emotional_state field populated" }
+      ],
+      "evidence": {
+        "emotionalStatesTracked": ["anxious", "lonely"],
+        "psychUpdateRecords": 4,
+        "sampleRecords": [
+          { "emotional_state": "anxious", "detected_keywords": ["anxious", "worried", "down"] },
+          { "emotional_state": "anxious", "detected_keywords": ["stressed"] },
+          { "emotional_state": "lonely", "detected_keywords": ["alone"] },
+          { "emotional_state": "lonely", "detected_keywords": ["lonely", "trust"] }
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MEMORY-006",
+      "title": "Pattern Detection",
+      "status": "pass",
+      "steps": [
+        { "action": "Send messages containing patterns (always/never/tend to)", "expected": "Patterns detected and stored", "observed": "Pattern 'I always feel like I am not doing enough' correctly identified" },
+        { "action": "Send messages with struggle language", "expected": "Struggle patterns detected", "observed": "Multiple struggle patterns detected: 'i have a demanding job', 'i struggle with trusting others'" },
+        { "action": "Query detected_patterns in psych_updates", "expected": "Patterns stored as JSON array", "observed": "detected_patterns column contains JSON arrays with pattern categories" }
+      ],
+      "evidence": {
+        "patternsDetected": [
+          "emotional indicators: anxious, worried, down",
+          "struggle: i have a demanding job and i find it hard to relax",
+          "goal: i want to be more productive and i prefer working alone rather than in groups",
+          "preference: i want to be more productive and i prefer working alone rather than in groups",
+          "pattern: i always feel like i am not doing enough",
+          "struggle: i have been feeling lonely lately and i struggle with trusting others"
+        ],
+        "patternCategories": ["emotional indicators", "struggle", "goal", "preference", "pattern"]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Semantic assertions not created for messages without explicit goal/preference/pattern keywords",
+      "resolved": false,
+      "resolution": "System correctly requires explicit pattern language like 'I want to', 'I always', 'I prefer' to trigger semantic assertion extraction",
+      "affectedAssertions": ["VAL-MEMORY-002"]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 4 assertions (VAL-MEMORY-001, VAL-MEMORY-002, VAL-MEMORY-005, VAL-MEMORY-006): All PASS. PsychUpdate records created correctly with emotional state tracking and pattern detection. Semantic assertions extracted from messages containing goal/preference/pattern language. Both streaming and non-streaming endpoints create memory records properly."
+}

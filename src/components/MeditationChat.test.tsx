@@ -1,7 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import MeditationChat from './MeditationChat';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useProfileStore } from '../stores/profileStore';
 import { useSessionStore } from '../stores/sessionStore';
+import MeditationChat from './MeditationChat';
 
 // Mock the stores
 vi.mock('../stores/profileStore', () => ({
@@ -38,13 +38,10 @@ function setupSessionStore(overrides: Record<string, unknown> = {}) {
     resetSession: vi.fn(),
     loadSession: vi.fn(),
     restoreSession: vi.fn(),
-    setProfileId: vi.fn(),
     ...overrides,
   };
 
   (useSessionStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockStore);
-  const mockGetState = (useSessionStore as unknown as { getState: ReturnType<typeof vi.fn> }).getState;
-  mockGetState.mockReturnValue({ setProfileId: mockStore.setProfileId });
 
   return mockStore;
 }
@@ -85,9 +82,7 @@ describe('MeditationChat', () => {
       setupProfileStore();
       render(<MeditationChat />);
 
-      expect(
-        screen.getByText(/Welcome back, TestUser/),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Welcome back, TestUser/)).toBeInTheDocument();
     });
 
     it('displays medical disclaimer', () => {
@@ -95,9 +90,7 @@ describe('MeditationChat', () => {
       setupProfileStore();
       render(<MeditationChat />);
 
-      expect(
-        screen.getByText(/OpenMarcus is not therapy or medical advice/),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/OpenMarcus is not therapy or medical advice/)).toBeInTheDocument();
     });
 
     it('calls beginSession when Begin Meditation button is clicked', async () => {
@@ -107,7 +100,7 @@ describe('MeditationChat', () => {
       render(<MeditationChat />);
 
       fireEvent.click(screen.getByRole('button', { name: 'Begin meditation session' }));
-      expect(beginSession).toHaveBeenCalledWith('test-profile-id');
+      expect(beginSession).toHaveBeenCalledWith();
     });
 
     it('shows loading state while starting session', () => {
@@ -142,15 +135,25 @@ describe('MeditationChat', () => {
       setupProfileStore();
       render(<MeditationChat />);
 
-      expect(
-        screen.getByText(/I'm Marcus\. Hey there, TestUser/),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/I'm Marcus\. Hey there, TestUser/)).toBeInTheDocument();
     });
 
     it('displays messages in the chat', () => {
       const messages = [
-        { id: '1', session_id: 's1', role: 'user' as const, content: 'Hello Marcus', created_at: '2024-01-01T00:00:00Z' },
-        { id: '2', session_id: 's1', role: 'assistant' as const, content: 'Greetings, seeker.', created_at: '2024-01-01T00:00:01Z' },
+        {
+          id: '1',
+          session_id: 's1',
+          role: 'user' as const,
+          content: 'Hello Marcus',
+          created_at: '2024-01-01T00:00:00Z',
+        },
+        {
+          id: '2',
+          session_id: 's1',
+          role: 'assistant' as const,
+          content: 'Greetings, seeker.',
+          created_at: '2024-01-01T00:00:01Z',
+        },
       ];
       setupSessionStore({ status: 'active', messages });
       setupProfileStore();
@@ -166,7 +169,9 @@ describe('MeditationChat', () => {
       setupProfileStore();
       render(<MeditationChat />);
 
-      const textarea = screen.getByRole('textbox', { name: 'Type your message to Marcus' });
+      const textarea = screen.getByRole('textbox', {
+        name: 'Type your message to Marcus',
+      });
       fireEvent.change(textarea, { target: { value: 'I am troubled today.' } });
       fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter' });
 
@@ -181,7 +186,9 @@ describe('MeditationChat', () => {
       setupProfileStore();
       render(<MeditationChat />);
 
-      const textarea = screen.getByRole('textbox', { name: 'Type your message to Marcus' });
+      const textarea = screen.getByRole('textbox', {
+        name: 'Type your message to Marcus',
+      });
       fireEvent.change(textarea, { target: { value: '   ' } });
       fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter' });
 
@@ -196,8 +203,14 @@ describe('MeditationChat', () => {
       setupProfileStore();
       render(<MeditationChat />);
 
-      const textarea = screen.getByRole('textbox', { name: 'Type your message to Marcus' });
-      fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter', shiftKey: true });
+      const textarea = screen.getByRole('textbox', {
+        name: 'Type your message to Marcus',
+      });
+      fireEvent.keyDown(textarea, {
+        key: 'Enter',
+        code: 'Enter',
+        shiftKey: true,
+      });
 
       expect(sendMessage).not.toHaveBeenCalled();
     });
@@ -206,7 +219,13 @@ describe('MeditationChat', () => {
       setupSessionStore({
         status: 'streaming',
         messages: [
-          { id: '1', session_id: 's1', role: 'user' as const, content: 'Test', created_at: '2024-01-01T00:00:00Z' },
+          {
+            id: '1',
+            session_id: 's1',
+            role: 'user' as const,
+            content: 'Test',
+            created_at: '2024-01-01T00:00:00Z',
+          },
         ],
         isStreaming: true,
         streamingContent: 'I hear',
@@ -241,7 +260,9 @@ describe('MeditationChat', () => {
       setupProfileStore();
       render(<MeditationChat />);
 
-      const textarea = screen.getByRole('textbox', { name: 'Type your message to Marcus' });
+      const textarea = screen.getByRole('textbox', {
+        name: 'Type your message to Marcus',
+      });
       expect(textarea).toBeDisabled();
     });
 
@@ -255,9 +276,88 @@ describe('MeditationChat', () => {
       render(<MeditationChat />);
 
       expect(
-        screen.getByText('Unable to connect to AI. Please ensure Ollama is running.'),
+        screen.getByText('Unable to connect to AI. Please ensure Ollama is running.')
       ).toBeInTheDocument();
       expect(screen.getByRole('alert')).toBeInTheDocument();
+    });
+  });
+
+  describe('Error state (status === "error")', () => {
+    it('renders error view when status is error after beginSession fails', () => {
+      setupSessionStore({
+        status: 'error',
+        error: 'Failed to start session. Server returned 500.',
+      });
+      setupProfileStore();
+      render(<MeditationChat />);
+
+      // Should show error message prominently
+      expect(screen.getByText('Failed to start session. Server returned 500.')).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+    });
+
+    it('shows Try Again button in error state', () => {
+      const resetSession = vi.fn();
+      setupSessionStore({
+        status: 'error',
+        error: 'Network error occurred.',
+        resetSession,
+      });
+      setupProfileStore();
+      render(<MeditationChat />);
+
+      const tryAgainBtn = screen.getByRole('button', { name: /try again/i });
+      expect(tryAgainBtn).toBeInTheDocument();
+    });
+
+    it('calls resetSession when Try Again button is clicked', () => {
+      const resetSession = vi.fn();
+      setupSessionStore({
+        status: 'error',
+        error: 'Session failed.',
+        resetSession,
+      });
+      setupProfileStore();
+      render(<MeditationChat />);
+
+      fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+      expect(resetSession).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not show chat input area in error state', () => {
+      setupSessionStore({
+        status: 'error',
+        error: 'An error occurred.',
+      });
+      setupProfileStore();
+      render(<MeditationChat />);
+
+      // Should not show the chat textarea
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    });
+
+    it('does not show End Session button in error state', () => {
+      setupSessionStore({
+        status: 'error',
+        error: 'An error occurred.',
+      });
+      setupProfileStore();
+      render(<MeditationChat />);
+
+      // Should not show End Session button
+      expect(screen.queryByRole('button', { name: 'End meditation session' })).not.toBeInTheDocument();
+    });
+
+    it('displays error with non-empty message', () => {
+      setupSessionStore({
+        status: 'error',
+        error: '500',
+      });
+      setupProfileStore();
+      render(<MeditationChat />);
+
+      // Error message should be displayed even if short
+      expect(screen.getByText('500')).toBeInTheDocument();
     });
   });
 
@@ -287,8 +387,27 @@ describe('MeditationChat', () => {
       render(<MeditationChat />);
 
       expect(
-        screen.getByRole('button', { name: 'Begin a new meditation session' }),
+        screen.getByRole('button', { name: 'Begin a new meditation session' })
       ).toBeInTheDocument();
+    });
+
+    it('does not show scrollbar in textarea', () => {
+      setupSessionStore({
+        status: 'active',
+        messages: [],
+      });
+      setupProfileStore();
+      render(<MeditationChat />);
+
+      const textarea = screen.getByRole('textbox', {
+        name: 'Type your message to Marcus',
+      });
+
+      // Verify the textarea has the correct class for styling
+      expect(textarea.className).toContain('meditation-chat__textarea');
+
+      // The CSS class exists and is styled to hide scrollbar
+      // This prevents the scrollbar from appearing and causing layout shift
     });
 
     it('resets session when Begin New Meditation button is clicked', () => {
@@ -302,9 +421,7 @@ describe('MeditationChat', () => {
       setupProfileStore();
       render(<MeditationChat />);
 
-      fireEvent.click(
-        screen.getByRole('button', { name: 'Begin a new meditation session' }),
-      );
+      fireEvent.click(screen.getByRole('button', { name: 'Begin a new meditation session' }));
       expect(resetSession).toHaveBeenCalledTimes(1);
     });
   });

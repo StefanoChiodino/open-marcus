@@ -1,6 +1,7 @@
 /**
  * STT Settings Component
- * Handles speech-to-text model selection and reload functionality
+ * Handles speech-to-text model selection.
+ * Model reloads automatically when selection changes.
  */
 
 import type { STTSettingsProps } from './types';
@@ -12,7 +13,6 @@ export function STTSettings({
   isReloadingStt,
   showSttWarning,
   onSttModelChange,
-  onSttReload,
   onSttWarningDismiss,
 }: STTSettingsProps) {
   if (isLoadingSttModels) {
@@ -36,16 +36,21 @@ export function STTSettings({
           value={selectedSttModel}
           onChange={onSttModelChange}
           disabled={isReloadingStt}
+          aria-describedby="stt-model-help"
         >
           <option value="">Select a model...</option>
           {sttModels.map((model) => (
             <option key={model.name} value={model.name}>
-              {model.name} (~{model.memoryMB}MB RAM)
+              {selectedSttModel === model.name
+                ? `✓ ${model.name}`
+                : model.name} (~{model.memoryMB}MB RAM)
             </option>
           ))}
         </select>
-        <p className="stt-settings__help">
-          Select the Whisper model for speech recognition. Larger models are more accurate but require more memory.
+        <p id="stt-model-help" className="stt-settings__help">
+          {isReloadingStt
+            ? 'Loading model...'
+            : 'Select the Whisper model for speech recognition. Larger models are more accurate but require more memory. Changes take effect immediately.'}
         </p>
       </div>
 
@@ -66,26 +71,6 @@ export function STTSettings({
           </button>
         </div>
       )}
-
-      {/* Reload Button */}
-      <div className="stt-settings__control">
-        <button
-          type="button"
-          className="button button--secondary"
-          onClick={onSttReload}
-          disabled={isReloadingStt || !selectedSttModel}
-          aria-busy={isReloadingStt}
-        >
-          {isReloadingStt ? (
-            <>
-              <span className="loading-spinner" aria-hidden="true" />
-              Reloading Model...
-            </>
-          ) : (
-            'Reload Model'
-          )}
-        </button>
-      </div>
     </div>
   );
 }

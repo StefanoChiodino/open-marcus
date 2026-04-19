@@ -1,0 +1,50 @@
+data: {"type": "session_state", "state": "active"}
+
+data: {"type": "token", "content": "You "}
+
+data: {"type": "token", "content": "have "}
+
+data: {"type": "token", "content": "power "}
+
+data: {"type": "token", "content": "over "}
+
+data: {"type": "token", "content": "your "}
+
+data: {"type": "token", "content": "mind "}
+
+data: {"type": "token", "content": "- "}
+
+data: {"type": "token", "content": "not "}
+
+data: {"type": "token", "content": "outside "}
+
+data: {"type": "token", "content": "events. "}
+
+data: {"type": "token", "content": "Realize "}
+
+data: {"type": "token", "content": "this, "}
+
+data: {"type": "token", "content": "and "}
+
+data: {"type": "token", "content": "you "}
+
+data: {"type": "token", "content": "will "}
+
+data: {"type": "token", "content": "find "}
+
+data: {"type": "token", "content": "strength. "}
+
+data: {"type": "token", "content": "What "}
+
+data: {"type": "token", "content": "would "}
+
+data: {"type": "token", "content": "you "}
+
+data: {"type": "token", "content": "like "}
+
+data: {"type": "token", "content": "to "}
+
+data: {"type": "token", "content": "explore? "}
+
+data: {"type": "complete", "message_id": "521502a5-8782-41e4-8b43-dadd19453be7", "content": "You have power over your mind - not outside events. Realize this, and you will find strength. What would you like to explore? ", "session_state": "active"}
+

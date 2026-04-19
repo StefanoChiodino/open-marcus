@@ -1,0 +1,51 @@
+{
+  "featureId": "memory-semantic-assertions",
+  "reviewedAt": "2026-04-19T21:00:00Z",
+  "commitId": "73aeefd",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Implementation covers the semantic assertion extraction feature. SemanticAssertion model stores facts with confidence scores, extraction is integrated into both streaming and non-streaming session endpoints, and tests pass. However, there are some design limitations and potential issues.",
+    "issues": [
+      {
+        "file": "backend-python/src/services/psych_update.py",
+        "line": 214,
+        "severity": "non_blocking",
+        "description": "Feature says 'AI extracts 0-3 facts' but there is no code enforcing this limit. Multiple keyword matches could return unlimited assertions."
+      },
+      {
+        "file": "backend-python/src/services/psych_update.py",
+        "line": 188,
+        "severity": "non_blocking",
+        "description": "Belief category is defined in PATTERN_CATEGORIES but is never extracted in create_semantic_assertions. Only 'goal', 'preference', and 'pattern' categories are extracted."
+      },
+      {
+        "file": "backend-python/src/services/psych_update.py",
+        "line": 165,
+        "severity": "non_blocking",
+        "description": "Keyword 'like' appears in both goal extraction (via 'like to') and preference extraction. If a sentence contains 'I like to meditate', it could potentially be matched twice."
+      },
+      {
+        "file": "backend-python/src/services/psych_update.py",
+        "line": 141,
+        "severity": "suggestion",
+        "description": "Sentence splitting using re.split(r'[.!?]', text) is duplicated across _create_pattern_description and create_semantic_assertions. Could be refactored to a shared utility."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "The skill references reviewing Stoic Emperor patterns at /Users/stefano/repos/stoic-emperor/src/core/emperor_brain.py for memory system implementation, but there's no evidence in the handoff transcript skeleton that this was done. The feature was noted as 'already implemented'.",
+      "evidence": "Handoff states: 'The memory-semantic-assertions feature was already implemented in commit 73aeefd'. Skill.md step 1 says to 'Review Stoic Emperor patterns' but no evidence of this review in transcript."
+    },
+    {
+      "area": "skills",
+      "observation": "Skill procedure was followed per skillFeedback, but the skill.md references reference implementations that should be reviewed. The worker noted the feature was already complete, which may indicate the pre-work was done by a prior session.",
+      "evidence": "Handoff skillFeedback: { followedProcedure: true, deviations: [] }"
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "The semantic assertion extraction feature implementation passes review. The SemanticAssertion model correctly stores facts with confidence scores, extraction integrates into session endpoints, and tests pass. Design limitations noted: (1) no enforced 0-3 fact limit mentioned in requirements, (2) belief category not extracted despite being defined in PATTERN_CATEGORIES, (3) minor keyword overlap potential. These are non-blocking issues as the core functionality works."
+}

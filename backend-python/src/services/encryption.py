@@ -3,9 +3,6 @@ Encryption service for database file encryption.
 Uses Fernet (AES-128-CBC with HMAC) for symmetric encryption.
 """
 
-import os
-import sqlite3
-import shutil
 from pathlib import Path
 from typing import Optional
 

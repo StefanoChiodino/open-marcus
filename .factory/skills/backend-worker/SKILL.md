@@ -25,6 +25,37 @@ Features that involve:
 - FastAPI router patterns
 - Pydantic validation
 
+## Auth-Specific Testing
+
+When implementing auth features, test these specific behaviors:
+
+1. **Password Hashing**
+   ```bash
+   # Verify argon2id hash format
+   node -e "const argon2 = require('argon2'); argon2.hash('test').then(h => console.log(h))"
+   # Should output: $argon2id$v=19$m=65536,t=3,p=4$...
+   ```
+
+2. **Token Validation**
+   ```bash
+   # Generate token
+   curl -X POST http://localhost:3100/api/auth/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"test","password":"TestPass123!"}'
+   
+   # Use token
+   curl http://localhost:3100/api/profile \
+     -H "Authorization: Bearer <token>"
+   # Should return 200 or 401 based on token validity
+   ```
+
+3. **Encryption Verification**
+   ```bash
+   # Inspect raw database to verify encryption
+   sqlite3 ./data/openmarcus.db "SELECT encrypted_data FROM profiles WHERE id = '<id>';"
+   # Should see base64 ciphertext, not plaintext
+   ```
+
 ## Work Procedure
 
 ### 1. Read Mission Context

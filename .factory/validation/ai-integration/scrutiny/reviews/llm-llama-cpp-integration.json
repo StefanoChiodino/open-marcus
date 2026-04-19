@@ -1,0 +1,67 @@
+{
+  "featureId": "llm-llama-cpp-integration",
+  "reviewedAt": "2026-04-19T19:55:00.000Z",
+  "commitId": "b13428a",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Implementation is solid with proper async streaming, error handling, and comprehensive tests. The LLMService correctly wraps llama-cpp-python with a clean interface. MockLLMService provides good test doubles. However, there are a few minor issues worth noting.",
+    "issues": [
+      {
+        "file": "backend-python/src/services/llm.py",
+        "line": 361,
+        "severity": "non_blocking",
+        "description": "MockLLMService sets self._llama = self._mock_llama (a boolean True) but the type annotation on parent LLMService is _llama: Optional[Llama]. While this works at runtime due to Python's dynamic typing, it violates the explicit type contract. Consider using a proper mock object or casting."
+      },
+      {
+        "file": "backend-python/src/services/llm.py",
+        "line": 375,
+        "severity": "non_blocking",
+        "description": "MockLLMService.stream_chat_completion yields StreamChunk(content='', is_final=False) between each word. This creates unnecessary empty chunks that clients must handle. Consider only yielding content-bearing chunks."
+      },
+      {
+        "file": "backend-python/src/services/llm.py",
+        "line": 113,
+        "severity": "non_blocking",
+        "description": "Hardcoded chat_format='llama-2' assumes all models use Llama 2 chat format. This may not be correct for other GGUF models (Phi, Qwen, etc.). Consider making this configurable or using 'chatml' or auto-detection."
+      },
+      {
+        "file": "backend-python/src/services/llm.py",
+        "line": 70,
+        "severity": "non_blocking",
+        "description": "No environment variable override for model path. The library/environment.md documents OPENMARCUS_MODEL_PATH env var, but LLMService only uses DEFAULT_MODEL_PATH or constructor argument. Should read env var if set."
+      },
+      {
+        "file": "backend-python/src/services/llm.py",
+        "line": 112,
+        "severity": "non_blocking",
+        "description": "n_gpu_layers=0 is hardcoded (CPU-only). The environment.md mentions Metal GPU support for Mac but there's no configuration for GPU acceleration. Consider detecting platform and enabling GPU layers automatically."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "The llm.py uses standard Python logging.getLogger(__name__) but library/logging.md describes a project-specific DevLogger utility with structured JSON Lines format. This is not documented as a requirement in AGENTS.md, but the logging convention may be TypeScript-specific (the docs show JS code). The Python services appear to use standard Python logging patterns.",
+      "evidence": "llm.py:8 uses 'logger = logging.getLogger(__name__)' while library/logging.md describes DevLogger with JSON Lines format for ./data/logs/*.log"
+    },
+    {
+      "area": "knowledge",
+      "observation": "LLMService doesn't read OPENMARCUS_MODEL_PATH environment variable even though library/environment.md documents this as the mechanism for configuring model path. The env var is mentioned but not implemented.",
+      "evidence": "environment.md documents OPENMARCUS_MODEL_PATH env var, but llm.py line 68 only uses DEFAULT_MODEL_PATH or constructor-provided path"
+    },
+    {
+      "area": "knowledge",
+      "observation": "The environment.md mentions 'export LLAMA_METAL=1' for Mac GPU support but LLMService has no platform detection or GPU configuration. Could be a gap between documented configuration and implementation.",
+      "evidence": "environment.md Mac setup notes mention LLAMA_METAL=1 but llm.py has no GPU layer configuration"
+    },
+    {
+      "area": "services",
+      "observation": "services.yaml doesn't include any health checks or startup/cleanup commands for model loading. The LLM model is loaded lazily on first use rather than at service startup. This is a valid design choice but differs from how other services like backend-api are configured.",
+      "evidence": "services.yaml backend-api has healthcheck but no equivalent for LLM model loading"
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Feature implementation passes review. LLMService correctly integrates llama-cpp-python with proper async streaming, fallback error handling, and a useful MockLLMService for development. The integration with session router is clean via dependency injection. 28 tests cover the service adequately. Minor issues are non-blocking: type annotation violation in mock, empty chunk yields, hardcoded chat format, and missing env var/configuration support. These are quality-of-life improvements rather than bugs."
+}

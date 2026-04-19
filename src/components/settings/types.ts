@@ -52,7 +52,6 @@ export interface STTSettingsProps {
 	selectedSttModel: string;
 	showSttWarning: boolean;
 	onSttModelChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
-	onSttReload: () => void;
 	onSttWarningDismiss: () => void;
 }
 

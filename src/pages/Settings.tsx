@@ -69,6 +69,7 @@ function Settings() {
 	const [isLoadingSttModels, setIsLoadingSttModels] = useState(true);
 	const [isReloadingStt, setIsReloadingStt] = useState(false);
 	const [showSttWarning, setShowSttWarning] = useState(false);
+	const [sttInitialized, setSttInitialized] = useState(false);
 
 	/**
 	 * Load settings and STT models on mount
@@ -112,6 +113,27 @@ function Settings() {
 			try {
 				const models = await settingsAPI.getSttModels();
 				setSttModels(models);
+
+				// Auto-select first model if none selected and we have models
+				if (models.length > 0 && !selectedSttModel && !sttInitialized) {
+					setSttInitialized(true);
+					setSelectedSttModel(models[0].name);
+					// Save the auto-selection to backend and reload
+					setIsReloadingStt(true);
+					try {
+						await settingsAPI.updateSettings({ sttModel: models[0].name });
+						// Try to reload (non-blocking if server is down)
+						try {
+							await settingsAPI.reloadSttModel(models[0].path);
+						} catch (reloadError) {
+							console.warn('STT reload failed (server may be down):', reloadError);
+						}
+					} catch (error) {
+						console.error("Failed to auto-select STT model:", error);
+					} finally {
+						setIsReloadingStt(false);
+					}
+				}
 			} catch (error) {
 				console.error("Failed to load STT models:", error);
 			} finally {
@@ -121,7 +143,7 @@ function Settings() {
 
 		loadSettings();
 		loadSttModels();
-	}, [addToast]);
+	}, [addToast, sttInitialized, selectedSttModel]);
 
 	// ============ Model Selection Handlers ============
 
@@ -373,59 +395,52 @@ function Settings() {
 		const newModel = event.target.value;
 		setSelectedSttModel(newModel);
 
-		// Show warning for larger models (> 500MB)
+		// Find the model info for path and size
 		const selectedModelInfo = sttModels.find((m) => m.name === newModel);
+
+		// Show warning for larger models (> 500MB)
 		if (selectedModelInfo && selectedModelInfo.memoryMB > 500) {
 			setShowSttWarning(true);
 		} else {
 			setShowSttWarning(false);
 		}
 
+		// Save model preference and reload immediately
 		setIsSavingModel(true);
+		setIsReloadingStt(true);
+
 		try {
+			// Save the preference first
 			const updated = await settingsAPI.updateSettings({ sttModel: newModel });
 			setSettingsData(updated);
+
+			// Then reload the model with the actual path (non-blocking, don't fail if server is down)
+			if (selectedModelInfo) {
+				try {
+					await settingsAPI.reloadSttModel(selectedModelInfo.path);
+				} catch (reloadError) {
+					// STT server might not be running - that's OK, model will reload on next use
+					console.warn('STT reload failed (server may be down):', reloadError);
+				}
+			}
+
 			addToast({
-				type: "success",
-				title: "STT model updated",
+				type: 'success',
+				title: 'STT model updated',
 				message: `${newModel} is now active.`,
 			});
 		} catch (error) {
 			const message =
-				error instanceof Error ? error.message : "Failed to update STT model";
+				error instanceof Error ? error.message : 'Failed to update STT model';
 			addToast({
-				type: "error",
-				title: "STT model update failed",
+				type: 'error',
+				title: 'STT model update failed',
 				message,
 			});
 			// Revert to previous value
-			setSelectedSttModel(settingsData?.sttModel || "");
+			setSelectedSttModel(settingsData?.sttModel || '');
 		} finally {
 			setIsSavingModel(false);
-		}
-	};
-
-	const handleSttReload = async () => {
-		if (!selectedSttModel) return;
-		setIsReloadingStt(true);
-		setShowSttWarning(false);
-
-		try {
-			await settingsAPI.reloadSttModel(selectedSttModel);
-			addToast({
-				type: "success",
-				title: "Model reloaded",
-				message: `${selectedSttModel} is now active.`,
-			});
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "Failed to reload STT model";
-			addToast({
-				type: "error",
-				title: "Reload failed",
-				message,
-			});
-		} finally {
 			setIsReloadingStt(false);
 		}
 	};
@@ -577,11 +592,10 @@ function Settings() {
 	const sttSettingsProps: STTSettingsProps = {
 		sttModels,
 		isLoadingSttModels,
-		isReloadingStt,
+		isReloadingStt: isReloadingStt || isSavingModel,
 		selectedSttModel,
 		showSttWarning,
 		onSttModelChange: handleSttModelChange,
-		onSttReload: handleSttReload,
 		onSttWarningDismiss: handleSttWarningDismiss,
 	};
 

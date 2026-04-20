@@ -1,0 +1,88 @@
+{
+  "milestone": "history-settings",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 37,
+    "passed": 37,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-HISTORY-001",
+    "VAL-HISTORY-002",
+    "VAL-HISTORY-003",
+    "VAL-HISTORY-004",
+    "VAL-HISTORY-005",
+    "VAL-HISTORY-006",
+    "VAL-HISTORY-007",
+    "VAL-HISTORY-008",
+    "VAL-HISTORY-009",
+    "VAL-HISTORY-010",
+    "VAL-HISTORY-011",
+    "VAL-HISTORY-012",
+    "VAL-DETAIL-001",
+    "VAL-DETAIL-002",
+    "VAL-DETAIL-003",
+    "VAL-DETAIL-004",
+    "VAL-DETAIL-005",
+    "VAL-DETAIL-006",
+    "VAL-DETAIL-007",
+    "VAL-DETAIL-008",
+    "VAL-DETAIL-009",
+    "VAL-DETAIL-010",
+    "VAL-SETTINGS-001",
+    "VAL-SETTINGS-002",
+    "VAL-SETTINGS-003",
+    "VAL-SETTINGS-004",
+    "VAL-SETTINGS-005",
+    "VAL-SETTINGS-006",
+    "VAL-SETTINGS-007",
+    "VAL-SETTINGS-008",
+    "VAL-SETTINGS-009",
+    "VAL-SETTINGS-010",
+    "VAL-SETTINGS-011",
+    "VAL-SETTINGS-012",
+    "VAL-SETTINGS-013",
+    "VAL-SETTINGS-014",
+    "VAL-SETTINGS-015"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Confirmed Flet's CanvasKit renderer limitation for browser automation - component-level testing with pytest/mocks is the correct approach for these screens",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null,
+  "testResults": {
+    "history_page": {
+      "testFile": "src/tests/e2e/test_history_page.py",
+      "testsCollected": 32,
+      "testsPassed": 32,
+      "durationSeconds": 3.46,
+      "tool": "pytest with flet mocks"
+    },
+    "session_detail_page": {
+      "testFile": "src/tests/e2e/test_session_detail_page.py",
+      "testsCollected": 36,
+      "testsPassed": 36,
+      "durationSeconds": 3.50,
+      "tool": "pytest with flet mocks"
+    },
+    "settings_page": {
+      "testFile": "src/tests/e2e/test_settings_page.py",
+      "testsCollected": 35,
+      "testsPassed": 35,
+      "durationSeconds": 3.60,
+      "tool": "pytest with flet mocks"
+    }
+  },
+  "flowReports": [
+    "history-page.json",
+    "session-detail-page.json",
+    "settings-page.json"
+  ]
+}

@@ -1,49 +1,34 @@
 #!/bin/bash
+# OpenMarcus E2E Test Mission - Environment Setup
+
 set -e
 
-cd /Users/stefano/repos/open-marcus/backend-python
-
-# Check Python version
-PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
-echo "Python version: $PYTHON_VERSION"
+cd /Users/stefano/repos/open-marcus/src
 
 # Create virtual environment if it doesn't exist
 if [ ! -d "venv" ]; then
-    echo "Creating Python virtual environment..."
+    echo "Creating virtual environment..."
     python3 -m venv venv
 fi
 
 # Activate virtual environment
 source venv/bin/activate
 
-# Install core dependencies
-echo "Installing core dependencies..."
-pip install --upgrade pip
+# Install dependencies
+echo "Installing dependencies..."
+pip install -q -r requirements.txt
 
-# Flet and web framework
-pip install flet fastapi uvicorn
+# Install Playwright for E2E testing
+echo "Installing Playwright..."
+pip install -q playwright
+playwright install chromium
 
-# Database
-pip install sqlalchemy aiosqlite
+# Create e2e test directory
+mkdir -p tests/e2e
 
-# Data validation
-pip install pydantic pydantic-settings
+# Verify installation
+echo "Verifying installation..."
+python -c "import flet; print(f'Flet {flet.__version__} installed')"
+python -c "import playwright; print('Playwright installed')"
 
-# Authentication
-pip install passlib[argon2] python-jose[cryptography] bcrypt
-
-# LLM integration (llama-cpp-python with Metal support for Mac)
-pip install llama-cpp-python
-
-# Speech
-pip install faster-whisper piper-tts
-
-# Testing
-pip install pytest pytest-asyncio httpx
-
-# Code quality
-pip install ruff black mypy
-
-echo "Python environment ready"
-echo "To activate: source venv/bin/activate"
-echo "To run Flet: flet run"
+echo "Setup complete!"

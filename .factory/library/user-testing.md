@@ -1,136 +1,141 @@
-# User Testing Surface
+# User Testing
 
-## Testing Approach
+Testing surface, required testing skills/tools, and resource cost classification per surface.
 
-This document describes how user testing is performed for OpenMarcus Flet rewrite.
+---
 
-## Test Tool
+## Validation Surface
 
-**Flet App Testing**
-- Run: `flet run` launches the app
-- Use `agent-browser` for web-based testing if Flet web target used
-- Use `tuistory` for terminal-based verification
+### Primary Tool: Playwright E2E Testing
 
-## Validation Surfaces
+OpenMarcus is a Flet desktop application that also supports web mode. For E2E testing:
 
-### Authentication Flow
-1. Fresh app launch → Password creation prompt
-2. Login with credentials → Home screen
-3. Invalid login → Error message
-4. Logout → Return to login
+- **Tool**: Playwright with Chromium browser
+- **Approach**: Run Flet in web mode, test via browser automation
+- **Why**: Flet supports `flet run --web` which serves the app as a web app
 
-### Profile/Onboarding
-1. Complete onboarding form
-2. View profile on home
-3. Edit profile → Changes persist
+### Alternative: tuistory
 
-### Meditation Session
-1. Click "Begin Meditation" → Session created
-2. Send first message → State transitions to active
-3. Receive AI response → Tokens stream
-4. End session → Summary generated
+For testing the desktop TUI version directly:
+- **Tool**: `tuistory` skill for TUI automation
+- **Use when**: Desktop-specific features need testing
+- **Setup**: Launch `flet run` (desktop mode)
 
-### Memory System
-1. Share personal info in session
-2. Return next day
-3. AI references past conversation
+## Test Surfaces
 
-### Speech
-1. Click microphone → Record audio
-2. Audio transcribed to text
-3. Click TTS → Hear Marcus speak
+### 1. Lock Screen (/lock)
+- **Interactions**: Password entry, form submission, mode toggle
+- **Resource cost**: Low (simple forms)
+- **Max concurrent**: 5
 
-### Settings
-1. Change model → Different responses
-2. Export data → JSON file created
-3. Clear data → App returns to fresh state
+### 2. Login/Register Screens
+- **Interactions**: Form filling, validation, auth flow
+- **Resource cost**: Low (forms + API calls)
+- **Max concurrent**: 5
 
-## Resource Cost Classification
+### 3. Onboarding/Profile
+- **Interactions**: Form filling, API calls, navigation
+- **Resource cost**: Low
+- **Max concurrent**: 5
 
-| Surface | Testing Cost | Notes |
-|---------|-------------|-------|
-| Auth | Low | API-based, fast |
-| Profile | Low | API-based, fast |
-| Session Chat | Medium | LLM inference, depends on model speed |
-| Memory | Medium | LLM inference, multi-turn testing |
-| Speech | High | Requires microphone, longer tests |
-| Settings | Low | API-based, fast |
-| Privacy | Medium | Code inspection + runtime verification |
+### 4. Home Page
+- **Interactions**: Navigation, profile display, button clicks
+- **Resource cost**: Low
+- **Max concurrent**: 5
 
-## Critical Test Paths
+### 5. Session Page (Chat)
+- **Interactions**: Message sending, streaming response, TTS playback
+- **Resource cost**: Medium (streaming + audio)
+- **Max concurrent**: 3 (due to streaming)
 
-### Complete Journey
-1. Register → Onboard → First Session → View History → Return Next Day
-
-### Memory Continuity
-1. Session 1: Share "I have a presentation tomorrow"
-2. Session 2: Ask "What should I focus on today?"
-3. Verify AI knows about presentation
-
-### Privacy Verification
-1. Inspect network traffic during use
-2. Verify no external API calls
-3. Check database is encrypted
+### 6. History/Settings Pages
+- **Interactions**: List display, settings changes, dialogs
+- **Resource cost**: Low
+- **Max concurrent**: 5
 
 ## Validation Concurrency
 
-The orchestrator sets a max concurrent validators number for each surface based on dry run observations. Default: 3 concurrent validators maximum across all surfaces.
+Based on resource analysis:
 
-For this milestone (foundation):
-- API auth testing: Low cost, can run up to 5 concurrent subagents safely
-- Flet UI testing: Currently blocked due to import bugs (see below)
+| Surface | Max Concurrent | Rationale |
+|---------|---------------|-----------|
+| Lock/Login/Register | 5 | Simple forms, minimal resource usage |
+| Onboarding/Profile | 5 | Forms + API, low memory |
+| Home | 5 | Static display, low resource |
+| Session (chat) | 3 | Streaming responses, potential audio |
+| History | 5 | List rendering, low resource |
+| Settings | 5 | Forms + settings save, low resource |
 
-## Flow Validator Guidance: API Testing
+**Overall recommendation**: Run E2E tests with max 3-5 concurrent workers depending on test mix.
 
-### Isolation Rules
-- Backend API URL: http://localhost:8000
-- Auth endpoints: POST /api/auth/register, POST /api/auth/login, GET /api/auth/me, POST /api/auth/verify
-- Use unique usernames per test to avoid conflicts (e.g., testuser_001, testuser_002)
-- Database: /Users/stefano/repos/open-marcus/data/openmarcus.db
+## Setup Requirements
 
-### Testing Protocol
-1. Register a new user with unique username
-2. Login to get JWT token
-3. Use token to access protected endpoints
-4. Verify password hash in database is argon2, not plain text
+### For Playwright E2E Tests
 
-## Flow Validator Guidance: Flet UI Testing (CURRENTLY BLOCKED)
+1. Start backend: `uvicorn src.api:app --port 8000`
+2. Start Flet web: `flet run --web --port 3100`
+3. Run tests: `pytest tests/e2e/ -v`
 
-### Isolation Rules
-- Flet app path: /Users/stefano/repos/open-marcus/backend-python/src/main.py
-- Backend API: http://localhost:8000 (ensure this is running first with `uvicorn src.api:app --reload --port 8000`)
-- DO NOT modify production code to work around issues
+### For tuistry Desktop Tests
 
-### Critical Issue
-**The Flet app crashes on launch due to `ft.icons` vs `ft.Icons` API change.**
+1. Start backend: `uvicorn src.api:app --port 8000`
+2. Start Flet desktop: `flet run`
+3. Use tuistory to automate desktop app
 
-Error:
+## Test Fixtures
+
+```python
+# conftest.py
+import pytest
+from playwright.sync_api import sync_playwright, Page
+
+@pytest.fixture(scope="session")
+def browser():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        yield browser
+        browser.close()
+
+@pytest.fixture
+def page(browser):
+    page = browser.new_page()
+    yield page
+    page.close()
+
+@pytest.fixture
+def authenticated_page(page):
+    # Login flow
+    page.goto("http://localhost:3100/login")
+    page.fill('[label="Username"]', "testuser")
+    page.fill('[label="Password"]', "testpass123")
+    page.click('button:has-text("Login")')
+    page.wait_for_url("**/home")
+    yield page
 ```
-AttributeError: module 'flet' has no attribute 'icons'
-```
 
-Location: All screen files use `ft.icons.X` but Flet 0.28.3 uses `ft.Icons.X` (capital I).
+## Validation Contract Assertions
 
-Files affected:
-- screens/login_screen.py: `ft.icons.MOOD`
-- screens/lock_screen.py: `ft.icons.LOCK`
-- screens/home_page.py: `ft.icons.HISTORY`, `ft.icons.SETTINGS`, `ft.icons.PERSON`, `ft.icons.PLAY_ARROW`
-- screens/session_page.py: `ft.icons.ARROW_BACK`, `ft.icons.INFO_OUTLINE`, `ft.icons.SEND`
-- screens/history_page.py: `ft.icons.ARROW_BACK`, `ft.icons.SCHEDULE`, `ft.icons.CALENDAR_TODAY`, `ft.icons.CHEVRON_RIGHT`
-- screens/settings_page.py: `ft.icons.ARROW_BACK`, `ft.icons.VOLUME_UP`, `ft.icons.MIC`, `ft.icons.PSYCHOLOGY`, `ft.icons.INFO_OUTLINE`, `ft.icons.FOLDER`, `ft.icons.DOWNLOAD`, `ft.icons.DELETE`
+All 130+ assertions in `validation-contract.md` must be verified:
 
-Impact: VAL-AUTH-006, VAL-UI-001, VAL-UI-002 cannot be tested.
+- **VAL-LOCK-*** : 13 assertions
+- **VAL-LOGIN-*** : 13 assertions
+- **VAL-REGISTER-*** : 13 assertions
+- **VAL-ONBOARD-*** : 9 assertions
+- **VAL-HOME-*** : 16 assertions
+- **VAL-PROFILE-*** : 11 assertions
+- **VAL-SESSION-*** : 18 assertions
+- **VAL-HISTORY-*** : 12 assertions
+- **VAL-DETAIL-*** : 10 assertions
+- **VAL-SETTINGS-*** : 15 assertions
+- **VAL-NAV-*** : 6 assertions
+- **VAL-CROSS-*** : 7 assertions
 
-### Prior Issue (FIXED)
-The prior round's ImportError (`ft.colors`) was fixed by `fix-flet-colors-api`. However, the same issue with `ft.icons` was not addressed in that fix.
+**Total**: 143 assertions
 
-### Running the App
-To test manually:
-```bash
-cd /Users/stefano/repos/open-marcus/backend-python
-source venv/bin/activate
-# Start backend API first (in another terminal)
-uvicorn src.api:app --reload --port 8000
-# Then run Flet app
-PYTHONPATH=. flet run src/main.py -p 8750
-```
+## Known Testing Considerations
+
+1. **Audio features**: TTS playback may not work in headless mode - mock or skip
+2. **Streaming**: Message streaming tests may be timing-sensitive - use appropriate waits
+3. **Async updates**: Flet uses async updates - wait for DOM changes
+4. **Navigation timing**: Use `page.wait_for_url()` after navigation
+5. **Mock LLM**: In tests, mock LLM responses to avoid dependency on AI service

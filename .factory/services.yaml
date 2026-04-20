@@ -1,65 +1,22 @@
 commands:
-  install: |
-    cd /Users/stefano/repos/open-marcus/backend-python
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -e .
-  install:manual: |
-    cd /Users/stefano/repos/open-marcus/backend-python
-    pip install flet fastapi uvicorn sqlalchemy pydantic
-    pip install passlib[argon2] python-jose[cryptography]
-    pip install llama-cpp-python faster-whisper
-    pip install pytest pytest-asyncio httpx
-  typecheck: |
-    cd /Users/stefano/repos/open-marcus/backend-python
-    source venv/bin/activate
-    mypy src/ || echo "mypy not installed, skipping"
-  test: |
-    cd /Users/stefano/repos/open-marcus/backend-python
-    source venv/bin/activate
-    pytest tests/ -v
-  test:unit: |
-    cd /Users/stefano/repos/open-marcus/backend-python
-    source venv/bin/activate
-    pytest tests/unit/ -v
-  lint: |
-    cd /Users/stefano/repos/open-marcus/backend-python
-    source venv/bin/activate
-    ruff check src/ || flake8 src/ || echo "Linter not configured"
-  format: |
-    cd /Users/stefano/repos/open-marcus/backend-python
-    source venv/bin/activate
-    black src/ || ruff format src/ || echo "Formatter not configured"
-  dev:flet: |
-    cd /Users/stefano/repos/open-marcus/backend-python
-    source venv/bin/activate
-    flet run
-  dev:backend: |
-    cd /Users/stefano/repos/open-marcus/backend-python
-    source venv/bin/activate
-    uvicorn src.api:app --reload --port 8000
-  build:mac: |
-    cd /Users/stefano/repos/open-marcus/backend-python
-    source venv/bin/activate
-    flet build macos
+  install: cd src && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
+  build: cd src && ./venv/bin/python -m venv venv && ./venv/bin/pip install -r requirements.txt
+  test: cd src && ./venv/bin/python -m pytest tests/ -v
+  test_e2e: cd src && ./venv/bin/python -m pytest tests/e2e/ -v
+  lint: cd src && ./venv/bin/ruff check .
+  typecheck: cd src && ./venv/bin/python -m mypy src/ || true
 
 services:
-  flet-app:
-    start: |
-      cd /Users/stefano/repos/open-marcus/backend-python
-      source venv/bin/activate
-      flet run
-    stop: pkill -f "flet" || true
-    healthcheck: echo "Flet app runs in foreground"
-    port: 8550
-    depends_on: []
-
-  backend-api:
-    start: |
-      cd /Users/stefano/repos/open-marcus/backend-python
-      source venv/bin/activate
-      uvicorn src.api:app --reload --port 8000
+  api:
+    start: cd src && ./venv/bin/uvicorn src.api:app --reload --port 8000
     stop: lsof -ti :8000 | xargs kill 2>/dev/null || true
-    healthcheck: curl -sf http://localhost:8000/health || echo "Health check placeholder"
+    healthcheck: curl -sf http://localhost:8000/health || echo "API not ready"
     port: 8000
     depends_on: []
+
+  flet_web:
+    start: cd src && ./venv/bin/flet run --web --port 3100
+    stop: lsof -ti :3100 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:3100 || echo "Flet not ready"
+    port: 3100
+    depends_on: [api]

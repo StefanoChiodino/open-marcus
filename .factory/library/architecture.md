@@ -1,97 +1,159 @@
-# OpenMarcus Architecture
+# Architecture
 
-## Overview
+How the OpenMarcus system works: components, relationships, data flows, invariants.
 
-OpenMarcus is a mental well-being app with a Marcus Aurelius persona that runs entirely locally with no telemetry.
+---
 
-## Architecture Layers
+## System Overview
+
+OpenMarcus is a Flet desktop/mobile application with a FastAPI backend.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    FLET UI LAYER (Python)                       │
-│  Screens: Login, Register, Onboarding, Home, Session, History   │
-│  State: AppState (user, profile, current session)               │
-└─────────────────────────────────────────────────────────────────┘
-                              │ HTTP/WebSocket
-┌─────────────────────────────────────────────────────────────────┐
-│                 FASTAPI BACKEND (Python)                        │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │ Auth Router  │  │Session Router│  │Settings Router│         │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────┐        │
-│  │                  SERVICES LAYER                       │        │
-│  │  AuthService  │  SessionService  │  MemoryService   │        │
-│  │  LLMSevice    │  STTService     │  TTSService      │        │
-│  └──────────────────────────────────────────────────────┘        │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────┐        │
-│  │                 DATA LAYER (SQLAlchemy)              │        │
-│  │  User │ Profile │ Session │ Message │ PsychUpdate   │        │
-│  └──────────────────────────────────────────────────────┘        │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────────┐
-│                    LOCAL SERVICES                                │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │ llama-cpp  │  │faster-whisper│ │  piper-tts  │             │
-│  │  (LLM)     │  │   (STT)     │  │   (TTS)     │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│           Flet Desktop App               │
+│  (src/main.py, src/screens/)            │
+│                                          │
+│  ┌─────────┐  ┌──────────┐  ┌────────┐  │
+│  │  Lock   │  │  Login   │  │  ...   │  │
+│  │ Screen  │  │  Screen  │  │        │  │
+│  └────┬────┘  └────┬─────┘  └────────┘  │
+│       │            │                      │
+│       └────────────┼──────────────────┐   │
+│                    │                   │   │
+│              ┌─────▼─────┐            │   │
+│              │ APIClient │─────────────┼───┘
+│              └─────┬─────┘            │
+└────────────────────┼──────────────────┘
+                     │ HTTP/REST
+                     ▼
+┌─────────────────────────────────────────┐
+│         FastAPI Backend                   │
+│  (src/api.py, src/routers/)             │
+│                                          │
+│  ┌──────────┐  ┌──────────┐  ┌────────┐ │
+│  │  Auth    │  │  Profile │  │Session │ │
+│  │  Router  │  │  Router  │  │ Router │ │
+│  └────┬─────┘  └────┬─────┘  └───┬────┘ │
+│       │             │            │       │
+│       └─────────────┼────────────┘       │
+│                     │                   │
+│              ┌──────▼──────┐            │
+│              │DatabaseService│           │
+│              └──────┬──────┘            │
+└─────────────────────┼───────────────────┘
+                      │ SQLAlchemy
+                      ▼
+              ┌───────────────┐
+              │    SQLite     │
+              │ (encrypted)   │
+              └───────────────┘
 ```
 
-## Data Models
+## Components
 
-### User & Auth
-- **User**: id, username, password_hash, created_at
-- **Password**: Derived from master password, encrypts database
+### Flet Screens (src/screens/)
 
-### Profile & Journey
-- **Profile**: id, user_id, name, goals, experience_level, created_at
-- **Session**: id, user_id, state (intro/active/concluded), created_at, summary
-- **Message**: id, session_id, role, content, created_at, psych_update_id
+Each screen is a class that builds a `ft.View`:
 
-### Memory System (Mental Health Journey)
-- **PsychUpdate**: id, message_id, detected_patterns, emotional_state, stoic_principle, suggested_direction, confidence
-- **SemanticAssertion**: id, user_id, source_message_id, text, confidence, created_at
+| Screen | Route | Purpose |
+|--------|-------|---------|
+| LockScreen | /lock | Master password setup/unlock |
+| LoginScreen | /login | User authentication |
+| RegisterScreen | /register | New user registration |
+| OnboardingScreen | /onboarding | Profile creation for new users |
+| HomePage | /home | Dashboard with profile display |
+| ProfilePage | /profile | Edit existing profile |
+| SessionPage | /session | Meditation chat interface |
+| HistoryPage | /history | Past sessions list |
+| SessionDetailPage | /session/{id} | Individual session view |
+| SettingsPage | /settings | App configuration |
 
-### Settings
-- **Settings**: id, user_id, selected_model, tts_voice, stt_enabled, ram_detected
+### Navigation (src/screens/navigation.py)
 
-## Key Patterns
+- `NavigationSidebar` - `ft.NavigationRail` component
+- 4 destinations: Home, History, Settings, Profile
+- Leading: CircleAvatar with "M" logo
+- Trailing: Logout IconButton
 
-### Memory Context Building
-Before each AI response, build context from:
-1. User profile (name, goals, experience)
-2. Semantic assertions (facts about user)
-3. Recent emotional states
-4. Past conversation highlights
+### API Client (src/services/api_client.py)
 
-### PsychUpdate Flow
-After each AI response:
-1. Generate response with Marcus persona
-2. Extract psych_update (detected patterns, emotional state)
-3. Extract semantic assertions (0-3 facts)
-4. Store both in database
-5. Inject accumulated context into next prompt
+- `APIClient` singleton
+- JWT token stored in `self.token`
+- Methods: `login()`, `register()`, `get_profile()`, `create_profile()`, `update_profile()`, `create_session()`, `stream_message()`, `end_session()`, `list_sessions()`, `get_session()`, `get_settings()`, `update_settings()`, `export_data()`, `clear_all_data()`
 
-### Model Selection by RAM
-| RAM | Recommended Model | Size |
-|-----|-----------------|------|
-| 4GB | Qwen2-0.5B | ~1GB |
-| 8GB | Phi-3-mini | ~4GB |
-| 16GB | Llama-3.2-7B | ~8GB |
-| 32GB+ | Llama-3.1-13B | ~16GB |
+### Backend API (src/api.py)
 
-## Security Model
+FastAPI application with routers:
+- `/api/auth/*` - Authentication (register, login)
+- `/api/profile` - Profile CRUD
+- `/api/sessions/*` - Session management
+- `/api/settings` - App settings
+- `/api/system/*` - System info
 
-- Master password → argon2 → database encryption key
-- JWT for API authentication
-- No third-party network calls except model downloads
-- All data local, encrypted at rest
+### Database Models (src/models/)
 
-## Reference Implementations
+SQLAlchemy 2.0 async models:
+- `User` - username, hashed_password
+- `Profile` - user_id, name, goals, experience_level
+- `Session` - user_id, state (intro/active/concluded), summary
+- `Message` - session_id, role, content
+- `PsychUpdate` - session_id, emotional_state, keywords
+- `SemanticAssertion` - session_id, assertion_text, category
+- `Settings` - user_id, tts_voice, stt_enabled, selected_model
 
-- **Stoic Emperor**: `/Users/stefano/repos/stoic-emperor/src/core/emperor_brain.py`
-- **Memory Architecture**: `/Users/stefano/repos/aigent/docs/memory-architecture.md`
+### Services (src/services/)
+
+- `auth.py` - JWT generation, password hashing (argon2id)
+- `database.py` - SQLAlchemy session management
+- `encryption.py` - Fernet AES-256 encryption
+- `password_lock.py` - Master password service
+- `session.py` - Session business logic
+- `persona.py` - Marcus Aurelius persona prompt building
+- `llm.py` - LLM inference (llama-cpp-python)
+- `stt.py` - Speech-to-text (faster-whisper)
+- `tts.py` - Text-to-speech (piper-tts)
+
+## Data Flows
+
+### Login Flow
+1. User enters credentials on LoginScreen
+2. `api_client.login()` POSTs to `/api/auth/login`
+3. Backend validates, returns JWT
+4. Token stored in `api_client.token`
+5. Check profile: if none → `/onboarding`, else → `/home`
+
+### Session Flow
+1. User clicks "Begin Meditation" → `/session`
+2. `api_client.create_session()` creates session (state=intro)
+3. User sends message → `api_client.stream_message()`
+4. Backend streams LLM response
+5. User clicks Stop → `api_client.end_session()`
+6. Session state = concluded, summary generated
+7. Navigate to `/home`
+
+### Data Encryption
+- Master password derives encryption key via PBKDF2
+- Database encrypted at rest via Fernet (AES-256)
+- Passwords hashed via argon2id
+- JWT for stateless auth
+
+## Testing Structure
+
+```
+src/tests/
+├── unit/           # pytest unit tests (existing)
+├── e2e/            # NEW: Playwright E2E tests
+│   ├── conftest.py
+│   ├── test_lock_screen.py
+│   ├── test_login_screen.py
+│   └── ...
+└── test_*.py      # Existing integration tests
+```
+
+## Key Invariants
+
+1. All API calls require valid JWT (except /auth/*)
+2. Session state machine: intro → active → concluded (never backwards)
+3. Profile must exist before accessing /home
+4. Master password must be set before using app
+5. All sensitive data encrypted at rest

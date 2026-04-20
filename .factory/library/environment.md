@@ -1,107 +1,47 @@
-# Environment Setup
+# Environment
 
-## Prerequisites
+Environment variables, external dependencies, and setup notes.
 
-- Python 3.11+
-- macOS (target platform)
-- 4GB+ RAM (for local AI models)
+**What belongs here:** Required env vars, external API keys/services, dependency quirks, platform-specific notes.
+**What does NOT belong here:** Service ports/commands (use `.factory/services.yaml`).
 
-## Project Structure
+---
 
-```
-backend-python/
-├── src/
-│   ├── main.py           # Flet app + FastAPI
-│   ├── models/           # SQLAlchemy models
-│   ├── routers/          # FastAPI routes
-│   ├── services/         # Business logic
-│   └── screens/          # Flet UI screens
-├── tests/
-├── config/
-│   └── prompts.yaml      # Marcus persona prompts
-├── models/               # GGUF model files
-├── data/                 # SQLite database (encrypted)
-└── venv/                 # Python virtual environment
-```
+## OpenMarcus E2E Testing Environment
 
-## Dependencies
+### Dependencies
 
-### Core
-- `flet>=1.0.0` - UI framework
-- `fastapi>=0.100` - Web framework
-- `uvicorn` - ASGI server
+- Python 3.9+ with venv
+- Flet 0.28.3+ (desktop/web framework)
+- Playwright for E2E testing
+- FastAPI + SQLAlchemy for backend
+- pytest for test execution
 
-### Database
-- `sqlalchemy>=2.0` - ORM
-- `aiosqlite` - Async SQLite driver
+### Setup
 
-### Auth & Security
-- `passlib[argon2]` - Password hashing
-- `python-jose[cryptography]` - JWT tokens
-- `cryptography` - Encryption utilities
-
-### AI/ML
-- `llama-cpp-python` - Local LLM inference (with Metal support)
-- `faster-whisper` - Speech-to-text
-- `piper-tts` - Text-to-speech
-
-### Testing
-- `pytest` - Test framework
-- `pytest-asyncio` - Async test support
-- `httpx` - HTTP client for tests
-
-### Code Quality
-- `ruff` - Linter
-- `black` - Formatter
-- `mypy` - Type checker
-
-## Environment Variables
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `OPENMARCUS_PORT` | Backend API port | `8000` |
-| `OPENMARCUS_DB_PATH` | Database file path | `./data/openMarcus.db` |
-| `OPENMARCUS_MODEL_PATH` | Default LLM model | `./models/` |
-
-## RAM Detection
-
-System detects available RAM on startup using:
-
-```python
-import sys
-import psutil
-
-def get_ram_gb() -> int:
-    return psutil.virtual_memory().total // (1024**3)
-```
-
-Recommended model sizes based on RAM:
-- 4GB: 2B parameter models
-- 8GB: 7B parameter models
-- 16GB: 13B parameter models
-- 32GB+: 70B parameter models
-
-## Model Management
-
-Models are GGUF files stored in `models/` directory.
-
-Recommended initial models:
-- `llama-3.2-1b-instruct-q4_k_m.gguf` - Small, fast
-- `llama-3.2-3b-instruct-q4_k_m.gguf` - Balanced
-- `llama-3.1-8b-instruct-q4_k_m.gguf` - Higher quality
-
-Download from: https://huggingface.co/models?sort=trending
-
-## Known Issues
-
-### llama-cpp-python on Mac
-May need to set environment variable for Metal GPU:
 ```bash
-export LLAMA_METAL=1
+cd src
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+playwright install chromium
 ```
 
-Or use homebrew openblas:
-```bash
-brew install openblas
-CMAKE_ARGS="-DGGML_OPENBLAS=ON" pip install llama-cpp-python
-```
+### External Services
+
+- **Backend API**: localhost:8000 (FastAPI)
+- **Flet Web UI**: localhost:3100
+- **SQLite**: In-memory for tests, file-based for dev
+
+### Testing Notes
+
+- E2E tests use Playwright with Chromium browser
+- Backend tests use FastAPI TestClient with in-memory SQLite
+- Unit tests use pytest with mocked services
+- All tests must be deterministic (no flaky tests)
+
+### Platform Notes
+
+- macOS (Darwin) - primary development platform
+- Tests run headless in CI, headed for debugging
+- Audio/video features may be limited in headless mode

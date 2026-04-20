@@ -1,0 +1,73 @@
+{
+  "milestone": "cross-flows",
+  "round": 1,
+  "groupId": "cross-flows-all",
+  "tool": "pytest (API-level component testing)",
+  "assertions": [
+    "VAL-CROSS-001",
+    "VAL-CROSS-002",
+    "VAL-CROSS-003",
+    "VAL-CROSS-004",
+    "VAL-CROSS-005",
+    "VAL-CROSS-006",
+    "VAL-CROSS-007"
+  ],
+  "status": "pass",
+  "details": {
+    "VAL-CROSS-001": {
+      "name": "New User Registration Flow",
+      "testCases": 4,
+      "passed": 4,
+      "summary": "Complete new user registration flow verified: setup password -> register -> login -> onboarding -> home. All validation failures tested."
+    },
+    "VAL-CROSS-002": {
+      "name": "Returning User Login Flow",
+      "testCases": 5,
+      "passed": 5,
+      "summary": "Returning user login flow verified: unlock -> login -> home with profile. Session expiry and corrupted profile handling tested."
+    },
+    "VAL-CROSS-003": {
+      "name": "Complete Session Flow",
+      "testCases": 5,
+      "passed": 5,
+      "summary": "Complete meditation session flow verified: intro -> active -> concluded -> history. Session immutability and error handling tested."
+    },
+    "VAL-CROSS-004": {
+      "name": "View Session History Flow",
+      "testCases": 4,
+      "passed": 4,
+      "summary": "Session history viewing flow verified: history list -> session detail -> back. Empty state and pagination tested."
+    },
+    "VAL-CROSS-005": {
+      "name": "Edit Profile Flow",
+      "testCases": 4,
+      "passed": 4,
+      "summary": "Profile edit flow verified: load pre-filled -> edit -> save -> home. Validation failures and network error handling tested."
+    },
+    "VAL-CROSS-006": {
+      "name": "Change Settings Flow",
+      "testCases": 6,
+      "passed": 6,
+      "summary": "Settings change flow verified: TTS/STT/AI model changes with auto-save. Rapid changes, invalid values, and persistence tested."
+    },
+    "VAL-CROSS-007": {
+      "name": "Logout Flow",
+      "testCases": 6,
+      "passed": 6,
+      "summary": "Logout flow verified from all pages: home, history, settings, profile. Immediate re-login and token invalidation tested."
+    }
+  },
+  "evidence": [
+    "pytest src/tests/test_cross_flows.py -v: 37 passed"
+  ],
+  "frictions": [],
+  "blockers": [
+    {
+      "issue": "Flet CanvasKit limitation prevents browser automation",
+      "description": "Flet's CanvasKit web renderer doesn't expose DOM elements for agent-browser/playwright interaction. UI tests use component-level mocking instead.",
+      "impact": "Cross-flow assertions verified via API-level tests rather than browser-based E2E"
+    }
+  ],
+  "toolsUsed": ["pytest", "FastAPI TestClient", "unittest.mock"],
+  "note": "Tests use component-level testing with mocks per user-testing.md guidance for Flet apps"
+}

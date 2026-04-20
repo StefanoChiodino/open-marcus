@@ -14,7 +14,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 import flet as ft
 
 from src.screens.lock_screen import PasswordLockScreen
-from src.services.password_lock import password_lock_service
 
 
 class TestApp:

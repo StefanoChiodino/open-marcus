@@ -10,7 +10,6 @@ In a headless environment, the tests may not be able to connect to the Flet app
 if there's no browser available to establish the WebSocket connection.
 """
 
-import time
 from pathlib import Path
 from playwright.sync_api import Page, expect
 

@@ -1,0 +1,21 @@
+{
+  "surface": "register-screen",
+  "assertions": [
+    "VAL-REGISTER-001", "VAL-REGISTER-002", "VAL-REGISTER-003", "VAL-REGISTER-004", "VAL-REGISTER-005",
+    "VAL-REGISTER-006", "VAL-REGISTER-007", "VAL-REGISTER-008", "VAL-REGISTER-009", "VAL-REGISTER-010",
+    "VAL-REGISTER-011", "VAL-REGISTER-012", "VAL-REGISTER-013"
+  ],
+  "status": "passed",
+  "testFile": "src/tests/e2e/test_register_screen.py",
+  "testCount": 32,
+  "passedAssertions": [
+    "VAL-REGISTER-001", "VAL-REGISTER-002", "VAL-REGISTER-003", "VAL-REGISTER-004", "VAL-REGISTER-005",
+    "VAL-REGISTER-006", "VAL-REGISTER-007", "VAL-REGISTER-008", "VAL-REGISTER-009", "VAL-REGISTER-010",
+    "VAL-REGISTER-011", "VAL-REGISTER-012", "VAL-REGISTER-013"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "frictions": [],
+  "blockers": [],
+  "toolsUsed": ["pytest", "component-testing-with-mocks"]
+}

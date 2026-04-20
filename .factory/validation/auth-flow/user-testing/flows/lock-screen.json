@@ -1,0 +1,21 @@
+{
+  "surface": "lock-screen",
+  "assertions": [
+    "VAL-LOCK-001", "VAL-LOCK-002", "VAL-LOCK-003", "VAL-LOCK-004", "VAL-LOCK-005",
+    "VAL-LOCK-006", "VAL-LOCK-007", "VAL-LOCK-008", "VAL-LOCK-009", "VAL-LOCK-010",
+    "VAL-LOCK-011", "VAL-LOCK-012", "VAL-LOCK-013"
+  ],
+  "status": "passed",
+  "testFile": "src/tests/e2e/test_lock_screen.py",
+  "testCount": 22,
+  "passedAssertions": [
+    "VAL-LOCK-001", "VAL-LOCK-002", "VAL-LOCK-003", "VAL-LOCK-004", "VAL-LOCK-005",
+    "VAL-LOCK-006", "VAL-LOCK-007", "VAL-LOCK-008", "VAL-LOCK-009", "VAL-LOCK-010",
+    "VAL-LOCK-011", "VAL-LOCK-012", "VAL-LOCK-013"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "frictions": [],
+  "blockers": [],
+  "toolsUsed": ["pytest", "component-testing-with-mocks"]
+}

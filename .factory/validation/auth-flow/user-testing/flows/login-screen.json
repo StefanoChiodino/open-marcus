@@ -1,0 +1,21 @@
+{
+  "surface": "login-screen",
+  "assertions": [
+    "VAL-LOGIN-001", "VAL-LOGIN-002", "VAL-LOGIN-003", "VAL-LOGIN-004", "VAL-LOGIN-005",
+    "VAL-LOGIN-006", "VAL-LOGIN-007", "VAL-LOGIN-008", "VAL-LOGIN-009", "VAL-LOGIN-010",
+    "VAL-LOGIN-011", "VAL-LOGIN-012", "VAL-LOGIN-013"
+  ],
+  "status": "passed",
+  "testFile": "src/tests/e2e/test_login_screen.py",
+  "testCount": 28,
+  "passedAssertions": [
+    "VAL-LOGIN-001", "VAL-LOGIN-002", "VAL-LOGIN-003", "VAL-LOGIN-004", "VAL-LOGIN-005",
+    "VAL-LOGIN-006", "VAL-LOGIN-007", "VAL-LOGIN-008", "VAL-LOGIN-009", "VAL-LOGIN-010",
+    "VAL-LOGIN-011", "VAL-LOGIN-012", "VAL-LOGIN-013"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "frictions": [],
+  "blockers": [],
+  "toolsUsed": ["pytest", "component-testing-with-mocks"]
+}

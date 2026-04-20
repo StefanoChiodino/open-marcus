@@ -1,0 +1,19 @@
+{
+  "surface": "onboarding-screen",
+  "assertions": [
+    "VAL-ONBOARD-001", "VAL-ONBOARD-002", "VAL-ONBOARD-003", "VAL-ONBOARD-004", "VAL-ONBOARD-005",
+    "VAL-ONBOARD-006", "VAL-ONBOARD-007", "VAL-ONBOARD-008", "VAL-ONBOARD-009"
+  ],
+  "status": "passed",
+  "testFile": "src/tests/e2e/test_onboarding_screen.py",
+  "testCount": 19,
+  "passedAssertions": [
+    "VAL-ONBOARD-001", "VAL-ONBOARD-002", "VAL-ONBOARD-003", "VAL-ONBOARD-004", "VAL-ONBOARD-005",
+    "VAL-ONBOARD-006", "VAL-ONBOARD-007", "VAL-ONBOARD-008", "VAL-ONBOARD-009"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "frictions": [],
+  "blockers": [],
+  "toolsUsed": ["pytest", "component-testing-with-mocks"]
+}

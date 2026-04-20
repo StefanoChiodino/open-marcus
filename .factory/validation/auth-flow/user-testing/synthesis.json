@@ -1,0 +1,40 @@
+{
+  "milestone": "auth-flow",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 48,
+    "passed": 48,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-LOCK-001", "VAL-LOCK-002", "VAL-LOCK-003", "VAL-LOCK-004", "VAL-LOCK-005",
+    "VAL-LOCK-006", "VAL-LOCK-007", "VAL-LOCK-008", "VAL-LOCK-009", "VAL-LOCK-010",
+    "VAL-LOCK-011", "VAL-LOCK-012", "VAL-LOCK-013",
+    "VAL-LOGIN-001", "VAL-LOGIN-002", "VAL-LOGIN-003", "VAL-LOGIN-004", "VAL-LOGIN-005",
+    "VAL-LOGIN-006", "VAL-LOGIN-007", "VAL-LOGIN-008", "VAL-LOGIN-009", "VAL-LOGIN-010",
+    "VAL-LOGIN-011", "VAL-LOGIN-012", "VAL-LOGIN-013",
+    "VAL-REGISTER-001", "VAL-REGISTER-002", "VAL-REGISTER-003", "VAL-REGISTER-004", "VAL-REGISTER-005",
+    "VAL-REGISTER-006", "VAL-REGISTER-007", "VAL-REGISTER-008", "VAL-REGISTER-009", "VAL-REGISTER-010",
+    "VAL-REGISTER-011", "VAL-REGISTER-012", "VAL-REGISTER-013",
+    "VAL-ONBOARD-001", "VAL-ONBOARD-002", "VAL-ONBOARD-003", "VAL-ONBOARD-004", "VAL-ONBOARD-005",
+    "VAL-ONBOARD-006", "VAL-ONBOARD-007", "VAL-ONBOARD-008", "VAL-ONBOARD-009"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null,
+  "flowReports": [
+    ".factory/validation/auth-flow/user-testing/flows/lock-screen.json",
+    ".factory/validation/auth-flow/user-testing/flows/login-screen.json",
+    ".factory/validation/auth-flow/user-testing/flows/register-screen.json",
+    ".factory/validation/auth-flow/user-testing/flows/onboarding-screen.json"
+  ],
+  "testResults": {
+    "lock-screen": { "tests": 22, "passed": 22 },
+    "login-screen": { "tests": 28, "passed": 28 },
+    "register-screen": { "tests": 32, "passed": 32 },
+    "onboarding-screen": { "tests": 19, "passed": 19 }
+  }
+}

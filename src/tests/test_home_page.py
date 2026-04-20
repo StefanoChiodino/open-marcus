@@ -3,7 +3,7 @@ Tests for HomePage screen.
 """
 
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, patch
 import flet as ft
 
 
@@ -113,7 +113,7 @@ class TestHomePageNavigation:
         home_page = HomePage(mock_app)
         
         # build() first to set up content_column
-        view = home_page.build()
+        _view = home_page.build()
         
         # Trigger the navigation callback via update_content
         home_page.update_content()

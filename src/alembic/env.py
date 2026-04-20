@@ -13,7 +13,6 @@ from sqlalchemy import engine_from_config, pool
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.models import Base
-from src.services.database import DatabaseService
 
 # this is the Alembic Config object
 config = context.config

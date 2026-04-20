@@ -2,7 +2,6 @@
 Tests for streaming message functionality.
 """
 
-import pytest
 from src.services.api_client import StreamHandler
 
 

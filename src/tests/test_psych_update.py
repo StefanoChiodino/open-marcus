@@ -2,19 +2,13 @@
 Tests for PsychUpdateService - psychological analysis generation.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-from datetime import datetime
+from unittest.mock import MagicMock
 
 from src.services.psych_update import (
     PsychUpdateService,
-    psych_update_service,
     get_psych_update_service,
-    EMOTIONAL_KEYWORDS,
-    STOIC_PRINCIPLES,
 )
 from src.models.psych_update import PsychUpdate
-from src.models.semantic_assertion import SemanticAssertion
 
 
 class TestPsychUpdateServiceInit:
@@ -192,7 +186,7 @@ class TestExtractPatterns:
         service = PsychUpdateService()
         text = "The weather is nice today"
         
-        patterns = service.extract_patterns(text)
+        _patterns = service.extract_patterns(text)
         
         # May or may not have patterns depending on keyword matching
 
@@ -283,7 +277,7 @@ class TestCreateSemanticAssertions:
         service = PsychUpdateService()
         mock_db = MagicMock()
         
-        assertions = service.create_semantic_assertions(
+        _assertions = service.create_semantic_assertions(
             db=mock_db,
             user_id="user123",
             message_id="msg456",

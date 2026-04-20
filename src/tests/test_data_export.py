@@ -3,15 +3,13 @@ Tests for data export endpoints.
 """
 
 import pytest
-import json
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from src.models import Base, User, Profile, Session, Message, Settings, PsychUpdate, SemanticAssertion
+from src.models import Base
 from src.api import create_app
-from src.services.database import DatabaseService
 
 
 # Create test database

@@ -12,20 +12,13 @@ simulate the complete user journey through the application.
 """
 
 import pytest
-from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock, AsyncMock
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.models import Base
 from src.api import create_app
-from src.services.database import DatabaseService
-from src.services.session import SessionService
-from src.services.auth import AuthService
-from src.services.psych_update import PsychUpdateService
-from src.services.persona import PersonaService
 
 
 # Test database setup
@@ -44,7 +37,6 @@ TestingSessionLocal = sessionmaker(bind=test_engine, expire_on_commit=False)
 def test_db():
     """Create test database tables."""
     # Import models to ensure they're registered with Base
-    from src.models import User, Profile, Session, Message, PsychUpdate, SemanticAssertion, Settings
     Base.metadata.create_all(test_engine)
     yield
     Base.metadata.drop_all(test_engine)
@@ -634,10 +626,10 @@ class TestVALCROSS004PrivacyEnhancedFlow:
         
         # Create Fernet instances
         fernet1 = Fernet(key1)
-        fernet2 = Fernet(key2)
+        _fernet2 = Fernet(key2)
         fernet_wrong = Fernet(wrong_key)
         
-        encryption = EncryptionService()
+        _encryption = EncryptionService()
         
         # Test data
         plaintext = b"This is secret data that should be protected."

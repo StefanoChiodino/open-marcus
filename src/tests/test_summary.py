@@ -3,9 +3,7 @@ Tests for session summary service.
 """
 
 import pytest
-from sqlalchemy.orm import Session
 
-from src.models import Session as SessionModel, Message as MessageModel, User
 from src.services.session import SessionService
 from src.services.summary import SummaryService
 from src.services.database import DatabaseService
@@ -163,7 +161,7 @@ class TestGenerateAndStoreSummary:
         session = session_service.create_session(db, user.id)
         session_service.add_message(db, session.id, user.id, "user", "Hello")
         
-        summary = summary_service.generate_and_store_summary(db, session.id, user.id)
+        _summary = summary_service.generate_and_store_summary(db, session.id, user.id)
         
         session_state = session_service.get_session_state(db, session.id, user.id)
         assert session_state == "active"  # State preserved

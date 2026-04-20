@@ -3,7 +3,6 @@ Tests for authentication endpoints.
 """
 
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -11,7 +10,6 @@ from sqlalchemy.pool import StaticPool
 
 from src.models import Base
 from src.api import create_app
-from src.services.database import DatabaseService
 
 
 # Create test database
@@ -30,7 +28,6 @@ TestingSessionLocal = sessionmaker(bind=test_engine, expire_on_commit=False)
 def test_db():
     """Create test database tables."""
     # Import models to ensure they're registered with Base
-    from src.models import User, Profile, Session, Message, PsychUpdate, SemanticAssertion, Settings
     Base.metadata.create_all(test_engine)
     yield
     Base.metadata.drop_all(test_engine)

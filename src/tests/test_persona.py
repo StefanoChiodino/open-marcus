@@ -2,16 +2,13 @@
 Tests for PersonaService - Marcus Aurelius persona system.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-from datetime import datetime
+from unittest.mock import MagicMock
 
 from src.services.persona import (
     PersonaService,
     MARCUS_BASE_PROMPT,
     get_persona_service,
 )
-from src.services.llm import ChatMessage
 from src.models.profile import Profile
 from src.models.semantic_assertion import SemanticAssertion
 from src.models.psych_update import PsychUpdate

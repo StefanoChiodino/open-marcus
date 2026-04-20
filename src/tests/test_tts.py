@@ -2,10 +2,8 @@
 Tests for TTS Service using piper-tts.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 from src.services.tts import TTSService, MockTTSService, get_tts_service, download_voice
-from pathlib import Path
 
 
 class TestTTSServiceImports:
@@ -222,7 +220,7 @@ class TestTTSValidation:
 
     def test_val_speech_002_tts_service_exists(self):
         """VAL-SPEECH-002: TTS service exists for text-to-speech."""
-        from src.services.tts import TTSService, get_tts_service
+        from src.services.tts import get_tts_service
         service = get_tts_service()
         
         assert service is not None
@@ -307,7 +305,7 @@ class TestDownloadVoice:
         """Test download_voice calls subprocess correctly."""
         mock_run.return_value = MagicMock(returncode=0)
         
-        result = download_voice("en_US-lessac-medium")
+        _result = download_voice("en_US-lessac-medium")
         
         assert mock_run.called
         # Note: result depends on actual subprocess success

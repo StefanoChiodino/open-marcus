@@ -2,7 +2,6 @@
 Tests for password lock service.
 """
 
-import os
 import tempfile
 import pytest
 from pathlib import Path

@@ -2,7 +2,6 @@
 Tests for SessionPage screen.
 """
 
-import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 import flet as ft
 
@@ -121,7 +120,7 @@ class TestSessionPageStructure:
         mock_app.page = MagicMock()
         
         session_page = SessionPage(mock_app)
-        view = session_page.build()
+        _view = session_page.build()
         
         # Find message_input
         assert session_page.message_input is not None
@@ -138,7 +137,7 @@ class TestSessionPageStructure:
         mock_app.page = MagicMock()
         
         session_page = SessionPage(mock_app)
-        view = session_page.build()
+        _view = session_page.build()
         
         # Find send_button
         assert session_page.send_button is not None
@@ -431,7 +430,6 @@ class TestSessionPageValidation:
     @patch('asyncio.create_task')
     def test_val_session_003_chat_messages(self, mock_create_task):
         """VAL-SESSION-003: User can send messages that appear in the chat."""
-        import asyncio
         from src.screens.session_page import SessionPage
         
         mock_app = MagicMock()
@@ -645,7 +643,7 @@ class TestSessionPageTTS:
         assert session_page.currently_playing_message_index is None
 
 
-class TestSessionPageValidation:
+class TestSessionPageSpeechValidation:
     """Tests validating SessionPage meets VAL-SPEECH requirements."""
 
     @patch('asyncio.create_task')

@@ -4,10 +4,8 @@ Tests for session service and endpoints.
 
 import pytest
 from datetime import datetime
-from sqlalchemy.orm import Session
 
-from src.models import Session as SessionModel, Message as MessageModel, User
-from src.services.session import SessionService, SessionNotFoundError
+from src.services.session import SessionService
 from src.services.database import DatabaseService
 from src.services.auth import AuthService
 

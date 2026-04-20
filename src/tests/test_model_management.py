@@ -2,9 +2,6 @@
 Tests for model management service and endpoints.
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
 
 from src.services.model_management import (
     ModelManagementService,
@@ -73,7 +70,7 @@ class TestModelManagementService:
         """Test that models dir is created if it doesn't exist."""
         new_dir = tmp_path / "new_models"
         # Constructor creates the dir immediately, so first verify it exists
-        service = ModelManagementService(models_dir=new_dir)
+        _service = ModelManagementService(models_dir=new_dir)
         assert new_dir.exists()
 
 

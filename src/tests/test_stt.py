@@ -2,8 +2,6 @@
 Tests for STT Service using faster-whisper.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
 from src.services.stt import STTService, MockSTTService, get_stt_service
 
 
@@ -135,7 +133,7 @@ class TestSTTValidation:
 
     def test_val_speech_001_stt_service_exists(self):
         """VAL-SPEECH-001: STT service exists for speech-to-text."""
-        from src.services.stt import STTService, get_stt_service
+        from src.services.stt import get_stt_service
         service = get_stt_service()
         
         assert service is not None

@@ -1,0 +1,40 @@
+{
+  "milestone": "history-settings",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": { "passed": true, "command": "cd src && python -m pytest tests/ -v", "exitCode": 0, "note": "762 passed in 27.23s" },
+    "typecheck": { "passed": true, "command": "cd src && python -m mypy .", "exitCode": 0, "note": "Success: no issues found in 94 source files" },
+    "lint": { "passed": true, "command": "cd src && ruff check .", "exitCode": 0, "note": "All checks passed" }
+  },
+  "reviewsSummary": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "description": "Add knowledge entry: Flet's CanvasKit renderer doesn't expose DOM elements, making Playwright browser automation impossible. All E2E tests use component-level mocking with unittest.mock as a workaround.",
+      "sourceFeature": "e2e-history-page, e2e-session-detail-page, e2e-settings-page"
+    }
+  ],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Add E2E testing convention: For Flet desktop apps, E2E tests use component-level mocking with unittest.mock (not Playwright browser automation) because Flet's CanvasKit renderer doesn't expose DOM elements. Tests import Flet screen classes directly and verify component structure via MagicMock.",
+      "evidence": "All 6 E2E test files (test_history_page.py, test_session_detail_page.py, test_settings_page.py, test_home_page.py, test_profile_page.py, test_session_page.py) follow this same pattern. The e2e-worker skill and AGENTS.md say Playwright but all tests use mock-based component testing.",
+      "isSystemic": true
+    },
+    {
+      "target": "e2e-worker skill",
+      "suggestion": "Document that for Flet desktop apps, Playwright browser automation is not possible due to CanvasKit DOM limitation. Provide mock-based component testing procedure as the correct approach.",
+      "evidence": "e2e-history-page, e2e-session-detail-page, e2e-settings-page all deviated from the skill's Playwright procedure. All 6 E2E test files in the project use the same mock-based component approach.",
+      "isSystemic": true
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null
+}

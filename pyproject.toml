@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openmarcus"
+version = "0.1.0"
+description = "OpenMarcus - Private, local-first AI mental health companion"
+requires-python = ">=3.9"
+dependencies = [
+    "flet>=0.24.0",
+    "httpx>=0.28.0",
+    "sqlalchemy>=2.0.0",
+    "pydantic>=2.0.0",
+    "passlib[argon2]>=1.7.4",
+    "python-jose[cryptography]>=3.3.0",
+    "cryptography>=42.0.0",
+    "alembic>=1.13.0",
+    "fastapi>=0.100.0",
+    "llama-cpp-python>=0.2.0",
+    "psutil>=5.9.0",
+    "huggingface_hub>=0.20.0",
+    "faster-whisper>=1.0.0",
+    "python-multipart>=0.0.6",
+    "piper-tts>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.0",
+    "mypy",
+    "playwright>=1.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.ruff]
+line-length = 200
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = [
+    "E402",  # Module level import not at top of file - structural requirement for SQLAlchemy models with circular imports
+    "F821",  # Undefined name - false positive with from __future__ import annotations and SQLAlchemy forward references
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F401"]  # __init__.py often has imports after Base definition
+"src/models/*.py" = ["F821"]  # Models use forward references with __future__ annotations

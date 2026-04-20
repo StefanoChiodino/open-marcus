@@ -37,7 +37,67 @@ class OpenMarcusApp:
         self.settings_page = SettingsPage(self)
         self.setup_theme()
         self.setup_routes()
-        self.check_password_lock()
+        # Set initial route synchronously to ensure view is shown immediately
+        self._show_initial_view()
+
+    def _show_initial_view(self) -> None:
+        """Show the appropriate initial view synchronously without page.go()."""
+        from src.services.password_lock import password_lock_service
+
+        if password_lock_service.is_password_set() and not password_lock_service.is_unlocked():
+            initial_route = "/lock"
+        elif password_lock_service.is_first_launch():
+            initial_route = "/lock"
+        else:
+            initial_route = "/login"
+
+        # Set route and show view synchronously
+        self.page.route = initial_route
+        self._build_current_view()
+        self.page.update()
+
+    def _build_current_view(self) -> None:
+        """Build the view for the current route."""
+        self.page.views.clear()
+
+        if self.page.route == "/lock":
+            self.page.views.append(self.lock_screen.build())
+        elif self.page.route == "/login":
+            self.page.views.append(self.login_screen.build())
+        elif self.page.route == "/register":
+            self.page.views.append(self.register_screen.build())
+        elif self.page.route == "/onboarding":
+            self.page.views.append(self.onboarding_screen.build())
+        elif self.page.route == "/home":
+            self.page.views.append(self.home_page.build())
+        elif self.page.route == "/profile":
+            self.page.views.append(self.profile_page.build())
+        elif self.page.route == "/session":
+            self.page.views.append(self.session_page.build())
+        elif self.page.route == "/history":
+            self.page.views.append(self.history_page.build())
+        elif self.page.route == "/settings":
+            self.page.views.append(self.settings_page.build())
+        elif self.page.route.startswith("/session/") and self.page.route != "/session":
+            route_part = self.page.route.split("/session/")[1]
+            if route_part and route_part != "detail":
+                self.current_session_id = route_part
+                self.page.views.append(self.session_detail_page.build())
+            elif route_part == "detail":
+                self.page.views.append(self.history_page.build())
+        else:
+            self.page.views.append(self.lock_screen.build())
+
+    def check_password_lock(self) -> None:
+        """Check if password lock is enabled and redirect accordingly."""
+        from src.services.password_lock import password_lock_service
+
+        if password_lock_service.is_password_set() and not password_lock_service.is_unlocked():
+            self.page.go("/lock")
+        elif password_lock_service.is_first_launch():
+            self.page.go("/lock")
+        else:
+            self.page.go("/login")
 
     def setup_theme(self) -> None:
         """Configure app theme with consistent styling."""
@@ -52,25 +112,9 @@ class OpenMarcusApp:
         self.page.window_min_width = 800
         self.page.window_min_height = 600
 
-    def check_password_lock(self) -> None:
-        """Check if password lock is enabled and redirect accordingly."""
-        from src.services.password_lock import password_lock_service
-        
-        # If password is set but app is locked, show lock screen
-        if password_lock_service.is_password_set() and not password_lock_service.is_unlocked():
-            self.page.go("/lock")
-        # If password is not set, show setup screen
-        elif password_lock_service.is_first_launch():
-            # First launch - go to lock screen which will show setup mode
-            self.page.go("/lock")
-        else:
-            # Already unlocked - go to login
-            self.page.go("/login")
-
     def setup_routes(self) -> None:
         """Register all application routes with named views."""
         self.page.on_route_change = self.route_change
-        # Don't auto-navigate here - check_password_lock handles initial route
 
     def route_change(self, route: ft.RouteChangeEvent) -> None:
         """Handle route changes and display appropriate view."""

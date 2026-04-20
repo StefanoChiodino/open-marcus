@@ -1,10 +1,13 @@
-.PHONY: setup dev test lint typecheck clean
+.PHONY: setup dev build test lint typecheck clean
 
 setup:
 	python3 -m venv venv && ./venv/bin/python3 -m pip install --upgrade pip && ./venv/bin/pip install -e .
 
 dev:
 	./venv/bin/flet run src/main.py
+
+build:
+	./venv/bin/flet build macos --module-name src.main
 
 test:
 	./venv/bin/python -m pytest src/tests/ -v

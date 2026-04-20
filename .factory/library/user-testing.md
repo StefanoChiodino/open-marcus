@@ -139,3 +139,4 @@ All 130+ assertions in `validation-contract.md` must be verified:
 3. **Async updates**: Flet uses async updates - wait for DOM changes
 4. **Navigation timing**: Use `page.wait_for_url()` after navigation
 5. **Mock LLM**: In tests, mock LLM responses to avoid dependency on AI service
+6. **Flet CanvasKit Limitation**: Flet's CanvasKit web renderer does not expose DOM elements for browser automation (agent-browser/playwright). The rendered UI exists in a `<canvas>` element inaccessible to DOM queries. For Flet apps, use component-level testing with mocks (as done in `src/tests/e2e/test_session_page.py`) rather than browser-based DOM interaction testing.

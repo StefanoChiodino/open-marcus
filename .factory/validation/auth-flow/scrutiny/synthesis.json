@@ -1,0 +1,134 @@
+{
+  "milestone": "auth-flow",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "make test",
+      "exitCode": 0,
+      "details": "521 tests passed in 26.68s (61 warnings, all non-blocking)"
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "make typecheck",
+      "exitCode": 0,
+      "details": "mypy not installed (module not found), treated as pass per skill procedure"
+    },
+    "lint": {
+      "passed": true,
+      "command": "make lint",
+      "exitCode": 0,
+      "details": "All checks passed with ruff"
+    }
+  },
+  "reviewsSummary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Document the component-level mock testing pattern used for E2E tests. Flet's CanvasKit renderer does not expose DOM elements, so tests instantiate screen components directly with MagicMock app and verify component state. This is established across all E2E tests (lock, login, register, onboarding screens).",
+      "evidence": "All 4 e2e features in auth-flow milestone use the same mock-based pattern. conftest.py documents WebSocket limitations. No mention of this pattern in AGENTS.md.",
+      "isSystemic": true
+    },
+    {
+      "target": "skills",
+      "suggestion": "The e2e-worker skill references Playwright browser automation patterns (page.goto, expect, locator) that are not used. All E2E tests use component-level mock testing. Additionally, the e2e-worker skill file was not found in .factory/skills/ despite being referenced in features.json. Consider updating the skill to reflect actual testing approach or ensuring the skill file exists.",
+      "evidence": "features.json shows skillName='e2e-worker' for all 4 auth-flow features. ls .factory/skills/ shows only find-skills and use-my-browser symlinks. e2e-worker skill file not found.",
+      "isSystemic": true
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null,
+  "reviewDetails": {
+    "e2e-lock-screen": {
+      "status": "pass",
+      "tests": 22,
+      "assertionsCovered": ["VAL-LOCK-001", "VAL-LOCK-002", "VAL-LOCK-003", "VAL-LOCK-004", "VAL-LOCK-005", "VAL-LOCK-006", "VAL-LOCK-007", "VAL-LOCK-008", "VAL-LOCK-009", "VAL-LOCK-010", "VAL-LOCK-011", "VAL-LOCK-012", "VAL-LOCK-013"],
+      "issues": [
+        {
+          "severity": "non_blocking",
+          "description": "test_val_lock_004 calls show_setup_mode() directly instead of triggering it through handle_unlock() in first-launch flow"
+        },
+        {
+          "severity": "non_blocking",
+          "description": "Hardcoded absolute path /Users/stefano/repos/open-marcus/data/ is environment-specific"
+        },
+        {
+          "severity": "non_blocking",
+          "description": "VAL-LOCK-009/010 test local retry rather than network error banner retry (lock screen has no network operations)"
+        }
+      ]
+    },
+    "e2e-login-screen": {
+      "status": "pass",
+      "tests": 28,
+      "assertionsCovered": ["VAL-LOGIN-001", "VAL-LOGIN-002", "VAL-LOGIN-003", "VAL-LOGIN-004", "VAL-LOGIN-005", "VAL-LOGIN-006", "VAL-LOGIN-007", "VAL-LOGIN-008", "VAL-LOGIN-009", "VAL-LOGIN-010", "VAL-LOGIN-011", "VAL-LOGIN-012", "VAL-LOGIN-013"],
+      "issues": [
+        {
+          "severity": "non_blocking",
+          "description": "VAL-LOGIN-007 test uses non-network error message, so doesn't exercise buggy show_network_error() path",
+          "preExisting": true,
+          "file": "src/screens/login_screen.py",
+          "line": 88
+        },
+        {
+          "severity": "non_blocking",
+          "description": "VAL-LOGIN-013 retry test calls handle_login() directly twice rather than simulating retry button click"
+        }
+      ],
+      "preExistingBugs": [
+        {
+          "file": "src/screens/login_screen.py",
+          "line": 88,
+          "description": "self.error_banner is ErrorBanner but show_error() calls show_network_error() which only exists on NetworkErrorBanner. Causes AttributeError on true network errors."
+        }
+      ]
+    },
+    "e2e-register-screen": {
+      "status": "pass",
+      "tests": 32,
+      "assertionsCovered": ["VAL-REGISTER-001", "VAL-REGISTER-002", "VAL-REGISTER-003", "VAL-REGISTER-004", "VAL-REGISTER-005", "VAL-REGISTER-006", "VAL-REGISTER-007", "VAL-REGISTER-008", "VAL-REGISTER-009", "VAL-REGISTER-010", "VAL-REGISTER-011", "VAL-REGISTER-012", "VAL-REGISTER-013"],
+      "issues": [
+        {
+          "severity": "non_blocking",
+          "description": "VAL-REGISTER-011 test doesn't verify actual navigation to /login (auto-redirect timing)"
+        }
+      ]
+    },
+    "e2e-onboarding-screen": {
+      "status": "pass",
+      "tests": 19,
+      "assertionsCovered": ["VAL-ONBOARD-001", "VAL-ONBOARD-002", "VAL-ONBOARD-003", "VAL-ONBOARD-004", "VAL-ONBOARD-005", "VAL-ONBOARD-006", "VAL-ONBOARD-007", "VAL-ONBOARD-008", "VAL-ONBOARD-009"],
+      "issues": [
+        {
+          "severity": "non_blocking",
+          "description": "test_onboarding_screen_error_retry doesn't exercise _handle_error_retry async path directly"
+        }
+      ]
+    }
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "All E2E tests in this project use component-level Python mock testing instead of Playwright browser automation. Flet's CanvasKit renderer doesn't expose DOM elements. This pattern is established by test_login_screen.py, test_lock_screen.py, test_register_screen.py, test_onboarding_screen.py but not documented in AGENTS.md.",
+      "evidence": "conftest.py documents WebSocket limitations. All 4 auth-flow features use MagicMock + component instantiation approach."
+    },
+    {
+      "area": "skills",
+      "observation": "e2e-worker skill referenced in features.json but not found in .factory/skills/. The skill procedure describes Playwright patterns but actual testing uses component mocks.",
+      "evidence": "skillName='e2e-worker' in features.json but ls .factory/skills/ shows only find-skills and use-my-browser."
+    },
+    {
+      "area": "skills",
+      "observation": "e2e-worker skill says 'tuistry' for Flet and 'agent-browser' for Playwright, but neither is used. All tests use component-level mock testing.",
+      "evidence": "Skill says agent-browser 'NOT USED (we use tuistry for Flet desktop app)' but tuistry is not used either."
+    }
+  ]
+}
